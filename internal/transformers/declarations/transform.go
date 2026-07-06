@@ -783,6 +783,7 @@ func (tx *DeclarationTransformer) transformFunctionTypeNode(input *ast.FunctionT
 		tx.Visitor().VisitNodes(input.TypeParameters),
 		tx.updateParamList(input.AsNode(), input.Parameters),
 		tx.Visitor().Visit(input.Type),
+		tx.Visitor().Visit(input.ThrowsType),
 	)
 }
 
@@ -1098,6 +1099,7 @@ func (tx *DeclarationTransformer) transformMethodSignatureDeclaration(input *ast
 			tx.ensureTypeParams(input.AsNode(), input.TypeParameters),
 			tx.updateParamList(input.AsNode(), input.Parameters),
 			tx.ensureType(input.AsNode(), false),
+			tx.Visitor().Visit(input.ThrowsType),
 		)
 	}
 }
@@ -1117,6 +1119,7 @@ func (tx *DeclarationTransformer) transformMethodDeclaration(input *ast.MethodDe
 			tx.ensureTypeParams(input.AsNode(), input.TypeParameters),
 			tx.updateParamList(input.AsNode(), input.Parameters),
 			tx.ensureType(input.AsNode(), false),
+			tx.Visitor().Visit(input.ThrowsType),
 			nil,
 			nil,
 		)
@@ -1268,6 +1271,7 @@ func (tx *DeclarationTransformer) transformFunctionLikeToDeclaration(unwrapped *
 		tx.ensureTypeParams(unwrapped, d.TypeParameters),
 		tx.updateParamList(unwrapped, d.Parameters),
 		tx.ensureType(unwrapped, false),
+		tx.Visitor().Visit(d.ThrowsType),
 		tx.Visitor().VisitNode(d.FullSignature),
 		nil,
 	)
@@ -1781,6 +1785,7 @@ func (tx *DeclarationTransformer) transformFunctionDeclaration(input *ast.Functi
 		tx.ensureTypeParams(input.AsNode(), input.TypeParameters),
 		tx.updateParamList(input.AsNode(), input.Parameters),
 		tx.ensureType(input.AsNode(), false),
+		tx.Visitor().Visit(input.ThrowsType),
 		nil, /*fullSignature*/
 		nil,
 	)
@@ -2848,11 +2853,11 @@ func (tx *DeclarationTransformer) transformExpandoHost(name *ast.Node, declarati
 
 	if ast.IsFunctionDeclaration(declaration) {
 		typeParameters, parameters, asteriskToken := extractExpandoHostParams(declaration)
-		replacement = append(replacement, tx.Factory().UpdateFunctionDeclaration(declaration.AsFunctionDeclaration(), modifiers, asteriskToken, declaration.Name(), tx.ensureTypeParams(declaration, typeParameters), tx.updateParamList(declaration, parameters), tx.ensureType(declaration, false), nil /*fullSignature*/, nil /*body*/))
+		replacement = append(replacement, tx.Factory().UpdateFunctionDeclaration(declaration.AsFunctionDeclaration(), modifiers, asteriskToken, declaration.Name(), tx.ensureTypeParams(declaration, typeParameters), tx.updateParamList(declaration, parameters), tx.ensureType(declaration, false), tx.Visitor().Visit(declaration.FunctionLikeData().ThrowsType), nil /*fullSignature*/, nil /*body*/))
 	} else if ast.IsVariableDeclaration(declaration) && ast.IsFunctionExpressionOrArrowFunction(declaration.Initializer()) {
 		fn := declaration.Initializer()
 		typeParameters, parameters, asteriskToken := extractExpandoHostParams(fn)
-		replacement = append(replacement, tx.Factory().NewFunctionDeclaration(modifiers, asteriskToken, tx.Factory().NewIdentifier(name.Text()), tx.ensureTypeParams(fn, typeParameters), tx.updateParamList(fn, parameters), tx.ensureType(fn, false), nil /*fullSignature*/, nil /*body*/))
+		replacement = append(replacement, tx.Factory().NewFunctionDeclaration(modifiers, asteriskToken, tx.Factory().NewIdentifier(name.Text()), tx.ensureTypeParams(fn, typeParameters), tx.updateParamList(fn, parameters), tx.ensureType(fn, false), tx.Visitor().Visit(fn.FunctionLikeData().ThrowsType), nil /*fullSignature*/, nil /*body*/))
 	} else {
 		tx.expandoHosts[id] = tx.transformTopLevelDeclaration(declaration)
 		return

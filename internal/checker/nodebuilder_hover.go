@@ -221,7 +221,7 @@ func typeElementsToClassElements(f *ast.NodeFactory, members []*ast.Node) []*ast
 			members[i] = f.NewPropertyDeclaration(m.Modifiers(), ps.Name(), ps.QuestionToken(), ps.Type, nil)
 		case ast.KindMethodSignature:
 			ms := m.AsMethodSignatureDeclaration()
-			members[i] = f.NewMethodDeclaration(m.Modifiers(), nil, ms.Name(), ms.QuestionToken(), ms.TypeParameters, ms.Parameters, ms.Type, nil, nil)
+			members[i] = f.NewMethodDeclaration(m.Modifiers(), nil, ms.Name(), ms.QuestionToken(), ms.TypeParameters, ms.Parameters, ms.Type, nil, nil, nil)
 		}
 	}
 	return members

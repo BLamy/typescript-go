@@ -1474,7 +1474,7 @@ func (tx *esDecoratorTransformer) visitMethodDeclaration(node *ast.Node) *ast.No
 	tx.exitClassElement()
 	method := node.AsMethodDeclaration()
 	return tx.finishClassElement(
-		tx.Factory().UpdateMethodDeclaration(method, result.modifiers, method.AsteriskToken, result.name, nil, nil, parameters, nil, nil, body),
+		tx.Factory().UpdateMethodDeclaration(method, result.modifiers, method.AsteriskToken, result.name, nil, nil, parameters, nil, nil, nil, body),
 		node,
 	)
 }
@@ -2482,6 +2482,7 @@ func (tx *esDecoratorTransformer) createDescriptorMethod(
 		nil, // typeParameters
 		parameters,
 		nil, // type
+		nil, // throwsType
 		nil, // fullSignature
 		body,
 	)

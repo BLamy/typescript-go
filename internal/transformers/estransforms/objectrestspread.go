@@ -187,7 +187,7 @@ func (ch *objectRestSpreadTransformer) visitMethodDeclaration(node *ast.MethodDe
 		node.PostfixToken,
 		nil,
 		ch.Visitor().VisitNodes(node.Parameters),
-		nil,
+		nil, nil,
 		nil,
 		ch.transformFunctionBody(node.AsNode()),
 	)
@@ -203,7 +203,7 @@ func (ch *objectRestSpreadTransformer) visitFunctionDeclaration(node *ast.Functi
 		ch.Visitor().VisitNode(node.Name()),
 		nil,
 		ch.Visitor().VisitNodes(node.Parameters),
-		nil,
+		nil, nil,
 		nil,
 		ch.transformFunctionBody(node.AsNode()),
 	)
@@ -217,7 +217,7 @@ func (ch *objectRestSpreadTransformer) visitArrowFunction(node *ast.ArrowFunctio
 		node.Modifiers(),
 		nil,
 		ch.Visitor().VisitNodes(node.Parameters),
-		nil,
+		nil, nil,
 		nil,
 		node.EqualsGreaterThanToken,
 		ch.transformFunctionBody(node.AsNode()),
@@ -234,7 +234,7 @@ func (ch *objectRestSpreadTransformer) visitFunctionExpression(node *ast.Functio
 		ch.Visitor().VisitNode(node.Name()),
 		nil,
 		ch.Visitor().VisitNodes(node.Parameters),
-		nil,
+		nil, nil,
 		nil,
 		ch.transformFunctionBody(node.AsNode()),
 	)

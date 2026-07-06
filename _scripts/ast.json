@@ -973,6 +973,10 @@
                     "type": "TypeNode",
                     "optional": true
                 },
+                "ThrowsType": {
+                    "type": "TypeNode",
+                    "optional": true
+                },
                 "FullSignature": {
                     "type": "TypeNode",
                     "optional": true
@@ -1859,6 +1863,10 @@
                         "inherited": true
                     },
                     {
+                        "name": "ThrowsType",
+                        "inherited": true
+                    },
+                    {
                         "name": "FullSignature",
                         "inherited": true,
                         "noTS": true
@@ -2507,6 +2515,10 @@
                     {
                         "name": "Type",
                         "inherited": true
+                    },
+                    {
+                        "name": "ThrowsType",
+                        "inherited": true
                     }
                 ],
                 "arena": true
@@ -2549,6 +2561,10 @@
                     },
                     {
                         "name": "Type",
+                        "inherited": true
+                    },
+                    {
+                        "name": "ThrowsType",
                         "inherited": true
                     },
                     {
@@ -2899,6 +2915,10 @@
                         "inherited": true
                     },
                     {
+                        "name": "ThrowsType",
+                        "inherited": true
+                    },
+                    {
                         "name": "FullSignature",
                         "inherited": true,
                         "noTS": true
@@ -2951,6 +2971,10 @@
                     },
                     {
                         "name": "Type",
+                        "inherited": true
+                    },
+                    {
+                        "name": "ThrowsType",
                         "inherited": true
                     },
                     {
@@ -3886,6 +3910,10 @@
                     },
                     {
                         "name": "Type",
+                        "inherited": true
+                    },
+                    {
+                        "name": "ThrowsType",
                         "inherited": true
                     }
                 ],
@@ -5090,7 +5118,10 @@
                 "members": [
                     {
                         "name": "Kind",
-                        "type": ["SyntaxKind.JSDocParameterTag", "SyntaxKind.JSDocPropertyTag"],
+                        "type": [
+                            "SyntaxKind.JSDocParameterTag",
+                            "SyntaxKind.JSDocPropertyTag"
+                        ],
                         "inherited": true
                     },
                     {

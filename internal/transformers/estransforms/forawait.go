@@ -619,6 +619,7 @@ func (tx *forawaitTransformer) visitMethodDeclaration(node *ast.Node) *ast.Node 
 		nil, /*typeParameters*/
 		parameters,
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		body,
 	)
@@ -663,6 +664,7 @@ func (tx *forawaitTransformer) visitFunctionDeclaration(node *ast.Node) *ast.Nod
 		nil, /*typeParameters*/
 		parameters,
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		body,
 	)
@@ -680,6 +682,7 @@ func (tx *forawaitTransformer) visitArrowFunction(node *ast.Node) *ast.Node {
 		nil, /*typeParameters*/
 		tx.EmitContext().VisitParameters(decl.Parameters, tx.Visitor()),
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		decl.EqualsGreaterThanToken,
 		tx.EmitContext().VisitFunctionBody(node.Body(), tx.Visitor()),
@@ -725,6 +728,7 @@ func (tx *forawaitTransformer) visitFunctionExpression(node *ast.Node) *ast.Node
 		nil, /*typeParameters*/
 		parameters,
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		body,
 	)
@@ -812,6 +816,7 @@ func (tx *forawaitTransformer) transformAsyncGeneratorFunctionBody(node *ast.Nod
 		nil, /*typeParameters*/
 		innerParams,
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		asyncBody,
 	)

@@ -1729,9 +1729,10 @@ func (p *Parser) parseFunctionDeclaration(pos int, jsdoc jsdocScannerInfo, modif
 	}
 	parameters := p.parseParameters(signatureFlags)
 	returnType := p.parseReturnType(ast.KindColonToken, false /*isType*/)
+	throwsType := p.parseThrowsClause()
 	body := p.parseFunctionBlockOrSemicolon(signatureFlags, diagnostics.X_or_expected)
 	p.contextFlags = saveContextFlags
-	result := p.finishNode(p.factory.NewFunctionDeclaration(modifiers, asteriskToken, name, typeParameters, parameters, returnType, nil /*fullSignature*/, body), pos)
+	result := p.finishNode(p.factory.NewFunctionDeclaration(modifiers, asteriskToken, name, typeParameters, parameters, returnType, throwsType, nil /*fullSignature*/, body), pos)
 	p.withJSDoc(result, jsdoc)
 	p.checkJSSyntax(result)
 	return result
@@ -1956,8 +1957,9 @@ func (p *Parser) parseMethodDeclaration(pos int, jsdoc jsdocScannerInfo, modifie
 	typeParameters := p.parseTypeParameters()
 	parameters := p.parseParameters(signatureFlags)
 	typeNode := p.parseReturnType(ast.KindColonToken, false /*isType*/)
+	throwsType := p.parseThrowsClause()
 	body := p.parseFunctionBlockOrSemicolon(signatureFlags, diagnosticMessage)
-	result := p.finishNode(p.factory.NewMethodDeclaration(modifiers, asteriskToken, name, questionToken, typeParameters, parameters, typeNode, nil /*fullSignature*/, body), pos)
+	result := p.finishNode(p.factory.NewMethodDeclaration(modifiers, asteriskToken, name, questionToken, typeParameters, parameters, typeNode, throwsType, nil /*fullSignature*/, body), pos)
 	p.withJSDoc(result, jsdoc)
 	p.checkJSSyntax(result)
 	return result
@@ -3405,6 +3407,19 @@ func (p *Parser) shouldParseReturnType(returnToken ast.Kind, isType bool) bool {
 	return false
 }
 
+// parseThrowsClause parses an optional `throws T` clause following a function signature's
+// return type (or parameter list when no return type is written). `throws` is a contextual
+// keyword: it is only recognized when it appears on the same line as the preceding token,
+// so that a following class/interface member that happens to be named `throws` (e.g.
+// `m(): void` on one line and `throws: boolean` on the next) keeps parsing as it does today.
+func (p *Parser) parseThrowsClause() *ast.TypeNode {
+	if p.token == ast.KindIdentifier && !p.hasPrecedingLineBreak() && p.scanner.TokenValue() == "throws" {
+		p.nextToken()
+		return doInContext(p, ast.NodeFlagsDisallowConditionalTypesContext, false, (*Parser).parseType)
+	}
+	return nil
+}
+
 func (p *Parser) parseTypeOrTypePredicate() *ast.TypeNode {
 	if p.isIdentifier() {
 		state := p.mark()
@@ -3584,7 +3599,8 @@ func (p *Parser) parsePropertyOrMethodSignature(pos int, jsdoc jsdocScannerInfo,
 		typeParameters := p.parseTypeParameters()
 		parameters := p.parseParameters(ParseFlagsType)
 		returnType := p.parseReturnType(ast.KindColonToken /*isType*/, true)
-		result = p.factory.NewMethodSignatureDeclaration(modifiers, name, questionToken, typeParameters, parameters, returnType)
+		throwsType := p.parseThrowsClause()
+		result = p.factory.NewMethodSignatureDeclaration(modifiers, name, questionToken, typeParameters, parameters, returnType, throwsType)
 	} else {
 		typeNode := p.parseTypeAnnotation()
 		// Although type literal properties cannot not have initializers, we attempt
@@ -3792,7 +3808,8 @@ func (p *Parser) parseFunctionOrConstructorType() *ast.TypeNode {
 	if isConstructorType {
 		result = p.factory.NewConstructorTypeNode(modifiers, typeParameters, parameters, returnType)
 	} else {
-		result = p.factory.NewFunctionTypeNode(typeParameters, parameters, returnType)
+		throwsType := p.parseThrowsClause()
+		result = p.factory.NewFunctionTypeNode(typeParameters, parameters, returnType, throwsType)
 	}
 	p.finishNode(result, pos)
 	p.withJSDoc(result, jsdoc)
@@ -4383,6 +4400,10 @@ func (p *Parser) parseParenthesizedArrowFunctionExpression(allowAmbiguity bool, 
 	if returnType != nil && !allowAmbiguity && typeHasArrowFunctionBlockingParseError(returnType) {
 		return nil
 	}
+	// A `throws T` clause may follow the return type (or the parameter list). In the
+	// speculative (!allowAmbiguity) path a bogus clause is harmless: failing to find
+	// `=>` afterwards returns nil and the caller rewinds.
+	throwsType := p.parseThrowsClause()
 	// Parsing a signature isn't enough.
 	// Parenthesized arrow signatures often look like other valid expressions.
 	// For instance:
@@ -4436,7 +4457,7 @@ func (p *Parser) parseParenthesizedArrowFunctionExpression(allowAmbiguity bool, 
 			return nil
 		}
 	}
-	result := p.finishNode(p.factory.NewArrowFunction(modifiers, typeParameters, parameters, returnType, nil /*fullSignature*/, equalsGreaterThanToken, body), pos)
+	result := p.finishNode(p.factory.NewArrowFunction(modifiers, typeParameters, parameters, returnType, throwsType, nil /*fullSignature*/, equalsGreaterThanToken, body), pos)
 	p.withJSDoc(result, jsdoc)
 	p.checkJSSyntax(result)
 	return result
@@ -4549,7 +4570,7 @@ func (p *Parser) parseSimpleArrowFunctionExpression(pos int, identifier *ast.Nod
 	parameters := p.newNodeList(parameter.Loc, []*ast.Node{parameter})
 	equalsGreaterThanToken := p.parseExpectedToken(ast.KindEqualsGreaterThanToken)
 	body := p.parseArrowFunctionExpressionBody(asyncModifier != nil /*isAsync*/, allowReturnTypeInArrowFunction)
-	result := p.finishNode(p.factory.NewArrowFunction(asyncModifier, nil /*typeParameters*/, parameters, nil /*returnType*/, nil /*fullSignature*/, equalsGreaterThanToken, body), pos)
+	result := p.finishNode(p.factory.NewArrowFunction(asyncModifier, nil /*typeParameters*/, parameters, nil /*returnType*/, nil /*throwsType*/, nil /*fullSignature*/, equalsGreaterThanToken, body), pos)
 	p.withJSDoc(result, jsdoc)
 	return result
 }
@@ -5719,9 +5740,10 @@ func (p *Parser) parseFunctionExpression() *ast.Expression {
 	typeParameters := p.parseTypeParameters()
 	parameters := p.parseParameters(signatureFlags)
 	returnType := p.parseReturnType(ast.KindColonToken, false /*isType*/)
+	throwsType := p.parseThrowsClause()
 	body := p.parseFunctionBlock(signatureFlags, nil /*diagnosticMessage*/)
 	p.contextFlags = saveContexFlags
-	result := p.factory.NewFunctionExpression(modifiers, asteriskToken, name, typeParameters, parameters, returnType, nil /*fullSignature*/, body)
+	result := p.factory.NewFunctionExpression(modifiers, asteriskToken, name, typeParameters, parameters, returnType, throwsType, nil /*fullSignature*/, body)
 	p.finishNode(result, pos)
 	p.withJSDoc(result, jsdoc)
 	p.checkJSSyntax(result)
@@ -6755,6 +6777,10 @@ func (p *Parser) checkJSSyntax(node *ast.Node) *ast.Node {
 			p.jsErrorAtRange(node.Loc, diagnostics.Signature_declarations_can_only_be_used_in_TypeScript_files)
 		} else if t := node.Type(); t != nil && t.Flags&ast.NodeFlagsReparsed == 0 {
 			p.jsErrorAtRange(t.Loc, diagnostics.Type_annotations_can_only_be_used_in_TypeScript_files)
+		} else if ast.IsFunctionLike(node) {
+			if throwsType := node.FunctionLikeData().ThrowsType; throwsType != nil && throwsType.Flags&ast.NodeFlagsReparsed == 0 {
+				p.jsErrorAtRange(throwsType.Loc, diagnostics.Type_annotations_can_only_be_used_in_TypeScript_files)
+			}
 		}
 	case ast.KindImportDeclaration:
 		if clause := node.ImportClause(); clause != nil && clause.IsTypeOnly() {

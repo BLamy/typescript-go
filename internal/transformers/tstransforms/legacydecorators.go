@@ -227,7 +227,7 @@ func (tx *LegacyDecoratorsTransformer) visitMethodDeclaration(node *ast.MethodDe
 			nil,
 			nil,
 			tx.Visitor().VisitNodes(node.Parameters),
-			nil,
+			nil, nil,
 			nil,
 			tx.Visitor().VisitNode(node.Body),
 		),

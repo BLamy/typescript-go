@@ -1580,6 +1580,18 @@ func (p *Printer) emitSignature(node *ast.Node) {
 
 	p.emitParameters(node, n.Parameters)
 	p.emitTypeAnnotation(n.Type)
+	p.emitThrowsClause(n.ThrowsType)
+}
+
+// Emits a `throws T` clause following a signature's return type.
+func (p *Printer) emitThrowsClause(node *ast.TypeNode) {
+	if node == nil {
+		return
+	}
+	p.writeSpace()
+	p.writeKeyword("throws")
+	p.writeSpace()
+	p.emitTypeNodeOutsideExtends(node)
 }
 
 func (p *Printer) emitFunctionBody(body *ast.Block) {
@@ -1929,6 +1941,7 @@ func (p *Printer) emitFunctionType(node *ast.FunctionTypeNode) {
 	p.emitParameters(node.AsNode(), node.Parameters)
 	p.writeSpace()
 	p.emitReturnType(node.Type)
+	p.emitThrowsClause(node.ThrowsType)
 	p.popNameGenerationScope(node.AsNode())
 	p.decreaseIndentIf(indented)
 	p.exitNode(node.AsNode(), state)
@@ -2676,6 +2689,7 @@ func (p *Printer) emitArrowFunction(node *ast.ArrowFunction) {
 	p.emitTypeParameters(node.AsNode(), node.TypeParameters)
 	p.emitParametersForArrow(node.AsNode(), node.Parameters)
 	p.emitTypeAnnotation(node.Type)
+	p.emitThrowsClause(node.ThrowsType)
 	p.writeSpace()
 	p.emitTokenNode(node.EqualsGreaterThanToken)
 	p.writeSpace()

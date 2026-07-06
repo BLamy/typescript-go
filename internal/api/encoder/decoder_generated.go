@@ -351,8 +351,9 @@ func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices
 		typeParameters := d.nodeListAt(it.nextIf(mask, 3))
 		parameters := d.nodeListAt(it.nextIf(mask, 4))
 		typeNode := d.nodeAt(it.nextIf(mask, 5))
-		body := d.nodeAt(it.nextIf(mask, 6))
-		return d.factory.NewFunctionDeclaration(modifiers, asteriskToken, name, typeParameters, parameters, typeNode, nil, body), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 6))
+		body := d.nodeAt(it.nextIf(mask, 7))
+		return d.factory.NewFunctionDeclaration(modifiers, asteriskToken, name, typeParameters, parameters, typeNode, throwsType, nil, body), nil
 	case ast.KindClassDeclaration:
 		it := newChildIter(childIndices)
 		modifiers := d.modifierListAt(it.nextIf(mask, 0))
@@ -500,7 +501,8 @@ func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices
 		typeParameters := d.nodeListAt(it.nextIf(mask, 3))
 		parameters := d.nodeListAt(it.nextIf(mask, 4))
 		typeNode := d.nodeAt(it.nextIf(mask, 5))
-		return d.factory.NewMethodSignatureDeclaration(modifiers, name, postfixToken, typeParameters, parameters, typeNode), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 6))
+		return d.factory.NewMethodSignatureDeclaration(modifiers, name, postfixToken, typeParameters, parameters, typeNode, throwsType), nil
 	case ast.KindMethodDeclaration:
 		it := newChildIter(childIndices)
 		modifiers := d.modifierListAt(it.nextIf(mask, 0))
@@ -510,8 +512,9 @@ func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices
 		typeParameters := d.nodeListAt(it.nextIf(mask, 4))
 		parameters := d.nodeListAt(it.nextIf(mask, 5))
 		typeNode := d.nodeAt(it.nextIf(mask, 6))
-		body := d.nodeAt(it.nextIf(mask, 7))
-		return d.factory.NewMethodDeclaration(modifiers, asteriskToken, name, postfixToken, typeParameters, parameters, typeNode, nil, body), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 7))
+		body := d.nodeAt(it.nextIf(mask, 8))
+		return d.factory.NewMethodDeclaration(modifiers, asteriskToken, name, postfixToken, typeParameters, parameters, typeNode, throwsType, nil, body), nil
 	case ast.KindPropertySignature:
 		it := newChildIter(childIndices)
 		modifiers := d.modifierListAt(it.nextIf(mask, 0))
@@ -586,9 +589,10 @@ func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices
 		typeParameters := d.nodeListAt(it.nextIf(mask, 1))
 		parameters := d.nodeListAt(it.nextIf(mask, 2))
 		typeNode := d.nodeAt(it.nextIf(mask, 3))
-		equalsGreaterThanToken := d.nodeAt(it.nextIf(mask, 4))
-		body := d.nodeAt(it.nextIf(mask, 5))
-		return d.factory.NewArrowFunction(modifiers, typeParameters, parameters, typeNode, nil, equalsGreaterThanToken, body), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 4))
+		equalsGreaterThanToken := d.nodeAt(it.nextIf(mask, 5))
+		body := d.nodeAt(it.nextIf(mask, 6))
+		return d.factory.NewArrowFunction(modifiers, typeParameters, parameters, typeNode, throwsType, nil, equalsGreaterThanToken, body), nil
 	case ast.KindFunctionExpression:
 		it := newChildIter(childIndices)
 		modifiers := d.modifierListAt(it.nextIf(mask, 0))
@@ -597,8 +601,9 @@ func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices
 		typeParameters := d.nodeListAt(it.nextIf(mask, 3))
 		parameters := d.nodeListAt(it.nextIf(mask, 4))
 		typeNode := d.nodeAt(it.nextIf(mask, 5))
-		body := d.nodeAt(it.nextIf(mask, 6))
-		return d.factory.NewFunctionExpression(modifiers, asteriskToken, name, typeParameters, parameters, typeNode, nil, body), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 6))
+		body := d.nodeAt(it.nextIf(mask, 7))
+		return d.factory.NewFunctionExpression(modifiers, asteriskToken, name, typeParameters, parameters, typeNode, throwsType, nil, body), nil
 	case ast.KindAsExpression:
 		it := newChildIter(childIndices)
 		expression := d.nodeAt(it.nextIf(mask, 0))
@@ -833,7 +838,8 @@ func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices
 		typeParameters := d.nodeListAt(it.nextIf(mask, 0))
 		parameters := d.nodeListAt(it.nextIf(mask, 1))
 		typeNode := d.nodeAt(it.nextIf(mask, 2))
-		return d.factory.NewFunctionTypeNode(typeParameters, parameters, typeNode), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 3))
+		return d.factory.NewFunctionTypeNode(typeParameters, parameters, typeNode, throwsType), nil
 	case ast.KindConstructorType:
 		it := newChildIter(childIndices)
 		modifiers := d.modifierListAt(it.nextIf(mask, 0))

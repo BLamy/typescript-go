@@ -121,7 +121,7 @@ func getChildrenPropertyMask(node *ast.Node) uint8 {
 		return (boolToByte(hasModifiers(n.Modifiers())) << 0)
 	case ast.KindFunctionDeclaration:
 		n := node.AsFunctionDeclaration()
-		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.AsteriskToken != nil) << 1) | (boolToByte(n.Name() != nil) << 2) | (boolToByte(n.TypeParameters != nil) << 3) | (boolToByte(n.Parameters != nil) << 4) | (boolToByte(n.Type != nil) << 5) | (boolToByte(n.Body != nil) << 6)
+		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.AsteriskToken != nil) << 1) | (boolToByte(n.Name() != nil) << 2) | (boolToByte(n.TypeParameters != nil) << 3) | (boolToByte(n.Parameters != nil) << 4) | (boolToByte(n.Type != nil) << 5) | (boolToByte(n.ThrowsType != nil) << 6) | (boolToByte(n.Body != nil) << 7)
 	case ast.KindClassDeclaration:
 		n := node.AsClassDeclaration()
 		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.Name() != nil) << 1) | (boolToByte(n.TypeParameters != nil) << 2) | (boolToByte(n.HeritageClauses != nil) << 3) | (boolToByte(n.Members != nil) << 4)
@@ -193,10 +193,10 @@ func getChildrenPropertyMask(node *ast.Node) uint8 {
 		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.Parameters != nil) << 1) | (boolToByte(n.Type != nil) << 2)
 	case ast.KindMethodSignature:
 		n := node.AsMethodSignatureDeclaration()
-		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.Name() != nil) << 1) | (boolToByte(n.PostfixToken != nil) << 2) | (boolToByte(n.TypeParameters != nil) << 3) | (boolToByte(n.Parameters != nil) << 4) | (boolToByte(n.Type != nil) << 5)
+		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.Name() != nil) << 1) | (boolToByte(n.PostfixToken != nil) << 2) | (boolToByte(n.TypeParameters != nil) << 3) | (boolToByte(n.Parameters != nil) << 4) | (boolToByte(n.Type != nil) << 5) | (boolToByte(n.ThrowsType != nil) << 6)
 	case ast.KindMethodDeclaration:
 		n := node.AsMethodDeclaration()
-		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.AsteriskToken != nil) << 1) | (boolToByte(n.Name() != nil) << 2) | (boolToByte(n.PostfixToken != nil) << 3) | (boolToByte(n.TypeParameters != nil) << 4) | (boolToByte(n.Parameters != nil) << 5) | (boolToByte(n.Type != nil) << 6) | (boolToByte(n.Body != nil) << 7)
+		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.AsteriskToken != nil) << 1) | (boolToByte(n.Name() != nil) << 2) | (boolToByte(n.PostfixToken != nil) << 3) | (boolToByte(n.TypeParameters != nil) << 4) | (boolToByte(n.Parameters != nil) << 5) | (boolToByte(n.Type != nil) << 6) | (boolToByte(n.ThrowsType != nil) << 7) | (boolToByte(n.Body != nil) << 8)
 	case ast.KindPropertySignature:
 		n := node.AsPropertySignatureDeclaration()
 		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.Name() != nil) << 1) | (boolToByte(n.PostfixToken != nil) << 2) | (boolToByte(n.Type != nil) << 3) | (boolToByte(n.Initializer != nil) << 4)
@@ -220,10 +220,10 @@ func getChildrenPropertyMask(node *ast.Node) uint8 {
 		return (boolToByte(n.AsteriskToken != nil) << 0) | (boolToByte(n.Expression != nil) << 1)
 	case ast.KindArrowFunction:
 		n := node.AsArrowFunction()
-		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.TypeParameters != nil) << 1) | (boolToByte(n.Parameters != nil) << 2) | (boolToByte(n.Type != nil) << 3) | (boolToByte(n.EqualsGreaterThanToken != nil) << 4) | (boolToByte(n.Body != nil) << 5)
+		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.TypeParameters != nil) << 1) | (boolToByte(n.Parameters != nil) << 2) | (boolToByte(n.Type != nil) << 3) | (boolToByte(n.ThrowsType != nil) << 4) | (boolToByte(n.EqualsGreaterThanToken != nil) << 5) | (boolToByte(n.Body != nil) << 6)
 	case ast.KindFunctionExpression:
 		n := node.AsFunctionExpression()
-		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.AsteriskToken != nil) << 1) | (boolToByte(n.Name() != nil) << 2) | (boolToByte(n.TypeParameters != nil) << 3) | (boolToByte(n.Parameters != nil) << 4) | (boolToByte(n.Type != nil) << 5) | (boolToByte(n.Body != nil) << 6)
+		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.AsteriskToken != nil) << 1) | (boolToByte(n.Name() != nil) << 2) | (boolToByte(n.TypeParameters != nil) << 3) | (boolToByte(n.Parameters != nil) << 4) | (boolToByte(n.Type != nil) << 5) | (boolToByte(n.ThrowsType != nil) << 6) | (boolToByte(n.Body != nil) << 7)
 	case ast.KindAsExpression:
 		n := node.AsAsExpression()
 		return (boolToByte(n.Expression != nil) << 0) | (boolToByte(n.Type != nil) << 1)
@@ -361,7 +361,7 @@ func getChildrenPropertyMask(node *ast.Node) uint8 {
 		return (boolToByte(n.Type != nil) << 0)
 	case ast.KindFunctionType:
 		n := node.AsFunctionTypeNode()
-		return (boolToByte(n.TypeParameters != nil) << 0) | (boolToByte(n.Parameters != nil) << 1) | (boolToByte(n.Type != nil) << 2)
+		return (boolToByte(n.TypeParameters != nil) << 0) | (boolToByte(n.Parameters != nil) << 1) | (boolToByte(n.Type != nil) << 2) | (boolToByte(n.ThrowsType != nil) << 3)
 	case ast.KindConstructorType:
 		n := node.AsConstructorTypeNode()
 		return (boolToByte(hasModifiers(n.Modifiers())) << 0) | (boolToByte(n.TypeParameters != nil) << 1) | (boolToByte(n.Parameters != nil) << 2) | (boolToByte(n.Type != nil) << 3)
