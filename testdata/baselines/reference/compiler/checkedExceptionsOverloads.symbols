@@ -1,0 +1,102 @@
+//// [tests/cases/compiler/checkedExceptionsOverloads.ts] ////
+
+=== checkedExceptionsOverloads.ts ===
+class E1 extends Error { readonly tag = "e1" as const; }
+>E1 : Symbol(E1, Decl(checkedExceptionsOverloads.ts, 0, 0))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(E1.tag, Decl(checkedExceptionsOverloads.ts, 0, 24))
+>const : Symbol(const)
+
+class E2 extends Error { readonly tag = "e2" as const; }
+>E2 : Symbol(E2, Decl(checkedExceptionsOverloads.ts, 0, 56))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(E2.tag, Decl(checkedExceptionsOverloads.ts, 1, 24))
+>const : Symbol(const)
+
+// Overloads may declare different throws types; the implementation's wider
+// clause is compatible (throws rides the return channel, which
+// overload/implementation compatibility ignores).
+function pick(x: string): string throws E1;
+>pick : Symbol(pick, Decl(checkedExceptionsOverloads.ts, 1, 56), Decl(checkedExceptionsOverloads.ts, 6, 43), Decl(checkedExceptionsOverloads.ts, 7, 43))
+>x : Symbol(x, Decl(checkedExceptionsOverloads.ts, 6, 14))
+>E1 : Symbol(E1, Decl(checkedExceptionsOverloads.ts, 0, 0))
+
+function pick(x: number): number throws E2;
+>pick : Symbol(pick, Decl(checkedExceptionsOverloads.ts, 1, 56), Decl(checkedExceptionsOverloads.ts, 6, 43), Decl(checkedExceptionsOverloads.ts, 7, 43))
+>x : Symbol(x, Decl(checkedExceptionsOverloads.ts, 7, 14))
+>E2 : Symbol(E2, Decl(checkedExceptionsOverloads.ts, 0, 56))
+
+function pick(x: string | number): string | number throws E1 | E2 {
+>pick : Symbol(pick, Decl(checkedExceptionsOverloads.ts, 1, 56), Decl(checkedExceptionsOverloads.ts, 6, 43), Decl(checkedExceptionsOverloads.ts, 7, 43))
+>x : Symbol(x, Decl(checkedExceptionsOverloads.ts, 8, 14))
+>E1 : Symbol(E1, Decl(checkedExceptionsOverloads.ts, 0, 0))
+>E2 : Symbol(E2, Decl(checkedExceptionsOverloads.ts, 0, 56))
+
+    if (typeof x === "string") throw new E1();
+>x : Symbol(x, Decl(checkedExceptionsOverloads.ts, 8, 14))
+>E1 : Symbol(E1, Decl(checkedExceptionsOverloads.ts, 0, 0))
+
+    throw new E2();
+>E2 : Symbol(E2, Decl(checkedExceptionsOverloads.ts, 0, 56))
+}
+
+// Call sites use the resolved overload's clause.
+function callsString(): void throws E1 {
+>callsString : Symbol(callsString, Decl(checkedExceptionsOverloads.ts, 11, 1))
+>E1 : Symbol(E1, Decl(checkedExceptionsOverloads.ts, 0, 0))
+
+    pick("a");
+>pick : Symbol(pick, Decl(checkedExceptionsOverloads.ts, 1, 56), Decl(checkedExceptionsOverloads.ts, 6, 43), Decl(checkedExceptionsOverloads.ts, 7, 43))
+}
+function callsNumber(): void throws E1 {
+>callsNumber : Symbol(callsNumber, Decl(checkedExceptionsOverloads.ts, 16, 1))
+>E1 : Symbol(E1, Decl(checkedExceptionsOverloads.ts, 0, 0))
+
+    pick(1); // error: resolves to the E2 overload
+>pick : Symbol(pick, Decl(checkedExceptionsOverloads.ts, 1, 56), Decl(checkedExceptionsOverloads.ts, 6, 43), Decl(checkedExceptionsOverloads.ts, 7, 43))
+}
+function catchesOverload() {
+>catchesOverload : Symbol(catchesOverload, Decl(checkedExceptionsOverloads.ts, 19, 1))
+
+    try {
+        pick("x");
+>pick : Symbol(pick, Decl(checkedExceptionsOverloads.ts, 1, 56), Decl(checkedExceptionsOverloads.ts, 6, 43), Decl(checkedExceptionsOverloads.ts, 7, 43))
+
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsOverloads.ts, 23, 13))
+
+        const t: "e1" = e.tag; // e: E1, from the matched overload
+>t : Symbol(t, Decl(checkedExceptionsOverloads.ts, 24, 13))
+>e.tag : Symbol(E1.tag, Decl(checkedExceptionsOverloads.ts, 0, 24))
+>e : Symbol(e, Decl(checkedExceptionsOverloads.ts, 23, 13))
+>tag : Symbol(E1.tag, Decl(checkedExceptionsOverloads.ts, 0, 24))
+
+        return t;
+>t : Symbol(t, Decl(checkedExceptionsOverloads.ts, 24, 13))
+    }
+}
+
+// A union-typed callee raises the union of all constituents' clauses.
+declare const fn: ((x: string) => void throws E1) | ((x: string) => void throws E2);
+>fn : Symbol(fn, Decl(checkedExceptionsOverloads.ts, 30, 13))
+>x : Symbol(x, Decl(checkedExceptionsOverloads.ts, 30, 20))
+>E1 : Symbol(E1, Decl(checkedExceptionsOverloads.ts, 0, 0))
+>x : Symbol(x, Decl(checkedExceptionsOverloads.ts, 30, 54))
+>E2 : Symbol(E2, Decl(checkedExceptionsOverloads.ts, 0, 56))
+
+function callsUnion(): void throws E1 | E2 {
+>callsUnion : Symbol(callsUnion, Decl(checkedExceptionsOverloads.ts, 30, 84))
+>E1 : Symbol(E1, Decl(checkedExceptionsOverloads.ts, 0, 0))
+>E2 : Symbol(E2, Decl(checkedExceptionsOverloads.ts, 0, 56))
+
+    fn("a");
+>fn : Symbol(fn, Decl(checkedExceptionsOverloads.ts, 30, 13))
+}
+function callsUnionWrong(): void throws E1 {
+>callsUnionWrong : Symbol(callsUnionWrong, Decl(checkedExceptionsOverloads.ts, 33, 1))
+>E1 : Symbol(E1, Decl(checkedExceptionsOverloads.ts, 0, 0))
+
+    fn("a"); // error: E2 is not declared
+>fn : Symbol(fn, Decl(checkedExceptionsOverloads.ts, 30, 13))
+}
+

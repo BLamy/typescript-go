@@ -1587,9 +1587,13 @@ func (c *Checker) compareSignaturesRelated(source *Signature, target *Signature,
 			result &= related
 		}
 	}
-	if throwsRelated := c.compareSignatureThrowsRelated(source, target, reportErrors, errorReporter, compareTypes); throwsRelated == TernaryFalse {
-		return TernaryFalse
-	} else {
+	// The throws type rides the return channel: comparisons that ignore return
+	// types (e.g. overload/implementation compatibility) ignore throws too.
+	if checkMode&SignatureCheckModeIgnoreReturnTypes == 0 {
+		throwsRelated := c.compareSignatureThrowsRelated(source, target, reportErrors, errorReporter, compareTypes)
+		if throwsRelated == TernaryFalse {
+			return TernaryFalse
+		}
 		result &= throwsRelated
 	}
 	if checkMode&SignatureCheckModeIgnoreReturnTypes == 0 {
