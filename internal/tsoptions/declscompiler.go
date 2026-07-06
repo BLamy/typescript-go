@@ -371,6 +371,15 @@ var optionsForCompiler = []*CommandLineOption{
 		DefaultValueDescription:  diagnostics.X_false_unless_checkJs_is_set,
 	},
 	{
+		Name:                       "checkedExceptions",
+		Kind:                       CommandLineOptionTypeEnum,
+		AffectsSemanticDiagnostics: true,
+		AffectsBuildInfo:           true,
+		Category:                   diagnostics.Type_Checking,
+		Description:                diagnostics.Enable_checked_exceptions_Functions_must_handle_the_errors_their_callees_declare_with_throws_clauses_or_declare_them_in_their_own,
+		DefaultValueDescription:    "off",
+	},
+	{
 		Name:                       "checkJs",
 		Kind:                       CommandLineOptionTypeBoolean,
 		AffectsModuleResolution:    true,
