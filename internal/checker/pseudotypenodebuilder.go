@@ -190,7 +190,7 @@ func (b *NodeBuilderImpl) pseudoTypeToNode(t *pseudochecker.PseudoType) *ast.Nod
 		}
 		params := b.pseudoParametersToNodeList(d.Parameters)
 		returnType := b.pseudoTypeToNode(d.ReturnType)
-		return b.f.NewFunctionTypeNode(typeParams, params, returnType, nil /*throwsType*/)
+		return b.f.NewFunctionTypeNode(typeParams, params, returnType, b.reuseThrowsClause(d.Signature))
 	case pseudochecker.PseudoTypeKindTuple:
 		var res []*ast.Node
 		elements := t.AsPseudoTypeTuple().Elements
@@ -256,7 +256,7 @@ func (b *NodeBuilderImpl) pseudoTypeToNode(t *pseudochecker.PseudoType) *ast.Nod
 							typeParams,
 							b.pseudoParametersToNodeList(d.Parameters),
 							b.pseudoTypeToNode(d.ReturnType),
-							nil, /*throwsType*/
+							b.reuseThrowsClause(d.Signature),
 						),
 						nil,
 					)
@@ -269,7 +269,7 @@ func (b *NodeBuilderImpl) pseudoTypeToNode(t *pseudochecker.PseudoType) *ast.Nod
 					typeParams,
 					b.pseudoParametersToNodeList(d.Parameters),
 					b.pseudoTypeToNode(d.ReturnType),
-					nil, /*throwsType*/
+					b.reuseThrowsClause(d.Signature),
 				)
 			case pseudochecker.PseudoObjectElementKindPropertyAssignment:
 				d := e.AsPseudoPropertyAssignment()
@@ -764,4 +764,16 @@ func (b *NodeBuilderImpl) pseudoTypeToType(t *pseudochecker.PseudoType) *Type {
 		debug.Fail("Unhandled pseudochecker.PseudoTypeKind in pseudoTypeToType")
 		return nil
 	}
+}
+
+// reuseThrowsClause clones the syntactic `throws` clause of the original
+// signature declaration, if any, for inclusion in a synthesized type node.
+func (b *NodeBuilderImpl) reuseThrowsClause(signature *ast.Node) *ast.TypeNode {
+	if signature == nil {
+		return nil
+	}
+	if data := signature.FunctionLikeData(); data != nil && data.ThrowsType != nil {
+		return b.reuseNode(data.ThrowsType)
+	}
+	return nil
 }

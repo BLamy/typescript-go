@@ -1,0 +1,156 @@
+//// [tests/cases/compiler/checkedExceptionsTypedCatch.ts] ////
+
+=== checkedExceptionsTypedCatch.ts ===
+class IOError extends Error { readonly tag = "io" as const; }
+>IOError : Symbol(IOError, Decl(checkedExceptionsTypedCatch.ts, 0, 0))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(IOError.tag, Decl(checkedExceptionsTypedCatch.ts, 0, 29))
+>const : Symbol(const)
+
+class ParseError extends Error { readonly tag = "parse" as const; }
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsTypedCatch.ts, 0, 61))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(ParseError.tag, Decl(checkedExceptionsTypedCatch.ts, 1, 32))
+>const : Symbol(const)
+
+declare function readFile(path: string): string throws IOError;
+>readFile : Symbol(readFile, Decl(checkedExceptionsTypedCatch.ts, 1, 67))
+>path : Symbol(path, Decl(checkedExceptionsTypedCatch.ts, 3, 26))
+>IOError : Symbol(IOError, Decl(checkedExceptionsTypedCatch.ts, 0, 0))
+
+declare function parse(text: string): number throws ParseError;
+>parse : Symbol(parse, Decl(checkedExceptionsTypedCatch.ts, 3, 63))
+>text : Symbol(text, Decl(checkedExceptionsTypedCatch.ts, 4, 23))
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsTypedCatch.ts, 0, 61))
+
+function combined() {
+>combined : Symbol(combined, Decl(checkedExceptionsTypedCatch.ts, 4, 63))
+
+    try {
+        return parse(readFile("a"));
+>parse : Symbol(parse, Decl(checkedExceptionsTypedCatch.ts, 3, 63))
+>readFile : Symbol(readFile, Decl(checkedExceptionsTypedCatch.ts, 1, 67))
+
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 9, 13))
+
+        // e: IOError | ParseError
+        switch (e.tag) {
+>e.tag : Symbol(tag, Decl(checkedExceptionsTypedCatch.ts, 0, 29), Decl(checkedExceptionsTypedCatch.ts, 1, 32))
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 9, 13))
+>tag : Symbol(tag, Decl(checkedExceptionsTypedCatch.ts, 0, 29), Decl(checkedExceptionsTypedCatch.ts, 1, 32))
+
+            case "io":
+                return e.message.length;
+>e.message.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>e.message : Symbol(Error.message, Decl(lib.es5.d.ts, --, --))
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 9, 13))
+>message : Symbol(Error.message, Decl(lib.es5.d.ts, --, --))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+            case "parse":
+                return -1;
+        }
+    }
+}
+
+function throwsOnly() {
+>throwsOnly : Symbol(throwsOnly, Decl(checkedExceptionsTypedCatch.ts, 18, 1))
+
+    try {
+        throw new ParseError("boom");
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsTypedCatch.ts, 0, 61))
+
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 23, 13))
+
+        // e: ParseError, from the throw statement's type
+        const tag: "parse" = e.tag;
+>tag : Symbol(tag, Decl(checkedExceptionsTypedCatch.ts, 25, 13))
+>e.tag : Symbol(ParseError.tag, Decl(checkedExceptionsTypedCatch.ts, 1, 32))
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 23, 13))
+>tag : Symbol(ParseError.tag, Decl(checkedExceptionsTypedCatch.ts, 1, 32))
+
+        return tag;
+>tag : Symbol(tag, Decl(checkedExceptionsTypedCatch.ts, 25, 13))
+    }
+}
+
+function rethrowNarrowed(): void throws ParseError {
+>rethrowNarrowed : Symbol(rethrowNarrowed, Decl(checkedExceptionsTypedCatch.ts, 28, 1))
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsTypedCatch.ts, 0, 61))
+
+    try {
+        parse("x");
+>parse : Symbol(parse, Decl(checkedExceptionsTypedCatch.ts, 3, 63))
+
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 33, 13))
+
+        // e: ParseError — rethrowing is covered by the clause
+        throw e;
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 33, 13))
+    }
+}
+
+function nothingTracked() {
+>nothingTracked : Symbol(nothingTracked, Decl(checkedExceptionsTypedCatch.ts, 37, 1))
+
+    try {
+        return JSON.stringify({});
+>JSON.stringify : Symbol(JSON.stringify, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>JSON : Symbol(JSON, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>stringify : Symbol(JSON.stringify, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 42, 13))
+
+        // e stays unknown: nothing tracked was raised
+        return e;
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 42, 13))
+    }
+}
+
+function explicitAnnotationWins() {
+>explicitAnnotationWins : Symbol(explicitAnnotationWins, Decl(checkedExceptionsTypedCatch.ts, 46, 1))
+
+    try {
+        return readFile("a");
+>readFile : Symbol(readFile, Decl(checkedExceptionsTypedCatch.ts, 1, 67))
+
+    } catch (e: unknown) {
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 51, 13))
+
+        // explicit annotation is respected
+        return e;
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 51, 13))
+    }
+}
+
+function innerTryDischarges() {
+>innerTryDischarges : Symbol(innerTryDischarges, Decl(checkedExceptionsTypedCatch.ts, 55, 1))
+
+    try {
+        try {
+            readFile("a");
+>readFile : Symbol(readFile, Decl(checkedExceptionsTypedCatch.ts, 1, 67))
+
+        } catch {
+            throw new ParseError("converted");
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsTypedCatch.ts, 0, 61))
+        }
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 64, 13))
+
+        // e: ParseError — the inner catch discharged IOError but raises ParseError
+        const tag: "parse" = e.tag;
+>tag : Symbol(tag, Decl(checkedExceptionsTypedCatch.ts, 66, 13))
+>e.tag : Symbol(ParseError.tag, Decl(checkedExceptionsTypedCatch.ts, 1, 32))
+>e : Symbol(e, Decl(checkedExceptionsTypedCatch.ts, 64, 13))
+>tag : Symbol(ParseError.tag, Decl(checkedExceptionsTypedCatch.ts, 1, 32))
+
+        return tag;
+>tag : Symbol(tag, Decl(checkedExceptionsTypedCatch.ts, 66, 13))
+    }
+}
+

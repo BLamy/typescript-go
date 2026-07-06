@@ -1,0 +1,147 @@
+//// [tests/cases/compiler/checkedExceptionsDeclareAndPropagate.ts] ////
+
+=== checkedExceptionsDeclareAndPropagate.ts ===
+class IOError extends Error { readonly tag = "io" as const; }
+>IOError : Symbol(IOError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 0))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(IOError.tag, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 29))
+>const : Symbol(const)
+
+class ParseError extends Error { readonly tag = "parse" as const; }
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 61))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(ParseError.tag, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 32))
+>const : Symbol(const)
+
+function readFile(path: string): string throws IOError {
+>readFile : Symbol(readFile, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 67))
+>path : Symbol(path, Decl(checkedExceptionsDeclareAndPropagate.ts, 3, 18))
+>IOError : Symbol(IOError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 0))
+
+    if (!path) throw new IOError("missing");
+>path : Symbol(path, Decl(checkedExceptionsDeclareAndPropagate.ts, 3, 18))
+>IOError : Symbol(IOError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 0))
+
+    return path;
+>path : Symbol(path, Decl(checkedExceptionsDeclareAndPropagate.ts, 3, 18))
+}
+
+// Unannotated functions propagate silently; their throws type is inferred.
+function passthrough(): string {
+>passthrough : Symbol(passthrough, Decl(checkedExceptionsDeclareAndPropagate.ts, 6, 1))
+
+    return readFile("x");
+>readFile : Symbol(readFile, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 67))
+}
+
+// Error: raises IOError but declares `throws never`.
+function declaresNever(): string throws never {
+>declaresNever : Symbol(declaresNever, Decl(checkedExceptionsDeclareAndPropagate.ts, 11, 1))
+
+    return readFile("x");
+>readFile : Symbol(readFile, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 67))
+}
+
+// Error: IOError is not assignable to ParseError.
+function declaresWrongType(): string throws ParseError {
+>declaresWrongType : Symbol(declaresWrongType, Decl(checkedExceptionsDeclareAndPropagate.ts, 16, 1))
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 61))
+
+    return readFile("x");
+>readFile : Symbol(readFile, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 67))
+}
+
+// OK: clause is a superset.
+function declaresUnion(): string throws IOError | ParseError {
+>declaresUnion : Symbol(declaresUnion, Decl(checkedExceptionsDeclareAndPropagate.ts, 21, 1))
+>IOError : Symbol(IOError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 0))
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 61))
+
+    return readFile("x");
+>readFile : Symbol(readFile, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 67))
+}
+
+// OK: handled by try/catch.
+function handles(): string {
+>handles : Symbol(handles, Decl(checkedExceptionsDeclareAndPropagate.ts, 26, 1))
+
+    try {
+        return readFile("x");
+>readFile : Symbol(readFile, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 67))
+
+    } catch {
+        return "";
+    }
+}
+
+// Error: thrown type not in the clause.
+function throwsUndeclared(): void throws IOError {
+>throwsUndeclared : Symbol(throwsUndeclared, Decl(checkedExceptionsDeclareAndPropagate.ts, 35, 1))
+>IOError : Symbol(IOError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 0))
+
+    throw new ParseError("nope");
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 61))
+}
+
+// OK: throw matches the clause.
+function throwsDeclared(): void throws IOError {
+>throwsDeclared : Symbol(throwsDeclared, Decl(checkedExceptionsDeclareAndPropagate.ts, 40, 1))
+>IOError : Symbol(IOError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 0))
+
+    throw new IOError("yep");
+>IOError : Symbol(IOError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 0))
+}
+
+// `throws any` opts callers out of enforcement.
+function escapeHatch(): void throws any {
+>escapeHatch : Symbol(escapeHatch, Decl(checkedExceptionsDeclareAndPropagate.ts, 45, 1))
+
+    throw new IOError("anything");
+>IOError : Symbol(IOError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 0))
+}
+function callsEscapeHatch(): void {
+>callsEscapeHatch : Symbol(callsEscapeHatch, Decl(checkedExceptionsDeclareAndPropagate.ts, 50, 1))
+
+    escapeHatch();
+>escapeHatch : Symbol(escapeHatch, Decl(checkedExceptionsDeclareAndPropagate.ts, 45, 1))
+}
+
+// Raises in a catch or finally block are not discharged by that try.
+function raiseInCatch(): void throws never {
+>raiseInCatch : Symbol(raiseInCatch, Decl(checkedExceptionsDeclareAndPropagate.ts, 53, 1))
+
+    try {
+        readFile("a");
+>readFile : Symbol(readFile, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 67))
+
+    } catch {
+        readFile("b"); // error
+>readFile : Symbol(readFile, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 67))
+
+    } finally {
+        readFile("c"); // error
+>readFile : Symbol(readFile, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 67))
+    }
+}
+
+// Top-level code must handle everything.
+readFile("top"); // error
+>readFile : Symbol(readFile, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 67))
+
+try { readFile("top"); } catch {} // ok
+>readFile : Symbol(readFile, Decl(checkedExceptionsDeclareAndPropagate.ts, 1, 67))
+
+passthrough(); // error: inferred IOError surfaces here
+>passthrough : Symbol(passthrough, Decl(checkedExceptionsDeclareAndPropagate.ts, 6, 1))
+
+// Inferred throws propagate through unannotated arrows, including IIFEs.
+const arrowInferred = () => { throw new ParseError("x"); };
+>arrowInferred : Symbol(arrowInferred, Decl(checkedExceptionsDeclareAndPropagate.ts, 72, 5))
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 61))
+
+arrowInferred(); // error
+>arrowInferred : Symbol(arrowInferred, Decl(checkedExceptionsDeclareAndPropagate.ts, 72, 5))
+
+(function () { throw new IOError("iife"); })(); // error
+>IOError : Symbol(IOError, Decl(checkedExceptionsDeclareAndPropagate.ts, 0, 0))
+

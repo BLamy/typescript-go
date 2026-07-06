@@ -1,0 +1,98 @@
+//// [tests/cases/compiler/checkedExceptionsAssignability.ts] ////
+
+=== checkedExceptionsAssignability.ts ===
+class IOError extends Error { readonly tag = "io" as const; }
+>IOError : Symbol(IOError, Decl(checkedExceptionsAssignability.ts, 0, 0))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(IOError.tag, Decl(checkedExceptionsAssignability.ts, 0, 29))
+>const : Symbol(const)
+
+class ParseError extends Error { readonly tag = "parse" as const; }
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsAssignability.ts, 0, 61))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(ParseError.tag, Decl(checkedExceptionsAssignability.ts, 1, 32))
+>const : Symbol(const)
+
+declare function risky(): void throws IOError;
+>risky : Symbol(risky, Decl(checkedExceptionsAssignability.ts, 1, 67))
+>IOError : Symbol(IOError, Decl(checkedExceptionsAssignability.ts, 0, 0))
+
+type SafeFn = () => void throws never;
+>SafeFn : Symbol(SafeFn, Decl(checkedExceptionsAssignability.ts, 3, 46))
+
+type IOFn = () => void throws IOError;
+>IOFn : Symbol(IOFn, Decl(checkedExceptionsAssignability.ts, 5, 38))
+>IOError : Symbol(IOError, Decl(checkedExceptionsAssignability.ts, 0, 0))
+
+type WideFn = () => void throws IOError | ParseError;
+>WideFn : Symbol(WideFn, Decl(checkedExceptionsAssignability.ts, 6, 38))
+>IOError : Symbol(IOError, Decl(checkedExceptionsAssignability.ts, 0, 0))
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsAssignability.ts, 0, 61))
+
+type UntrackedFn = () => void;
+>UntrackedFn : Symbol(UntrackedFn, Decl(checkedExceptionsAssignability.ts, 7, 53))
+
+declare const ioFn: IOFn;
+>ioFn : Symbol(ioFn, Decl(checkedExceptionsAssignability.ts, 10, 13))
+>IOFn : Symbol(IOFn, Decl(checkedExceptionsAssignability.ts, 5, 38))
+
+// Widening is fine (covariance).
+const widened: WideFn = ioFn;
+>widened : Symbol(widened, Decl(checkedExceptionsAssignability.ts, 13, 5))
+>WideFn : Symbol(WideFn, Decl(checkedExceptionsAssignability.ts, 6, 38))
+>ioFn : Symbol(ioFn, Decl(checkedExceptionsAssignability.ts, 10, 13))
+
+// Narrowing is an error.
+const narrowed: SafeFn = ioFn;
+>narrowed : Symbol(narrowed, Decl(checkedExceptionsAssignability.ts, 16, 5))
+>SafeFn : Symbol(SafeFn, Decl(checkedExceptionsAssignability.ts, 3, 46))
+>ioFn : Symbol(ioFn, Decl(checkedExceptionsAssignability.ts, 10, 13))
+
+// A function that throws nothing is assignable anywhere.
+declare const safeFn: SafeFn;
+>safeFn : Symbol(safeFn, Decl(checkedExceptionsAssignability.ts, 19, 13))
+>SafeFn : Symbol(SafeFn, Decl(checkedExceptionsAssignability.ts, 3, 46))
+
+const safeAsIO: IOFn = safeFn;
+>safeAsIO : Symbol(safeAsIO, Decl(checkedExceptionsAssignability.ts, 20, 5))
+>IOFn : Symbol(IOFn, Decl(checkedExceptionsAssignability.ts, 5, 38))
+>safeFn : Symbol(safeFn, Decl(checkedExceptionsAssignability.ts, 19, 13))
+
+const safeAsUntracked: UntrackedFn = safeFn;
+>safeAsUntracked : Symbol(safeAsUntracked, Decl(checkedExceptionsAssignability.ts, 21, 5))
+>UntrackedFn : Symbol(UntrackedFn, Decl(checkedExceptionsAssignability.ts, 7, 53))
+>safeFn : Symbol(safeFn, Decl(checkedExceptionsAssignability.ts, 19, 13))
+
+// Contextual arrows: inferred throws are checked against the target clause.
+const okHandler: SafeFn = () => {};
+>okHandler : Symbol(okHandler, Decl(checkedExceptionsAssignability.ts, 24, 5))
+>SafeFn : Symbol(SafeFn, Decl(checkedExceptionsAssignability.ts, 3, 46))
+
+const badHandler: SafeFn = () => { risky(); }; // error
+>badHandler : Symbol(badHandler, Decl(checkedExceptionsAssignability.ts, 25, 5))
+>SafeFn : Symbol(SafeFn, Decl(checkedExceptionsAssignability.ts, 3, 46))
+>risky : Symbol(risky, Decl(checkedExceptionsAssignability.ts, 1, 67))
+
+const okDeclared: IOFn = () => { risky(); };
+>okDeclared : Symbol(okDeclared, Decl(checkedExceptionsAssignability.ts, 26, 5))
+>IOFn : Symbol(IOFn, Decl(checkedExceptionsAssignability.ts, 5, 38))
+>risky : Symbol(risky, Decl(checkedExceptionsAssignability.ts, 1, 67))
+
+// Untracked declarations (no clause, no body) are treated permissively.
+declare function legacy(): void;
+>legacy : Symbol(legacy, Decl(checkedExceptionsAssignability.ts, 26, 44))
+
+const legacyAsSafe: SafeFn = legacy;
+>legacyAsSafe : Symbol(legacyAsSafe, Decl(checkedExceptionsAssignability.ts, 30, 5))
+>SafeFn : Symbol(SafeFn, Decl(checkedExceptionsAssignability.ts, 3, 46))
+>legacy : Symbol(legacy, Decl(checkedExceptionsAssignability.ts, 26, 44))
+
+// `throws unknown` targets accept anything.
+type AnythingFn = () => void throws unknown;
+>AnythingFn : Symbol(AnythingFn, Decl(checkedExceptionsAssignability.ts, 30, 36))
+
+const anything: AnythingFn = ioFn;
+>anything : Symbol(anything, Decl(checkedExceptionsAssignability.ts, 34, 5))
+>AnythingFn : Symbol(AnythingFn, Decl(checkedExceptionsAssignability.ts, 30, 36))
+>ioFn : Symbol(ioFn, Decl(checkedExceptionsAssignability.ts, 10, 13))
+

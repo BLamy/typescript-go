@@ -1144,6 +1144,7 @@ func TestParenthesizeArrowFunction1(t *testing.T) {
 					nil, /*typeParameters*/
 					factory.NewNodeList([]*ast.Node{}),
 					nil, /*returnType*/
+					nil, /*throwsType*/
 					nil, /*fullSignature*/
 					factory.NewToken(ast.KindEqualsGreaterThanToken),
 					// will be parenthesized on emit:
@@ -1172,6 +1173,7 @@ func TestParenthesizeArrowFunction2(t *testing.T) {
 					nil, /*typeParameters*/
 					factory.NewNodeList([]*ast.Node{}),
 					nil, /*returnType*/
+					nil, /*throwsType*/
 					nil, /*fullSignature*/
 					factory.NewToken(ast.KindEqualsGreaterThanToken),
 					// will be parenthesized on emit:
@@ -1351,7 +1353,7 @@ func makeSide(label string, kind ast.Kind, factory *ast.NodeFactory) *ast.Node {
 			nil, /*modifiers*/
 			nil, /*typeParameters*/
 			factory.NewNodeList([]*ast.Node{}),
-			nil, /*returnType*/
+			nil,nil,  /*returnType*/
 			nil, /*fullSignature*/
 			factory.NewToken(ast.KindEqualsGreaterThanToken),
 			factory.NewBlock(factory.NewNodeList([]*ast.Node{}), false /*multiLine*/),
@@ -1490,7 +1492,7 @@ func TestParenthesizeConditional3(t *testing.T) {
 						nil, /*modifiers*/
 						nil, /*typeParameters*/
 						factory.NewNodeList([]*ast.Node{}),
-						nil, /*returnType*/
+						nil,nil,  /*returnType*/
 						nil, /*fullSignature*/
 						factory.NewToken(ast.KindEqualsGreaterThanToken),
 						factory.NewBlock(
@@ -1875,7 +1877,7 @@ func TestParenthesizeExpressionStatement2(t *testing.T) {
 					factory.NewNodeList(
 						[]*ast.Node{},
 					),
-					nil, /*returnType*/
+					nil,nil,  /*returnType*/
 					nil, /*fullSignature*/
 					factory.NewBlock(
 						factory.NewNodeList([]*ast.Node{}),
@@ -1961,7 +1963,7 @@ func TestParenthesizeExpressionDefault2(t *testing.T) {
 					factory.NewNodeList(
 						[]*ast.Node{},
 					),
-					nil, /*returnType*/
+					nil,nil,  /*returnType*/
 					nil, /*fullSignature*/
 					factory.NewBlock(
 						factory.NewNodeList(
@@ -2089,6 +2091,7 @@ func TestParenthesizeUnionType1(t *testing.T) {
 									[]*ast.Node{},
 								),
 								factory.NewTypeReferenceNode(factory.NewIdentifier("b"), nil /*typeArguments*/),
+								nil, /*throwsType*/
 							),
 						},
 					),
@@ -2304,6 +2307,7 @@ func TestParenthesizeConditionalType1(t *testing.T) {
 							[]*ast.Node{},
 						),
 						factory.NewTypeReferenceNode(factory.NewIdentifier("a"), nil /*typeArguments*/),
+						nil, /*throwsType*/
 					),
 					factory.NewTypeReferenceNode(factory.NewIdentifier("b"), nil /*typeArguments*/),
 					factory.NewTypeReferenceNode(factory.NewIdentifier("c"), nil /*typeArguments*/),
@@ -2374,6 +2378,7 @@ func TestParenthesizeConditionalType3(t *testing.T) {
 								nil, /*defaultType*/
 							),
 						),
+						nil, /*throwsType*/
 					),
 					factory.NewTypeReferenceNode(factory.NewIdentifier("d"), nil /*typeArguments*/),
 					factory.NewTypeReferenceNode(factory.NewIdentifier("e"), nil /*typeArguments*/),
@@ -2419,6 +2424,7 @@ func TestParenthesizeConditionalType4(t *testing.T) {
 							},
 						),
 					),
+					nil, /*throwsType*/
 				),
 				factory.NewTypeReferenceNode(factory.NewIdentifier("e"), nil /*typeArguments*/),
 				factory.NewTypeReferenceNode(factory.NewIdentifier("f"), nil /*typeArguments*/),
@@ -2446,7 +2452,7 @@ func TestNameGeneration(t *testing.T) {
 			ec.Factory.NewIdentifier("f"),
 			nil,
 			ec.Factory.NewNodeList([]*ast.Node{}),
-			nil,
+			nil,nil, 
 			nil,
 			ec.Factory.NewBlock(ec.Factory.NewNodeList([]*ast.Node{
 				ec.Factory.NewVariableStatement(nil, ec.Factory.NewVariableDeclarationList(

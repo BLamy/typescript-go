@@ -64,6 +64,7 @@ loop:
 						useResult = result.Flags&ast.SymbolFlagsTypeParameter != 0 &&
 							(lastLocation.Flags&ast.NodeFlagsSynthesized != 0 ||
 								lastLocation == location.Type() ||
+								isThrowsClauseOf(lastLocation, location) ||
 								lastLocation.Kind == ast.KindParameter ||
 								lastLocation.Kind == ast.KindJSDocParameterTag ||
 								lastLocation.Kind == ast.KindJSDocReturnTag ||
@@ -495,4 +496,12 @@ func isSelfReferenceLocation(node *ast.Node, lastLocation *ast.Node) bool {
 		return true
 	}
 	return false
+}
+
+// isThrowsClauseOf reports whether node is the `throws` clause of the given
+// function-like declaration. Type parameters are in scope in the throws clause,
+// just as they are in the return type.
+func isThrowsClauseOf(node *ast.Node, fn *ast.Node) bool {
+	data := fn.FunctionLikeData()
+	return data != nil && data.ThrowsType != nil && node == data.ThrowsType
 }

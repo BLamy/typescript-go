@@ -596,7 +596,58 @@ a committed plan.
    - Surface the error set on hover; add quick-fixes: "add `throws` clause",
      "surround with try/catch", "add missing catch case".
 
-## 12. Open questions
+## 12. Reference implementation (this repository)
+
+This repository carries a working implementation of the proposal's core. What
+is implemented, and where it deliberately narrows the full design:
+
+**Implemented**
+
+- `throws T` clause syntax on function declarations/expressions, arrows, class
+  and object-literal methods, interface method signatures, and function type
+  nodes; `throws` is a contextual keyword recognized only on the same line as
+  the preceding token, so existing members named `throws` keep parsing.
+- The `checkedExceptions` option (`"off" | "warning" | "error"`), wired through
+  tsconfig, the CLI, and build info; diagnostics TS100021–TS100025 are emitted
+  at the corresponding category.
+- Handle-or-declare enforcement (§4.3), including top-level code, with
+  raises in `catch`/`finally` blocks correctly not discharged by their own
+  `try`.
+- Throws inference for unannotated functions with bodies (§6.1), transitive
+  through call sites and cycle-safe; inferred raises surface at call sites
+  (including IIFEs) instead of inside the unannotated function.
+- Typed `catch` (§4.2): the union of what the `try` block can raise.
+- Covariant throws in signature assignability (§5.2) with a dedicated
+  elaboration message, including contextually-typed arrows checked against
+  `throws never` targets.
+- Full erasure from JS emit; preservation in declaration emit (both the
+  syntactic path and signatures rebuilt from types), hover, and the `throws
+  any`/`throws unknown` escape hatch (§7.4).
+- Type parameters are in scope in the clause (`throws T` on generics), and the
+  clause instantiates with the signature.
+
+**Deliberate narrowings (future work)**
+
+- `rethrows` (§4.4) is not implemented; higher-order callees remain untracked.
+- Typed `catch` requires `"warning"` or `"error"`. With `"off"`, program types
+  are byte-for-byte what they are today; the proposal's "typed catch in the
+  editor even when off" would change types under a no-diagnostics setting.
+- The assignability rule runs only in `"error"` mode: a failed relation is a
+  hard type error, which would violate `"warning"` semantics.
+- Constructors, accessors, static blocks, class field initializers, tagged
+  templates, and JSX are untracked call/raise positions.
+- Overload signatures are not checked for consistency with their
+  implementation's clause; call sites use the resolved overload's clause.
+- The §7.3 legacy-degradation diagnostic (TSxxx4) is not implemented; ambient
+  declarations without clauses are simply untracked (permissive), matching
+  §6.4's "off" row.
+- Typed `catch` is optimistic: it reflects the *tracked* error channel only.
+  Untracked exceptions — runtime errors from getters/proxies/host operations,
+  and calls to untracked functions — do not widen the catch variable. This is
+  the same pragmatic stance Java takes with unchecked exceptions; annotate
+  `catch (e: unknown)` to opt out per-site.
+
+## 13. Open questions
 
 1. **Constructors, getters, field initializers, and destructors** — do we track
    throws through property initializers and getter access? (Proposed: yes for
@@ -615,7 +666,7 @@ a committed plan.
    literal/primitive types; no requirement that thrown values extend `Error`
    (consistent with today's permissiveness).
 
-## 13. Alternatives considered
+## 14. Alternatives considered
 
 - **Result types in `lib` only** (a built-in `Result<T, E>` + `?`-style
   operator). Rejected as the *primary* mechanism because it does not describe

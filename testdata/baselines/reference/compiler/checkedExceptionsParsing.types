@@ -1,0 +1,120 @@
+//// [tests/cases/compiler/checkedExceptionsParsing.ts] ////
+
+=== checkedExceptionsParsing.ts ===
+class E1 extends Error { readonly tag = "e1" as const; }
+>E1 : E1
+>Error : Error
+>tag : "e1"
+>"e1" as const : "e1"
+>"e1" : "e1"
+
+class E2 extends Error { readonly tag = "e2" as const; }
+>E2 : E2
+>Error : Error
+>tag : "e2"
+>"e2" as const : "e2"
+>"e2" : "e2"
+
+// Clause forms on every supported declaration shape.
+function decl(): void throws E1 {}
+>decl : () => void throws E1
+
+const funcExpr = function (): void throws E1 {};
+>funcExpr : () => void throws E1
+>function (): void throws E1 {} : () => void throws E1
+
+const arrow = (): void throws E1 => {};
+>arrow : () => void throws E1
+>(): void throws E1 => {} : () => void throws E1
+
+class C {
+>C : C
+
+    method(): void throws E1 {}
+>method : () => void throws E1
+}
+interface I {
+    method(): void throws E1 | E2;
+>method : () => void throws E1 | E2
+}
+type FnType = (x: string) => number throws E1;
+>FnType : FnType
+>x : string
+
+const obj = {
+>obj : { method(): void throws E1; }
+>{    method(): void throws E1 {},} : { method(): void throws E1; }
+
+    method(): void throws E1 {},
+>method : () => void throws E1
+
+};
+
+// A clause without a return type annotation.
+function noReturnType() throws E1 {
+>noReturnType : () => void throws E1
+
+    throw new E1();
+>new E1() : E1
+>E1 : typeof E1
+}
+
+// The clause type may be any type expression, greedily parsed.
+function unionClause(): void throws E1 | E2 {}
+>unionClause : () => void throws E1 | E2
+
+type Alias = E1 | E2;
+>Alias : Alias
+
+function aliasClause(): void throws Alias {}
+>aliasClause : () => void throws Alias
+
+function genericClause<T extends Error>(x: T): void throws T {
+>genericClause : <T extends Error>(x: T) => void throws T
+>x : T
+
+    throw x;
+>x : T
+}
+
+// `throws` is contextual: members named `throws` on a following line still work.
+interface Legacy {
+    m(): void
+>m : () => void
+
+    throws: boolean
+>throws : boolean
+}
+declare const legacy: Legacy;
+>legacy : Legacy
+
+const b: boolean = legacy.throws;
+>b : boolean
+>legacy.throws : boolean
+>legacy : Legacy
+>throws : boolean
+
+class LegacyClass {
+>LegacyClass : LegacyClass
+
+    m(): void {}
+>m : () => void
+
+    throws = 1;
+>throws : number
+>1 : 1
+}
+
+const throwsAsName = { throws: true };
+>throwsAsName : { throws: boolean; }
+>{ throws: true } : { throws: boolean; }
+>throws : boolean
+>true : true
+
+function throws(): void {}
+>throws : () => void
+
+throws();
+>throws() : void
+>throws : () => void
+
