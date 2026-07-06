@@ -59,7 +59,7 @@ func (d *astDecoder) createExtendedNode(kind ast.Kind, data uint32, childIndices
 }
 
 func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices []int, commonData uint8) (*ast.Node, error) {
-	mask := uint8(data & NodeDataChildMask)
+	mask := uint16(data & NodeDataChildMask)
 
 	switch kind {
 	case ast.KindUnknown,

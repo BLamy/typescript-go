@@ -3413,7 +3413,8 @@ func (p *Parser) shouldParseReturnType(returnToken ast.Kind, isType bool) bool {
 // so that a following class/interface member that happens to be named `throws` (e.g.
 // `m(): void` on one line and `throws: boolean` on the next) keeps parsing as it does today.
 func (p *Parser) parseThrowsClause() *ast.TypeNode {
-	if p.token == ast.KindIdentifier && !p.hasPrecedingLineBreak() && p.scanner.TokenValue() == "throws" {
+	if p.token == ast.KindIdentifier && !p.hasPrecedingLineBreak() && p.scanner.TokenValue() == "throws" &&
+		!p.scanner.HasUnicodeEscape() && !p.scanner.HasExtendedUnicodeEscape() {
 		p.nextToken()
 		return doInContext(p, ast.NodeFlagsDisallowConditionalTypesContext, false, (*Parser).parseType)
 	}

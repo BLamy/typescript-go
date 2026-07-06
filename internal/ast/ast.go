@@ -1778,6 +1778,7 @@ func (node *FunctionDeclaration) computeSubtreeFacts() SubtreeFacts {
 			propagateEraseableSyntaxListSubtreeFacts(node.TypeParameters) |
 			propagateNodeListSubtreeFacts(node.Parameters, propagateSubtreeFacts) |
 			propagateEraseableSyntaxSubtreeFacts(node.Type) |
+			propagateEraseableSyntaxSubtreeFacts(node.ThrowsType) |
 			propagateEraseableSyntaxSubtreeFacts(node.FullSignature) |
 			propagateSubtreeFacts(node.Body) |
 			core.IfElse(isAsync && isGenerator, SubtreeContainsForAwaitOrAsyncGenerator, SubtreeFactsNone) |
@@ -1934,6 +1935,7 @@ func (node *ConstructorDeclaration) computeSubtreeFacts() SubtreeFacts {
 			propagateEraseableSyntaxListSubtreeFacts(node.TypeParameters) |
 			propagateNodeListSubtreeFacts(node.Parameters, propagateSubtreeFacts) |
 			propagateEraseableSyntaxSubtreeFacts(node.Type) |
+			propagateEraseableSyntaxSubtreeFacts(node.ThrowsType) |
 			propagateEraseableSyntaxSubtreeFacts(node.FullSignature) |
 			propagateSubtreeFacts(node.Body)
 	}
@@ -1954,6 +1956,7 @@ func (node *AccessorDeclarationBase) computeSubtreeFacts() SubtreeFacts {
 			propagateEraseableSyntaxListSubtreeFacts(node.TypeParameters) |
 			propagateNodeListSubtreeFacts(node.Parameters, propagateSubtreeFacts) |
 			propagateEraseableSyntaxSubtreeFacts(node.Type) |
+			propagateEraseableSyntaxSubtreeFacts(node.ThrowsType) |
 			propagateEraseableSyntaxSubtreeFacts(node.FullSignature) |
 			propagateSubtreeFacts(node.Body)
 	}
@@ -1978,6 +1981,7 @@ func (node *MethodDeclaration) computeSubtreeFacts() SubtreeFacts {
 			propagateNodeListSubtreeFacts(node.Parameters, propagateSubtreeFacts) |
 			propagateSubtreeFacts(node.Body) |
 			propagateEraseableSyntaxSubtreeFacts(node.Type) |
+			propagateEraseableSyntaxSubtreeFacts(node.ThrowsType) |
 			propagateEraseableSyntaxSubtreeFacts(node.FullSignature) |
 			core.IfElse(isAsync && isGenerator, SubtreeContainsForAwaitOrAsyncGenerator, SubtreeFactsNone) |
 			core.IfElse(isAsync && !isGenerator, SubtreeContainsAnyAwait, SubtreeFactsNone)
@@ -2064,6 +2068,7 @@ func (node *ArrowFunction) computeSubtreeFacts() SubtreeFacts {
 		propagateEraseableSyntaxListSubtreeFacts(node.TypeParameters) |
 		propagateNodeListSubtreeFacts(node.Parameters, propagateSubtreeFacts) |
 		propagateEraseableSyntaxSubtreeFacts(node.Type) |
+		propagateEraseableSyntaxSubtreeFacts(node.ThrowsType) |
 		propagateEraseableSyntaxSubtreeFacts(node.FullSignature) |
 		propagateSubtreeFacts(node.Body) |
 		core.IfElse(node.ModifierFlags()&ModifierFlagsAsync != 0, SubtreeContainsAnyAwait, SubtreeFactsNone)
@@ -2082,6 +2087,7 @@ func (node *FunctionExpression) computeSubtreeFacts() SubtreeFacts {
 		propagateEraseableSyntaxListSubtreeFacts(node.TypeParameters) |
 		propagateNodeListSubtreeFacts(node.Parameters, propagateSubtreeFacts) |
 		propagateEraseableSyntaxSubtreeFacts(node.Type) |
+		propagateEraseableSyntaxSubtreeFacts(node.ThrowsType) |
 		propagateEraseableSyntaxSubtreeFacts(node.FullSignature) |
 		propagateSubtreeFacts(node.Body) |
 		core.IfElse(isAsync && isGenerator, SubtreeContainsForAwaitOrAsyncGenerator, SubtreeFactsNone) |

@@ -650,6 +650,11 @@ is implemented, and where it deliberately narrows the full design:
   and calls to untracked functions — do not widen the catch variable. This is
   the same pragmatic stance Java takes with unchecked exceptions; annotate
   `catch (e: unknown)` to opt out per-site.
+- Throws *inference* treats a rethrown catch variable as the catch clause's
+  full union rather than its flow-narrowed type (enforcement against explicit
+  clauses uses the precise narrowed type). An unannotated function that
+  narrows before rethrowing may therefore be inferred with a wider throws set
+  than it can actually raise — an over-approximation, never a missed error.
 
 ## 13. Open questions
 

@@ -1663,7 +1663,15 @@ func (c *Checker) compareSignatureThrowsRelated(source *Signature, target *Signa
 	if targetThrows == nil || targetThrows.flags&TypeFlagsAnyOrUnknown != 0 {
 		return TernaryTrue
 	}
-	sourceThrows := c.getThrowsTypeOfSignature(source)
+	var sourceThrows *Type
+	if c.throwsInference != nil {
+		// A throws-inference fixpoint is in flight: inferred throws types are
+		// provisional, and relation results are cached permanently. Compare
+		// declared clauses only so no provisional data poisons the cache.
+		sourceThrows = c.getDeclaredThrowsTypeOfSignature(source)
+	} else {
+		sourceThrows = c.getThrowsTypeOfSignature(source)
+	}
 	if sourceThrows == nil || sourceThrows.flags&TypeFlagsNever != 0 {
 		return TernaryTrue
 	}

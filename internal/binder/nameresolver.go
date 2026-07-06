@@ -81,7 +81,7 @@ loop:
 							// to make sure that they reference no variables declared after them.
 							useResult = lastLocation.Kind == ast.KindParameter ||
 								lastLocation.Flags&ast.NodeFlagsSynthesized != 0 ||
-								lastLocation == location.Type() && ast.FindAncestor(result.ValueDeclaration, ast.IsParameterDeclaration) != nil
+								(lastLocation == location.Type() || isThrowsClauseOf(lastLocation, location)) && ast.FindAncestor(result.ValueDeclaration, ast.IsParameterDeclaration) != nil
 						}
 					}
 				} else if location.Kind == ast.KindConditionalType {

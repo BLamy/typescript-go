@@ -16611,7 +16611,9 @@ func (c *Checker) getTypeForVariableLikeDeclaration(declaration *ast.Node, inclu
 		}
 		// Under checkedExceptions, an unannotated catch variable is typed as the
 		// union of the error types the try block can raise, when that is known.
-		if c.checkedExceptionsEnabled() && ast.IsVariableDeclaration(declaration) && declaration.Parent != nil && declaration.Parent.Kind == ast.KindCatchClause {
+		// Not while a throws-inference fixpoint is in flight: the union would be
+		// computed from provisional data and cached permanently on the symbol.
+		if c.checkedExceptionsEnabled() && c.throwsInference == nil && ast.IsVariableDeclaration(declaration) && declaration.Parent != nil && declaration.Parent.Kind == ast.KindCatchClause {
 			if throwsType := c.getCatchClauseThrowsType(declaration.Parent); throwsType != nil {
 				return throwsType
 			}

@@ -69,7 +69,7 @@ const obj = {
     method() { },
 };
 // A clause without a return type annotation.
-function noReturnType() throws E1 {
+function noReturnType() {
     throw new E1();
 }
 // The clause type may be any type expression, greedily parsed.

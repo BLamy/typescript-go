@@ -66,6 +66,6 @@ uMixed(); // error: E1
 function noClause(x = boom()) { return x; }
 noClause(); // error: E1
 // Parser F1: parenless-return-type arrows with clauses.
-const t1 = () throws E1 => { throw new E1(); };
-const t2 = async () throws E1 => { throw new E1(); };
+const t1 = () => { throw new E1(); };
+const t2 = async () => { throw new E1(); };
 function takesT1() { t1(); }

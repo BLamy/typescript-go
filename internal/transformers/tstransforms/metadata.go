@@ -144,7 +144,8 @@ func (tx *MetadataTransformer) visitMethodDeclaration(node *ast.MethodDeclaratio
 		tx.Visitor().VisitNode(node.PostfixToken),
 		tx.Visitor().VisitNodes(node.TypeParameters),
 		tx.Visitor().VisitNodes(node.Parameters),
-		tx.Visitor().VisitNode(node.Type), nil,
+		tx.Visitor().VisitNode(node.Type),
+		tx.Visitor().VisitNode(node.ThrowsType),
 		tx.Visitor().VisitNode(node.FullSignature),
 		tx.Visitor().VisitNode(node.Body),
 	)

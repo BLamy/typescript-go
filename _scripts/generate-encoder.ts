@@ -407,7 +407,7 @@ function generateGoGetNodeDataType(w: CodeWriter) {
 }
 
 function generateGoGetChildrenPropertyMask(w: CodeWriter) {
-    w.write("func getChildrenPropertyMask(node *ast.Node) uint8 {");
+    w.write("func getChildrenPropertyMask(node *ast.Node) uint16 {");
     w.push();
     w.write("switch node.Kind {");
 
@@ -440,7 +440,7 @@ function generateGoGetChildrenPropertyMask(w: CodeWriter) {
             else {
                 check = `${goFieldAccess(m)} != nil`;
             }
-            parts.push(`(boolToByte(${check}) << ${i})`);
+            parts.push(`(boolToUint16(${check}) << ${i})`);
         }
         w.write(`return ${parts.join(" | ")}`);
         w.pop();
@@ -702,7 +702,7 @@ function generateGoCreateExtendedNode(w: CodeWriter) {
 function generateGoCreateChildrenNode(w: CodeWriter) {
     w.write("func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices []int, commonData uint8) (*ast.Node, error) {");
     w.push();
-    w.write("mask := uint8(data & NodeDataChildMask)");
+    w.write("mask := uint16(data & NodeDataChildMask)");
     w.write("");
     w.write("switch kind {");
 
@@ -1503,7 +1503,7 @@ function emitNodeGeneratedImports(w: CodeWriter) {
     w.write(`    NODE_EXTENDED_DATA_MASK,`);
     w.write(`    NODE_STRING_INDEX_MASK,`);
     w.write(`    modifierToFlag,`);
-    w.write(`    popcount8,`);
+    w.write(`    popcount16,`);
     w.write(`    RemoteNodeBase,`);
     w.write(`    type SourceFileInfo,`);
     w.write(`} from "./node.infrastructure.ts";`);
@@ -1816,7 +1816,7 @@ function emitRemoteNodeClassOpen(w: CodeWriter) {
     w.write(`        // Counting the 1s gives us the number of *missing properties* before the \`order\`th property. If every property`);
     w.write(`        // were present, we would have \`parameters = children[5]\`, but since \`postfixToken\` and \`astersiskToken\` are`);
     w.write(`        // missing, we have \`parameters = children[5 - 2]\`.`);
-    w.write(`        const propertyIndex = order - popcount8[~(mask | ((0xff << order) & 0xff)) & 0xff];`);
+    w.write(`        const propertyIndex = popcount16(mask & ((1 << order) - 1));`);
     w.write(`        let childIndex = this.index + 1;`);
     w.write(`        for (let i = 0; i < propertyIndex; i++) {`);
     w.write(`            // Walk through children via their \`next\` pointer until we get to the right property index`);
@@ -1840,7 +1840,7 @@ function emitRemoteNodeClassOpen(w: CodeWriter) {
     w.write(`            "extended";`);
     w.write(`        result.push(\`dataType: \${dataType}\`);`);
     w.write(`        if (this.dataType === NODE_DATA_TYPE_CHILDREN) {`);
-    w.write(`            result.push(\`childMask: \${this.childMask.toString(2).padStart(8, "0")}\`);`);
+    w.write(`            result.push(\`childMask: \${this.childMask.toString(2).padStart(16, "0")}\`);`);
     w.write(`            result.push(\`childProperties: \${childProperties[this.kind]?.join(", ")}\`);`);
     w.write(`        }`);
     w.write(`        return result.join("\\n");`);
