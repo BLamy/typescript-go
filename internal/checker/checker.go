@@ -641,6 +641,8 @@ type Checker struct {
 	reverseMappedCache                          map[ReverseMappedTypeKey]*Type
 	reverseHomomorphicMappedCache               map[ReverseMappedTypeKey]*Type
 	iterationTypesCache                         map[IterationTypesKey]IterationTypes
+	inferredThrowsTypes                         map[*ast.Node]*Type
+	catchClauseThrowsTypes                      map[*ast.Node]*Type
 	markerTypes                                 collections.Set[*Type]
 	undefinedSymbol                             *ast.Symbol
 	argumentsSymbol                             *ast.Symbol
@@ -2198,6 +2200,9 @@ func (c *Checker) checkSourceFile(ctx context.Context, sourceFile *ast.SourceFil
 		}
 		if !sourceFile.IsDeclarationFile && !c.isCanceled() {
 			c.checkUnusedRenamedBindingElements()
+		}
+		if c.checkedExceptionsEnabled() && !sourceFile.IsDeclarationFile && !c.isCanceled() {
+			c.checkCheckedExceptionsForFile(sourceFile)
 		}
 		c.saveDeferredDiagnostics = false
 		c.produceDeferredDiagnostics()
@@ -11128,7 +11133,11 @@ func (c *Checker) checkIdentifier(node *ast.Node, checkMode CheckMode) *Type {
 		t != c.autoType && t != c.autoArrayType && (!c.strictNullChecks || t.flags&(TypeFlagsAnyOrUnknown|TypeFlagsVoid) != 0 || IsInTypeQuery(node) || c.isInAmbientOrTypeNode(node) || node.Parent.Kind == ast.KindExportSpecifier) ||
 		ast.IsNonNullExpression(node.Parent) ||
 		ast.IsVariableDeclaration(declaration) && declaration.AsVariableDeclaration().ExclamationToken != nil ||
-		declaration.Flags&ast.NodeFlagsAmbient != 0
+		declaration.Flags&ast.NodeFlagsAmbient != 0 ||
+		// A catch variable is always assigned when its block runs. This only matters
+		// under checkedExceptions, which can give catch variables a precise type;
+		// otherwise their unknown/any type is already assumed initialized above.
+		ast.IsCatchClauseVariableDeclarationOrBindingElement(declaration)
 	var initialType *Type
 	switch {
 	case isAutomaticTypeInNonNull:
@@ -16595,6 +16604,13 @@ func (c *Checker) getTypeForVariableLikeDeclaration(declaration *ast.Node, inclu
 				return declaredType
 			}
 			return c.errorType
+		}
+		// Under checkedExceptions, an unannotated catch variable is typed as the
+		// union of the error types the try block can raise, when that is known.
+		if c.checkedExceptionsEnabled() && ast.IsVariableDeclaration(declaration) && declaration.Parent != nil && declaration.Parent.Kind == ast.KindCatchClause {
+			if throwsType := c.getCatchClauseThrowsType(declaration.Parent); throwsType != nil {
+				return throwsType
+			}
 		}
 		// If the catch clause is not explicitly annotated, treat it as though it were explicitly
 		// annotated with unknown or any, depending on useUnknownInCatchVariables.
