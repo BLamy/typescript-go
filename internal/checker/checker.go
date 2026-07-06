@@ -643,6 +643,7 @@ type Checker struct {
 	iterationTypesCache                         map[IterationTypesKey]IterationTypes
 	inferredThrowsTypes                         map[*ast.Node]*Type
 	catchClauseThrowsTypes                      map[*ast.Node]*Type
+	throwsInference                             *throwsInferenceState
 	markerTypes                                 collections.Set[*Type]
 	undefinedSymbol                             *ast.Symbol
 	argumentsSymbol                             *ast.Symbol
@@ -2738,6 +2739,9 @@ func (c *Checker) checkSignatureDeclaration(node *ast.Node) {
 	returnTypeNode := node.Type()
 	if returnTypeNode != nil {
 		c.checkSourceElement(returnTypeNode)
+	}
+	if data := node.FunctionLikeData(); data != nil && data.ThrowsType != nil {
+		c.checkSourceElement(data.ThrowsType)
 	}
 	if c.noImplicitAny && returnTypeNode == nil {
 		switch node.Kind {

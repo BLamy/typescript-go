@@ -641,6 +641,10 @@ is implemented, and where it deliberately narrows the full design:
 - The §7.3 legacy-degradation diagnostic (TSxxx4) is not implemented; ambient
   declarations without clauses are simply untracked (permissive), matching
   §6.4's "off" row.
+- Interface/type-literal *call* and *construct* signatures and constructor
+  types do not accept a clause yet (standalone function types do).
+- `throws this` is not instantiated at call sites; the clause resolves to the
+  declaring class's `this` type.
 - Typed `catch` is optimistic: it reflects the *tracked* error channel only.
   Untracked exceptions — runtime errors from getters/proxies/host operations,
   and calls to untracked functions — do not widen the catch variable. This is

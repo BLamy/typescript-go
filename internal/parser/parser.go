@@ -4255,6 +4255,11 @@ func (p *Parser) nextIsParenthesizedArrowFunctionExpression() core.Tristate {
 			case ast.KindEqualsGreaterThanToken, ast.KindColonToken, ast.KindOpenBraceToken:
 				return core.TSTrue
 			}
+			// "() throws" starts an arrow function with a `throws` clause and no
+			// return type annotation; nothing else can make it valid.
+			if third == ast.KindIdentifier && !p.hasPrecedingLineBreak() && p.scanner.TokenValue() == "throws" {
+				return core.TSTrue
+			}
 			return core.TSFalse
 		}
 		// If encounter "([" or "({", this could be the start of a binding pattern.

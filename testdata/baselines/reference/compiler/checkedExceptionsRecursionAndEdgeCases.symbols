@@ -1,0 +1,102 @@
+//// [tests/cases/compiler/checkedExceptionsRecursionAndEdgeCases.ts] ////
+
+=== checkedExceptionsRecursionAndEdgeCases.ts ===
+class E1 extends Error { readonly tag = "e1" as const; }
+>E1 : Symbol(E1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 0))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(E1.tag, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 24))
+>const : Symbol(const)
+
+class E2 extends Error { readonly tag = "e2" as const; }
+>E2 : Symbol(E2, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 56))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(E2.tag, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 1, 24))
+>const : Symbol(const)
+
+// Finding 1: symmetric mutual recursion must report symmetrically.
+function f(x: number): void { if (x > 0) throw new E1(); g(x - 1); }
+>f : Symbol(f, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 1, 56))
+>x : Symbol(x, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 4, 11))
+>x : Symbol(x, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 4, 11))
+>E1 : Symbol(E1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 0))
+>g : Symbol(g, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 4, 68))
+>x : Symbol(x, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 4, 11))
+
+function g(x: number): void { if (x > 0) throw new E2(); f(x - 1); }
+>g : Symbol(g, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 4, 68))
+>x : Symbol(x, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 5, 11))
+>x : Symbol(x, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 5, 11))
+>E2 : Symbol(E2, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 56))
+>f : Symbol(f, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 1, 56))
+>x : Symbol(x, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 5, 11))
+
+function wrapF(): void throws E1 { f(3); }  // error: E2 missing
+>wrapF : Symbol(wrapF, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 5, 68))
+>E1 : Symbol(E1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 0))
+>f : Symbol(f, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 1, 56))
+
+function wrapG(): void throws E2 { g(3); }  // error: E1 missing
+>wrapG : Symbol(wrapG, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 6, 42))
+>E2 : Symbol(E2, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 56))
+>g : Symbol(g, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 4, 68))
+
+// Finding 2: mutually recursive rethrow wrappers, no TS7022, still enforced.
+function a(): void { try { b(); } catch (e) { throw e; } }
+>a : Symbol(a, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 7, 42))
+>b : Symbol(b, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 10, 58))
+>e : Symbol(e, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 10, 41))
+>e : Symbol(e, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 10, 41))
+
+function b(): void { try { a(); } catch (e) { throw e; } throw new E1(); }
+>b : Symbol(b, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 10, 58))
+>a : Symbol(a, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 7, 42))
+>e : Symbol(e, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 11, 41))
+>e : Symbol(e, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 11, 41))
+>E1 : Symbol(E1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 0))
+
+a(); // error: E1 surfaces at top level
+>a : Symbol(a, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 7, 42))
+
+// Finding 3: union with an untracked constituent keeps the tracked side.
+declare const uMixed: (() => void throws E1) | (() => void);
+>uMixed : Symbol(uMixed, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 15, 13))
+>E1 : Symbol(E1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 0))
+
+uMixed(); // error: E1
+>uMixed : Symbol(uMixed, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 15, 13))
+
+// Finding 4: default parameter initializers participate in inference.
+declare function boom(): number throws E1;
+>boom : Symbol(boom, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 16, 9))
+>E1 : Symbol(E1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 0))
+
+function noClause(x = boom()) { return x; }
+>noClause : Symbol(noClause, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 19, 42))
+>x : Symbol(x, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 20, 18))
+>boom : Symbol(boom, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 16, 9))
+>x : Symbol(x, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 20, 18))
+
+noClause(); // error: E1
+>noClause : Symbol(noClause, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 19, 42))
+
+// Parser F1: parenless-return-type arrows with clauses.
+const t1 = () throws E1 => { throw new E1(); };
+>t1 : Symbol(t1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 24, 5))
+>E1 : Symbol(E1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 0))
+>E1 : Symbol(E1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 0))
+
+const t2 = async () throws E1 => { throw new E1(); };
+>t2 : Symbol(t2, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 25, 5))
+>E1 : Symbol(E1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 0))
+>E1 : Symbol(E1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 0))
+
+function takesT1(): void throws E1 { t1(); }
+>takesT1 : Symbol(takesT1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 25, 53))
+>E1 : Symbol(E1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 0, 0))
+>t1 : Symbol(t1, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 24, 5))
+
+// Checker F3: unresolved clause type reports even when never called.
+declare function neverCalled(): void throws CompletelyUndefinedName;
+>neverCalled : Symbol(neverCalled, Decl(checkedExceptionsRecursionAndEdgeCases.ts, 26, 44))
+>CompletelyUndefinedName : Symbol(CompletelyUndefinedName)
+

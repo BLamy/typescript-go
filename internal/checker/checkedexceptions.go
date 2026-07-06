@@ -96,15 +96,18 @@ func (c *Checker) getThrowsTypeOfSignatureWorker(sig *Signature, includeInferred
 		return c.instantiateType(base, sig.mapper)
 	}
 	if sig.composite != nil {
-		// A composite (union/intersection) signature is tracked only when every
-		// constituent is tracked; its throws type is the union of theirs.
+		// A composite (union/intersection) signature raises the union of its
+		// tracked constituents' throws types. Untracked constituents contribute
+		// nothing (they are permissive everywhere else too); if none are
+		// tracked, the composite is untracked.
 		var throwsTypes []*Type
 		for _, constituent := range sig.composite.signatures {
-			t := c.getThrowsTypeOfSignatureWorker(constituent, includeInferred)
-			if t == nil {
-				return nil
+			if t := c.getThrowsTypeOfSignatureWorker(constituent, includeInferred); t != nil {
+				throwsTypes = append(throwsTypes, t)
 			}
-			throwsTypes = append(throwsTypes, t)
+		}
+		if len(throwsTypes) == 0 {
+			return nil
 		}
 		return c.getUnionType(throwsTypes)
 	}
@@ -121,10 +124,23 @@ func (c *Checker) getThrowsTypeOfSignatureWorker(sig *Signature, includeInferred
 	return nil
 }
 
+// throwsInferenceState tracks an in-flight throws inference. Recursion cycles
+// mean a single pass can compute incomplete unions (a recursive edge sees only
+// what has been discovered so far), so the outermost query iterates to a
+// fixpoint before committing results to the permanent cache: raise sets only
+// grow between iterations, and union types are interned, so iteration stops as
+// soon as nothing changes.
+type throwsInferenceState struct {
+	provisional map[*ast.Node]*Type
+	inProgress  map[*ast.Node]bool
+	computed    map[*ast.Node]bool // computed during the current iteration
+	changed     bool
+}
+
 // getInferredThrowsTypeOfFunction infers the throws type of an unannotated
-// function from its body: the union of everything its body can raise that no
-// internal try...catch discharges. Cycles (recursion) contribute nothing.
-// Returns nil when the body raises no tracked errors.
+// function: the union of everything its body and parameter initializers can
+// raise that no internal try...catch discharges. Recursive call graphs are
+// resolved by fixpoint iteration. Returns nil when nothing tracked is raised.
 func (c *Checker) getInferredThrowsTypeOfFunction(decl *ast.Node) *Type {
 	if c.inferredThrowsTypes == nil {
 		c.inferredThrowsTypes = make(map[*ast.Node]*Type)
@@ -132,14 +148,60 @@ func (c *Checker) getInferredThrowsTypeOfFunction(decl *ast.Node) *Type {
 	if cached, ok := c.inferredThrowsTypes[decl]; ok {
 		return cached
 	}
-	// Mark in-progress; recursive edges see nil and are skipped.
-	c.inferredThrowsTypes[decl] = nil
-	raised := c.collectRaisedTypes(decl.Body())
+	if state := c.throwsInference; state != nil {
+		// Nested query inside an ongoing inference.
+		if state.inProgress[decl] {
+			// Recursive edge: contribute the previous iteration's value; the
+			// outer fixpoint loop re-runs until this stabilizes.
+			return state.provisional[decl]
+		}
+		if state.computed[decl] {
+			return state.provisional[decl]
+		}
+		return c.inferThrowsWorker(decl, state)
+	}
+	state := &throwsInferenceState{
+		provisional: make(map[*ast.Node]*Type),
+		inProgress:  make(map[*ast.Node]bool),
+		computed:    make(map[*ast.Node]bool),
+	}
+	c.throwsInference = state
+	var result *Type
+	// Raise sets grow monotonically, so this terminates; the cap is a backstop
+	// against pathological cycle shapes, accepting the partial result instead
+	// of iterating further.
+	for range 100 {
+		state.changed = false
+		clear(state.computed)
+		result = c.inferThrowsWorker(decl, state)
+		if !state.changed {
+			break
+		}
+	}
+	c.throwsInference = nil
+	for d, t := range state.provisional {
+		c.inferredThrowsTypes[d] = t
+	}
+	return result
+}
+
+func (c *Checker) inferThrowsWorker(decl *ast.Node, state *throwsInferenceState) *Type {
+	state.inProgress[decl] = true
+	var raised []*Type
+	for _, parameter := range decl.Parameters() {
+		raised = append(raised, c.collectRaisedTypes(parameter.Initializer())...)
+	}
+	raised = append(raised, c.collectRaisedTypes(decl.Body())...)
+	delete(state.inProgress, decl)
+	state.computed[decl] = true
 	var result *Type
 	if len(raised) != 0 {
 		result = c.getUnionType(raised)
 	}
-	c.inferredThrowsTypes[decl] = result
+	if state.provisional[decl] != result {
+		state.changed = true
+		state.provisional[decl] = result
+	}
 	return result
 }
 
@@ -182,7 +244,17 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 		case ast.KindCallExpression, ast.KindNewExpression:
 			add(c.getThrowsTypeOfCall(node))
 		case ast.KindThrowStatement:
-			add(c.getTypeOfExpression(node.Expression()))
+			expr := node.Expression()
+			if catchClause := c.getCatchClauseOfRethrownVariable(expr); catchClause != nil {
+				// Rethrow of an unannotated catch variable: contribute the catch
+				// clause's own computed union instead of resolving the variable's
+				// type. Resolving it here can re-enter the checker's symbol type
+				// resolution mid-inference (mutually recursive rethrow wrappers)
+				// and produce a spurious circularity error.
+				add(c.getCatchClauseThrowsType(catchClause))
+			} else {
+				add(c.getTypeOfExpression(expr))
+			}
 		}
 		return node.ForEachChild(visit)
 	}
@@ -190,6 +262,26 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 		visit(node)
 	}
 	return raised
+}
+
+// getCatchClauseOfRethrownVariable returns the catch clause whose unannotated
+// variable the expression rethrows, or nil.
+func (c *Checker) getCatchClauseOfRethrownVariable(expr *ast.Node) *ast.Node {
+	if expr == nil || !ast.IsIdentifier(expr) {
+		return nil
+	}
+	symbol := c.getResolvedSymbol(expr)
+	if symbol == nil || symbol == c.unknownSymbol || symbol.ValueDeclaration == nil {
+		return nil
+	}
+	declaration := symbol.ValueDeclaration
+	if !ast.IsVariableDeclaration(declaration) || declaration.Parent == nil || declaration.Parent.Kind != ast.KindCatchClause {
+		return nil
+	}
+	if declaration.Type() != nil {
+		return nil
+	}
+	return declaration.Parent
 }
 
 // getCatchClauseThrowsType computes the type for an unannotated catch variable:
@@ -203,6 +295,7 @@ func (c *Checker) getCatchClauseThrowsType(catchClause *ast.Node) *Type {
 	if cached, ok := c.catchClauseThrowsTypes[catchClause]; ok {
 		return cached
 	}
+	// Mark in-progress; a cyclic query contributes nothing.
 	c.catchClauseThrowsTypes[catchClause] = nil
 	var result *Type
 	if tryStatement := catchClause.Parent; tryStatement != nil && tryStatement.Kind == ast.KindTryStatement {
@@ -210,6 +303,12 @@ func (c *Checker) getCatchClauseThrowsType(catchClause *ast.Node) *Type {
 		if len(raised) != 0 {
 			result = c.getUnionType(raised)
 		}
+	}
+	if c.throwsInference != nil {
+		// Computed from provisional inference results: usable now, but not safe
+		// to cache past the enclosing fixpoint iteration.
+		delete(c.catchClauseThrowsTypes, catchClause)
+		return result
 	}
 	c.catchClauseThrowsTypes[catchClause] = result
 	return result
