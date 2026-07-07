@@ -175,7 +175,7 @@ func getChildrenPropertyMask(node *ast.Node) uint16 {
 		return (boolToUint16(n.PropertyName != nil) << 0) | (boolToUint16(n.Name() != nil) << 1)
 	case ast.KindCallSignature:
 		n := node.AsCallSignatureDeclaration()
-		return (boolToUint16(n.TypeParameters != nil) << 0) | (boolToUint16(n.Parameters != nil) << 1) | (boolToUint16(n.Type != nil) << 2)
+		return (boolToUint16(n.TypeParameters != nil) << 0) | (boolToUint16(n.Parameters != nil) << 1) | (boolToUint16(n.Type != nil) << 2) | (boolToUint16(n.ThrowsType != nil) << 3)
 	case ast.KindConstructSignature:
 		n := node.AsConstructSignatureDeclaration()
 		return (boolToUint16(n.TypeParameters != nil) << 0) | (boolToUint16(n.Parameters != nil) << 1) | (boolToUint16(n.Type != nil) << 2)

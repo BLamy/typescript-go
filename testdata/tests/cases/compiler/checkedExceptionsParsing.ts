@@ -16,6 +16,12 @@ interface I {
     method(): void throws E1 | E2;
 }
 type FnType = (x: string) => number throws E1;
+interface Callable {
+    (x: string): number throws E1;
+}
+type CallableLiteral = {
+    (x: string): number throws E1 | E2;
+};
 const obj = {
     method(): void throws E1 {},
 };

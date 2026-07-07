@@ -54,7 +54,7 @@ export const childProperties: Readonly<Partial<Record<SyntaxKind, readonly (stri
     [SyntaxKind.NamespaceExport]: ["name"],
     [SyntaxKind.NamedExports]: ["elements"],
     [SyntaxKind.ExportSpecifier]: ["propertyName", "name"],
-    [SyntaxKind.CallSignature]: ["typeParameters", "parameters", "type"],
+    [SyntaxKind.CallSignature]: ["typeParameters", "parameters", "type", "throwsType"],
     [SyntaxKind.ConstructSignature]: ["typeParameters", "parameters", "type"],
     [SyntaxKind.Constructor]: ["modifiers", "typeParameters", "parameters", "type", "body"],
     [SyntaxKind.GetAccessor]: ["modifiers", "name", "typeParameters", "parameters", "type", "body"],

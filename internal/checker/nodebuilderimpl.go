@@ -1857,7 +1857,7 @@ func (b *NodeBuilderImpl) signatureToSignatureDeclarationHelper(signature *Signa
 	var node *ast.Node
 	switch {
 	case kind == ast.KindCallSignature:
-		node = b.f.NewCallSignatureDeclaration(typeParamList, paramList, returnTypeNode)
+		node = b.f.NewCallSignatureDeclaration(typeParamList, paramList, returnTypeNode, throwsTypeNode)
 	case kind == ast.KindConstructSignature:
 		node = b.f.NewConstructSignatureDeclaration(typeParamList, paramList, returnTypeNode)
 	case kind == ast.KindMethodSignature:

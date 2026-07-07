@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checked Exceptions Playground — typescript-go</title>
+<style>
+    :root {
+        --bg: #1e1e1e;
+        --panel: #252526;
+        --border: #3c3c3c;
+        --text: #d4d4d4;
+        --muted: #9d9d9d;
+        --accent: #4fc1ff;
+        --error: #f48771;
+        --warning: #cca700;
+        --ok: #89d185;
+        color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        color: var(--text);
+        font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 14px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+    }
+    header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+    header h1 .throws { color: var(--accent); font-family: ui-monospace, monospace; }
+    header .spacer { flex: 1; }
+    label { color: var(--muted); }
+    select {
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 3px 6px;
+        font: inherit;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    #status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+    }
+    #status .dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--warning);
+    }
+    #status.ready .dot { background: var(--ok); }
+    #status.error .dot { background: var(--error); }
+    main { flex: 1; display: flex; min-height: 0; }
+    #editor { flex: 1; min-width: 0; }
+    #problems {
+        width: 380px;
+        max-width: 45vw;
+        border-left: 1px solid var(--border);
+        background: var(--panel);
+        overflow-y: auto;
+        padding: 8px 0;
+    }
+    #problems h2 {
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+        color: var(--muted); margin: 0 12px 6px; font-weight: 600;
+    }
+    .problem {
+        padding: 5px 12px;
+        border-left: 3px solid transparent;
+        cursor: pointer;
+        font-family: ui-monospace, "Cascadia Code", monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .problem:hover { background: rgba(255, 255, 255, 0.04); }
+    .problem.severity-1 { border-left-color: var(--error); }
+    .problem.severity-2 { border-left-color: var(--warning); }
+    .problem .loc { color: var(--muted); }
+    .problem .code { color: var(--accent); }
+    .empty { color: var(--muted); padding: 5px 12px; font-style: italic; }
+</style>
+</head>
+<body>
+<header>
+    <h1>typescript-go <span class="throws">throws</span> playground</h1>
+    <label>checkedExceptions:
+        <select id="mode">
+            <option value="error">error</option>
+            <option value="warning">warning</option>
+            <option value="off">off</option>
+        </select>
+    </label>
+    <span class="spacer"></span>
+    <span id="status"><span class="dot"></span><span id="status-text">Loading compiler…</span></span>
+    <a href="https://github.com/BLamy/typescript-go/pull/1" target="_blank" rel="noopener">PR #1</a>
+</header>
+<main>
+    <div id="editor"></div>
+    <aside id="problems">
+        <h2>Problems</h2>
+        <div id="problems-list"><div class="empty">Waiting for the language server…</div></div>
+    </aside>
+</main>
+<script src="wasm_exec.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+<script src="playground.js"></script>
+</body>
+</html>

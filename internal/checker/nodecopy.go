@@ -710,6 +710,7 @@ func getExistingNodeTreeVisitor(b *NodeBuilderImpl, bound *recoveryBoundary) *as
 					node.AsCallSignatureDeclaration().TypeParameters,
 					node.AsCallSignatureDeclaration().Parameters,
 					newType,
+					node.AsCallSignatureDeclaration().ThrowsType,
 				)
 			case ast.KindJSDocSignature:
 				return factory.UpdateJSDocSignature(

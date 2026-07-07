@@ -3213,10 +3213,14 @@ func (p *Parser) parseSignatureMember(kind ast.Kind) *ast.Node {
 	typeParameters := p.parseTypeParameters()
 	parameters := p.parseParameters(ParseFlagsType)
 	typeNode := p.parseReturnType(ast.KindColonToken /*isType*/, true)
+	var throwsType *ast.TypeNode
+	if kind == ast.KindCallSignature {
+		throwsType = p.parseThrowsClause()
+	}
 	p.parseTypeMemberSemicolon()
 	var result *ast.Node
 	if kind == ast.KindCallSignature {
-		result = p.factory.NewCallSignatureDeclaration(typeParameters, parameters, typeNode)
+		result = p.factory.NewCallSignatureDeclaration(typeParameters, parameters, typeNode, throwsType)
 	} else {
 		result = p.factory.NewConstructSignatureDeclaration(typeParameters, parameters, typeNode)
 	}
