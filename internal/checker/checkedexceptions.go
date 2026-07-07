@@ -166,6 +166,9 @@ func (c *Checker) getInferredThrowsTypeOfFunction(decl *ast.Node) *Type {
 		computed:    make(map[*ast.Node]bool),
 	}
 	c.throwsInference = state
+	// Reset via defer so a panic anywhere below (signature resolution, union
+	// construction, ...) cannot leave the checker stuck in the in-flight state.
+	defer func() { c.throwsInference = nil }()
 	var result *Type
 	// Raise sets grow monotonically, so this terminates; the cap is a backstop
 	// against pathological cycle shapes, accepting the partial result instead
@@ -178,7 +181,6 @@ func (c *Checker) getInferredThrowsTypeOfFunction(decl *ast.Node) *Type {
 			break
 		}
 	}
-	c.throwsInference = nil
 	for d, t := range state.provisional {
 		c.inferredThrowsTypes[d] = t
 	}

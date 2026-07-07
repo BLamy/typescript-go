@@ -1,0 +1,84 @@
+//// [tests/cases/compiler/checkedExceptionsInferredTargets.ts] ////
+
+=== checkedExceptionsInferredTargets.ts ===
+class E1 extends Error { readonly tag = "e1" as const; }
+>E1 : Symbol(E1, Decl(checkedExceptionsInferredTargets.ts, 0, 0))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(E1.tag, Decl(checkedExceptionsInferredTargets.ts, 0, 24))
+>const : Symbol(const)
+
+class E2 extends Error { readonly tag = "e2" as const; }
+>E2 : Symbol(E2, Decl(checkedExceptionsInferredTargets.ts, 0, 56))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(E2.tag, Decl(checkedExceptionsInferredTargets.ts, 1, 24))
+>const : Symbol(const)
+
+declare const throwsE2: () => void throws E2;
+>throwsE2 : Symbol(throwsE2, Decl(checkedExceptionsInferredTargets.ts, 3, 13))
+>E2 : Symbol(E2, Decl(checkedExceptionsInferredTargets.ts, 0, 56))
+
+// A mutable binding whose type carries *inferred* throws constrains
+// reassignment: call sites of `f` see the initializer's inferred set (E1),
+// so assigning a wider thrower must fail.
+let f = (x?: number) => { if (x) throw new E1(); };
+>f : Symbol(f, Decl(checkedExceptionsInferredTargets.ts, 8, 3))
+>x : Symbol(x, Decl(checkedExceptionsInferredTargets.ts, 8, 9))
+>x : Symbol(x, Decl(checkedExceptionsInferredTargets.ts, 8, 9))
+>E1 : Symbol(E1, Decl(checkedExceptionsInferredTargets.ts, 0, 0))
+
+f = throwsE2; // error
+>f : Symbol(f, Decl(checkedExceptionsInferredTargets.ts, 8, 3))
+>throwsE2 : Symbol(throwsE2, Decl(checkedExceptionsInferredTargets.ts, 3, 13))
+
+f = (x?: number) => { if (x) throw new E1(); }; // ok: same set
+>f : Symbol(f, Decl(checkedExceptionsInferredTargets.ts, 8, 3))
+>x : Symbol(x, Decl(checkedExceptionsInferredTargets.ts, 10, 5))
+>x : Symbol(x, Decl(checkedExceptionsInferredTargets.ts, 10, 5))
+>E1 : Symbol(E1, Decl(checkedExceptionsInferredTargets.ts, 0, 0))
+
+// Same through a function declaration's type.
+function named(x?: number) { if (x) throw new E1(); }
+>named : Symbol(named, Decl(checkedExceptionsInferredTargets.ts, 10, 47))
+>x : Symbol(x, Decl(checkedExceptionsInferredTargets.ts, 13, 15))
+>x : Symbol(x, Decl(checkedExceptionsInferredTargets.ts, 13, 15))
+>E1 : Symbol(E1, Decl(checkedExceptionsInferredTargets.ts, 0, 0))
+
+let h = named;
+>h : Symbol(h, Decl(checkedExceptionsInferredTargets.ts, 14, 3))
+>named : Symbol(named, Decl(checkedExceptionsInferredTargets.ts, 10, 47))
+
+h = throwsE2; // error
+>h : Symbol(h, Decl(checkedExceptionsInferredTargets.ts, 14, 3))
+>throwsE2 : Symbol(throwsE2, Decl(checkedExceptionsInferredTargets.ts, 3, 13))
+
+// An untracked initializer (throws nothing) stays permissive.
+let g = (x?: number) => {};
+>g : Symbol(g, Decl(checkedExceptionsInferredTargets.ts, 18, 3))
+>x : Symbol(x, Decl(checkedExceptionsInferredTargets.ts, 18, 9))
+
+g = throwsE2; // ok
+>g : Symbol(g, Decl(checkedExceptionsInferredTargets.ts, 18, 3))
+>throwsE2 : Symbol(throwsE2, Decl(checkedExceptionsInferredTargets.ts, 3, 13))
+
+// Catch variables demanded while inference is in flight are not pinned to
+// unknown; the precise union is computed once inference completes.
+function outer(): void {
+>outer : Symbol(outer, Decl(checkedExceptionsInferredTargets.ts, 19, 13))
+
+    try {
+        f();
+>f : Symbol(f, Decl(checkedExceptionsInferredTargets.ts, 8, 3))
+
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsInferredTargets.ts, 26, 13))
+
+        const t: "e1" = e.tag;
+>t : Symbol(t, Decl(checkedExceptionsInferredTargets.ts, 27, 13))
+>e.tag : Symbol(E1.tag, Decl(checkedExceptionsInferredTargets.ts, 0, 24))
+>e : Symbol(e, Decl(checkedExceptionsInferredTargets.ts, 26, 13))
+>tag : Symbol(E1.tag, Decl(checkedExceptionsInferredTargets.ts, 0, 24))
+    }
+}
+outer();
+>outer : Symbol(outer, Decl(checkedExceptionsInferredTargets.ts, 19, 13))
+

@@ -16479,7 +16479,12 @@ func (c *Checker) getTypeOfVariableOrParameterOrProperty(symbol *ast.Symbol) *Ty
 		// to preserve this type. In fact, we need to _prefer_ that type, but it won't
 		// be assigned until contextual typing is complete, so we need to defer in
 		// cases where contextual typing may take place.
-		if links.resolvedType == nil && !c.isParameterOfContextSensitiveSignature(symbol) {
+		// Similarly, an unannotated catch variable demanded while a throws-inference
+		// fixpoint is in flight gets the unknown/any fallback (its precise union
+		// would be built from provisional data); don't pin that fallback — the
+		// precise type is computed on the next demand, after inference completes.
+		if links.resolvedType == nil && !c.isParameterOfContextSensitiveSignature(symbol) &&
+			!(c.throwsInference != nil && c.checkedExceptionsEnabled() && symbol.ValueDeclaration != nil && ast.IsCatchClauseVariableDeclarationOrBindingElement(symbol.ValueDeclaration)) {
 			links.resolvedType = t
 		}
 		return t

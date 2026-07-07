@@ -1659,15 +1659,25 @@ func (c *Checker) compareSignatureThrowsRelated(source *Signature, target *Signa
 	if c.compilerOptions.CheckedExceptions != core.CheckedExceptionsModeError {
 		return TernaryTrue
 	}
-	targetThrows := c.getDeclaredThrowsTypeOfSignature(target)
+	// While a throws-inference fixpoint is in flight, inferred throws types are
+	// provisional and relation results are cached permanently, so compare
+	// declared clauses only; no provisional data may poison the cache. Outside
+	// a fixpoint, both sides use declared-or-inferred throws: the target side
+	// matters for mutable bindings whose type came from a throwing initializer —
+	// call sites see the initializer's inferred throws, so assigning a wider
+	// thrower must fail.
+	inferenceInFlight := c.throwsInference != nil
+	var targetThrows *Type
+	if inferenceInFlight {
+		targetThrows = c.getDeclaredThrowsTypeOfSignature(target)
+	} else {
+		targetThrows = c.getThrowsTypeOfSignature(target)
+	}
 	if targetThrows == nil || targetThrows.flags&TypeFlagsAnyOrUnknown != 0 {
 		return TernaryTrue
 	}
 	var sourceThrows *Type
-	if c.throwsInference != nil {
-		// A throws-inference fixpoint is in flight: inferred throws types are
-		// provisional, and relation results are cached permanently. Compare
-		// declared clauses only so no provisional data poisons the cache.
+	if inferenceInFlight {
 		sourceThrows = c.getDeclaredThrowsTypeOfSignature(source)
 	} else {
 		sourceThrows = c.getThrowsTypeOfSignature(source)
