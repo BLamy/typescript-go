@@ -1651,12 +1651,12 @@ func (c *Checker) compareSignaturesRelated(source *Signature, target *Signature,
 // compareSignatureThrowsRelated implements the checked-exceptions part of
 // signature relation: a signature's throws type behaves covariantly, like its
 // return type — a source that may throw more than the target declares is not
-// assignable. Only enforced in "error" mode, since a failed relation surfaces
-// as a hard assignability error. Sources with no throws information (no clause,
-// no body to infer from) are treated permissively, as are targets declaring
-// `throws any`/`throws unknown`.
+// assignable. Enforced in "error" and "strict" modes, since a failed relation
+// surfaces as a hard assignability error. Gradual error mode treats sources
+// with no throws information permissively. Strict mode represents those
+// sources as `throws unknown`, so they cannot flow into a narrower target.
 func (c *Checker) compareSignatureThrowsRelated(source *Signature, target *Signature, reportErrors bool, errorReporter ErrorReporter, compareTypes TypeComparer) Ternary {
-	if c.compilerOptions.CheckedExceptions != core.CheckedExceptionsModeError {
+	if c.compilerOptions.CheckedExceptions < core.CheckedExceptionsModeError {
 		return TernaryTrue
 	}
 	// While a throws-inference fixpoint is in flight, inferred throws types are

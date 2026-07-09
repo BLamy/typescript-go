@@ -189,6 +189,7 @@ var checkedExceptionsOptionMap = collections.NewOrderedMapFromList([]collections
 	{Key: "off", Value: core.CheckedExceptionsModeOff},
 	{Key: "warning", Value: core.CheckedExceptionsModeWarning},
 	{Key: "error", Value: core.CheckedExceptionsModeError},
+	{Key: "strict", Value: core.CheckedExceptionsModeStrict},
 })
 
 var moduleDetectionOptionMap = collections.NewOrderedMapFromList([]collections.MapEntry[string, any]{

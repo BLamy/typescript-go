@@ -50,7 +50,7 @@ loadConfig("boot.json");
 
 const mode = (() => {
     const m = new URLSearchParams(location.search).get("mode");
-    return m === "off" || m === "warning" ? m : "error";
+    return m === "off" || m === "warning" || m === "strict" ? m : "error";
 })();
 
 const modeSelect = document.getElementById("mode");

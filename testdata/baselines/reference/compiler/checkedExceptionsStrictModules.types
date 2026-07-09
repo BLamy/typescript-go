@@ -1,0 +1,16 @@
+//// [tests/cases/compiler/checkedExceptionsStrictModules.ts] ////
+
+=== dependency.ts ===
+export const value = 1;
+>value : 1
+>1 : 1
+
+=== main.ts ===
+// Static module evaluation is an effect boundary. Until modules can publish an
+// initialization effect, strict mode must not silently call an import safe.
+import { value } from "./dependency";
+>value : 1
+
+value;
+>value : 1
+

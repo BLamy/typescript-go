@@ -1,0 +1,126 @@
+checkedExceptionsStrictSoundness.ts(8,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsStrictSoundness.ts(13,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsStrictSoundness.ts(16,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsStrictSoundness.ts(37,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsStrictSoundness.ts(37,5): error TS100027: Callback may throw '"callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
+checkedExceptionsStrictSoundness.ts(47,12): error TS100022: Thrown value of type 'unknown' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsStrictSoundness.ts(57,15): error TS2322: Type 'unknown' is not assignable to type '"tracked"'.
+checkedExceptionsStrictSoundness.ts(65,7): error TS2322: Type 'LegacyCallback' is not assignable to type 'SafeCallback'.
+  The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsStrictSoundness.ts(68,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsStrictSoundness.ts(75,31): error TS100023: The source signature may throw '"assertion"', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsStrictSoundness.ts(81,10): error TS100023: The source signature may throw '"implementation"', but the target's 'throws' clause only permits 'never'.
+
+
+==== checkedExceptionsStrictSoundness.ts (11 errors) ====
+    declare function legacy(): void;
+    declare function tracked(): void throws "tracked";
+    declare function explicitlyUnknown(): void throws unknown;
+    declare function explicitlyAny(): void throws any;
+    
+    // Ambient declarations without throws metadata are unknown, not throw-free.
+    function ambientInNever(): void throws never {
+        legacy();
+        ~~~~~~~~
+!!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    }
+    
+    // Explicit unknown and any effects cannot escape through `throws never`.
+    function unknownInNever(): void throws never {
+        explicitlyUnknown();
+        ~~~~~~~~~~~~~~~~~~~
+!!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    }
+    function anyInNever(): void throws never {
+        explicitlyAny();
+        ~~~~~~~~~~~~~~~
+!!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    }
+    
+    // Unknown effects may be caught or propagated honestly.
+    function catchesLegacy(): void throws never {
+        try {
+            legacy();
+        } catch (e) {
+            const value: unknown = e;
+        }
+    }
+    function propagatesLegacy(): void throws unknown {
+        legacy();
+    }
+    
+    // A missing callback effect makes the higher-order function unknown rather
+    // than silently losing an exception raised by the callback.
+    function invoke(callback: () => void): void {
+        callback();
+    }
+    function higherOrderInNever(): void throws never {
+        invoke(() => { throw "callback"; });
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100027: Callback may throw '"callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
+    }
+    
+    // Structural property access may invoke a getter or Proxy trap.
+    const accessor = {
+        get value(): number {
+            throw "getter";
+        },
+    };
+    function accessorInNever(): number throws never {
+        return accessor.value;
+               ~~~~~~~~~~~~~~
+!!! error TS100022: Thrown value of type 'unknown' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    }
+    
+    // One unknown source poisons catch precision instead of allowing an optimistic
+    // tracked-only type.
+    function mixedCatch(): void throws never {
+        try {
+            tracked();
+            legacy();
+        } catch (e) {
+            const unsound: "tracked" = e;
+                  ~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type '"tracked"'.
+        }
+    }
+    
+    // Function types without a clause describe an unknown effect in strict mode.
+    type LegacyCallback = () => void;
+    type SafeCallback = () => void throws never;
+    declare const legacyCallback: LegacyCallback;
+    const incorrectlyNarrowed: SafeCallback = legacyCallback;
+          ~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'LegacyCallback' is not assignable to type 'SafeCallback'.
+!!! error TS2322:   The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
+    
+    // Unknown effects at top level must be handled.
+    legacy();
+    ~~~~~~~~
+!!! error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+    try { legacy(); } catch {}
+    
+    // Type assertions cannot manufacture a non-throwing callable type.
+    function assertionSource(): void throws "assertion" {
+        throw "assertion";
+    }
+    const assertionErasesEffect = assertionSource as () => void throws never;
+                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100023: The source signature may throw '"assertion"', but the target's 'throws' clause only permits 'never'.
+    function callAssertedFunction(): void throws never {
+        assertionErasesEffect();
+    }
+    
+    // An overload cannot advertise a narrower effect than its implementation.
+    function lyingOverload(): void throws never;
+             ~~~~~~~~~~~~~
+!!! error TS100023: The source signature may throw '"implementation"', but the target's 'throws' clause only permits 'never'.
+    function lyingOverload(): void {
+        throw "implementation";
+    }
+    function callLyingOverload(): void throws never {
+        lyingOverload();
+    }
+    

@@ -1,0 +1,243 @@
+//// [tests/cases/compiler/checkedExceptionsStrictImplicitEffects.ts] ////
+
+=== checkedExceptionsStrictImplicitEffects.ts ===
+// Minimal global required by the explicit-resource-management grammar in this
+// focused baseline; the value below is null, so no member shape is needed.
+interface Disposable {}
+>Disposable : Symbol(Disposable, Decl(checkedExceptionsStrictImplicitEffects.ts, 0, 0))
+
+declare function safe(): void throws never;
+>safe : Symbol(safe, Decl(checkedExceptionsStrictImplicitEffects.ts, 2, 23))
+
+declare function known(): void throws "known";
+>known : Symbol(known, Decl(checkedExceptionsStrictImplicitEffects.ts, 4, 43))
+
+// A precisely declared direct call remains usable in strict code.
+function directSafeCall(): void throws never {
+>directSafeCall : Symbol(directSafeCall, Decl(checkedExceptionsStrictImplicitEffects.ts, 5, 46))
+
+    safe();
+>safe : Symbol(safe, Decl(checkedExceptionsStrictImplicitEffects.ts, 2, 23))
+}
+
+// Existing standard-library declarations have no throws metadata, so strict
+// mode treats them as unknown rather than claiming they are safe.
+function parseJson(): unknown throws never {
+>parseJson : Symbol(parseJson, Decl(checkedExceptionsStrictImplicitEffects.ts, 10, 1))
+
+    return JSON.parse("{");
+>JSON.parse : Symbol(JSON.parse, Decl(lib.es5.d.ts, --, --))
+>JSON : Symbol(JSON, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>parse : Symbol(JSON.parse, Decl(lib.es5.d.ts, --, --))
+}
+
+// Fetching a method may itself invoke a getter or Proxy trap, even when the
+// resolved method signature explicitly promises `throws never`.
+declare const service: {
+>service : Symbol(service, Decl(checkedExceptionsStrictImplicitEffects.ts, 20, 13))
+
+    run(): void throws never;
+>run : Symbol(run, Decl(checkedExceptionsStrictImplicitEffects.ts, 20, 24))
+
+};
+function methodLookup(): void throws never {
+>methodLookup : Symbol(methodLookup, Decl(checkedExceptionsStrictImplicitEffects.ts, 22, 2))
+
+    service.run();
+>service.run : Symbol(run, Decl(checkedExceptionsStrictImplicitEffects.ts, 20, 24))
+>service : Symbol(service, Decl(checkedExceptionsStrictImplicitEffects.ts, 20, 13))
+>run : Symbol(run, Decl(checkedExceptionsStrictImplicitEffects.ts, 20, 24))
+}
+
+declare const keyedService: {
+>keyedService : Symbol(keyedService, Decl(checkedExceptionsStrictImplicitEffects.ts, 27, 13))
+
+    run(): void throws never;
+>run : Symbol(run, Decl(checkedExceptionsStrictImplicitEffects.ts, 27, 29))
+
+};
+function elementLookup(): void throws never {
+>elementLookup : Symbol(elementLookup, Decl(checkedExceptionsStrictImplicitEffects.ts, 29, 2))
+
+    keyedService["run"]();
+>keyedService : Symbol(keyedService, Decl(checkedExceptionsStrictImplicitEffects.ts, 27, 13))
+>"run" : Symbol(run, Decl(checkedExceptionsStrictImplicitEffects.ts, 27, 29))
+}
+
+// Construct signatures without throws metadata are unknown boundaries.
+declare const LegacyConstructor: new () => object;
+>LegacyConstructor : Symbol(LegacyConstructor, Decl(checkedExceptionsStrictImplicitEffects.ts, 35, 13))
+
+function constructLegacy(): object throws never {
+>constructLegacy : Symbol(constructLegacy, Decl(checkedExceptionsStrictImplicitEffects.ts, 35, 50))
+
+    return new LegacyConstructor();
+>LegacyConstructor : Symbol(LegacyConstructor, Decl(checkedExceptionsStrictImplicitEffects.ts, 35, 13))
+}
+
+// An untracked constituent poisons a union call instead of disappearing.
+type KnownFunction = () => void throws "known";
+>KnownFunction : Symbol(KnownFunction, Decl(checkedExceptionsStrictImplicitEffects.ts, 38, 1))
+
+type LegacyFunction = () => void;
+>LegacyFunction : Symbol(LegacyFunction, Decl(checkedExceptionsStrictImplicitEffects.ts, 41, 47))
+
+declare const unionFunction: KnownFunction | LegacyFunction;
+>unionFunction : Symbol(unionFunction, Decl(checkedExceptionsStrictImplicitEffects.ts, 43, 13))
+>KnownFunction : Symbol(KnownFunction, Decl(checkedExceptionsStrictImplicitEffects.ts, 38, 1))
+>LegacyFunction : Symbol(LegacyFunction, Decl(checkedExceptionsStrictImplicitEffects.ts, 41, 47))
+
+function callUnion(): void throws "known" {
+>callUnion : Symbol(callUnion, Decl(checkedExceptionsStrictImplicitEffects.ts, 43, 60))
+
+    unionFunction();
+>unionFunction : Symbol(unionFunction, Decl(checkedExceptionsStrictImplicitEffects.ts, 43, 13))
+}
+
+// The selected legacy overload is unknown.
+declare function overloaded(value: 0): void throws "known";
+>overloaded : Symbol(overloaded, Decl(checkedExceptionsStrictImplicitEffects.ts, 46, 1), Decl(checkedExceptionsStrictImplicitEffects.ts, 49, 59))
+>value : Symbol(value, Decl(checkedExceptionsStrictImplicitEffects.ts, 49, 28))
+
+declare function overloaded(value: number): void;
+>overloaded : Symbol(overloaded, Decl(checkedExceptionsStrictImplicitEffects.ts, 46, 1), Decl(checkedExceptionsStrictImplicitEffects.ts, 49, 59))
+>value : Symbol(value, Decl(checkedExceptionsStrictImplicitEffects.ts, 50, 28))
+
+function callLegacyOverload(): void throws never {
+>callLegacyOverload : Symbol(callLegacyOverload, Decl(checkedExceptionsStrictImplicitEffects.ts, 50, 49))
+
+    overloaded(1);
+>overloaded : Symbol(overloaded, Decl(checkedExceptionsStrictImplicitEffects.ts, 46, 1), Decl(checkedExceptionsStrictImplicitEffects.ts, 49, 59))
+}
+
+// Class evaluation can execute static initializers, computed names, and
+// decorators. It remains unknown until those effects are modeled separately.
+declare function legacy(): void;
+>legacy : Symbol(legacy, Decl(checkedExceptionsStrictImplicitEffects.ts, 53, 1))
+
+function defineClass(): void throws never {
+>defineClass : Symbol(defineClass, Decl(checkedExceptionsStrictImplicitEffects.ts, 57, 32))
+
+    class Local {
+>Local : Symbol(Local, Decl(checkedExceptionsStrictImplicitEffects.ts, 58, 43))
+
+        static value = legacy();
+>value : Symbol(Local.value, Decl(checkedExceptionsStrictImplicitEffects.ts, 59, 17))
+>legacy : Symbol(legacy, Decl(checkedExceptionsStrictImplicitEffects.ts, 53, 1))
+    }
+}
+
+// Catching an unknown standard-library boundary is sound, but the binding must
+// remain unknown.
+function catchJson(): void throws never {
+>catchJson : Symbol(catchJson, Decl(checkedExceptionsStrictImplicitEffects.ts, 62, 1))
+
+    try {
+        JSON.parse("{");
+>JSON.parse : Symbol(JSON.parse, Decl(lib.es5.d.ts, --, --))
+>JSON : Symbol(JSON, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>parse : Symbol(JSON.parse, Decl(lib.es5.d.ts, --, --))
+
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsStrictImplicitEffects.ts, 69, 13))
+
+        const value: unknown = e;
+>value : Symbol(value, Decl(checkedExceptionsStrictImplicitEffects.ts, 70, 13))
+>e : Symbol(e, Decl(checkedExceptionsStrictImplicitEffects.ts, 69, 13))
+    }
+}
+
+// Operators that can perform user coercion fail closed, while strict equality
+// and logical negation remain proven-safe operations.
+declare const dynamicValue: any;
+>dynamicValue : Symbol(dynamicValue, Decl(checkedExceptionsStrictImplicitEffects.ts, 76, 13))
+
+function coercion(): unknown throws never {
+>coercion : Symbol(coercion, Decl(checkedExceptionsStrictImplicitEffects.ts, 76, 32))
+
+    return dynamicValue + 1;
+>dynamicValue : Symbol(dynamicValue, Decl(checkedExceptionsStrictImplicitEffects.ts, 76, 13))
+}
+function unaryCoercion(): number throws never {
+>unaryCoercion : Symbol(unaryCoercion, Decl(checkedExceptionsStrictImplicitEffects.ts, 79, 1))
+
+    return +dynamicValue;
+>dynamicValue : Symbol(dynamicValue, Decl(checkedExceptionsStrictImplicitEffects.ts, 76, 13))
+}
+function safePredicates(value: unknown): boolean throws never {
+>safePredicates : Symbol(safePredicates, Decl(checkedExceptionsStrictImplicitEffects.ts, 82, 1))
+>value : Symbol(value, Decl(checkedExceptionsStrictImplicitEffects.ts, 83, 24))
+
+    return !(value === null);
+>value : Symbol(value, Decl(checkedExceptionsStrictImplicitEffects.ts, 83, 24))
+}
+
+// Iteration, spreading, tagged templates, and parameter destructuring all
+// execute protocol hooks or property reads that can throw.
+declare const iterable: Iterable<number>;
+>iterable : Symbol(iterable, Decl(checkedExceptionsStrictImplicitEffects.ts, 89, 13))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+
+function spreadIterable(): number[] throws never {
+>spreadIterable : Symbol(spreadIterable, Decl(checkedExceptionsStrictImplicitEffects.ts, 89, 41))
+
+    return [...iterable];
+>iterable : Symbol(iterable, Decl(checkedExceptionsStrictImplicitEffects.ts, 89, 13))
+}
+function iterate(): void throws never {
+>iterate : Symbol(iterate, Decl(checkedExceptionsStrictImplicitEffects.ts, 92, 1))
+
+    for (const value of iterable) {
+>value : Symbol(value, Decl(checkedExceptionsStrictImplicitEffects.ts, 94, 14))
+>iterable : Symbol(iterable, Decl(checkedExceptionsStrictImplicitEffects.ts, 89, 13))
+
+        safe();
+>safe : Symbol(safe, Decl(checkedExceptionsStrictImplicitEffects.ts, 2, 23))
+    }
+}
+
+declare const tag: (parts: TemplateStringsArray) => string throws never;
+>tag : Symbol(tag, Decl(checkedExceptionsStrictImplicitEffects.ts, 99, 13))
+>parts : Symbol(parts, Decl(checkedExceptionsStrictImplicitEffects.ts, 99, 20))
+>TemplateStringsArray : Symbol(TemplateStringsArray, Decl(lib.es5.d.ts, --, --))
+
+function taggedTemplate(): string throws never {
+>taggedTemplate : Symbol(taggedTemplate, Decl(checkedExceptionsStrictImplicitEffects.ts, 99, 72))
+
+    return tag`value`;
+>tag : Symbol(tag, Decl(checkedExceptionsStrictImplicitEffects.ts, 99, 13))
+}
+
+function destructuredParameter({ value }: { value: number }): void throws never {
+>destructuredParameter : Symbol(destructuredParameter, Decl(checkedExceptionsStrictImplicitEffects.ts, 102, 1))
+>value : Symbol(value, Decl(checkedExceptionsStrictImplicitEffects.ts, 104, 32))
+>value : Symbol(value, Decl(checkedExceptionsStrictImplicitEffects.ts, 104, 43))
+
+    safe();
+>safe : Symbol(safe, Decl(checkedExceptionsStrictImplicitEffects.ts, 2, 23))
+}
+
+// Explicit resource management invokes a disposal hook at scope exit.
+function disposalAtScopeExit(): void throws never {
+>disposalAtScopeExit : Symbol(disposalAtScopeExit, Decl(checkedExceptionsStrictImplicitEffects.ts, 106, 1))
+
+    using resource = null;
+>resource : Symbol(resource, Decl(checkedExceptionsStrictImplicitEffects.ts, 110, 9))
+}
+
+declare const destructuringSource: { value: number };
+>destructuringSource : Symbol(destructuringSource, Decl(checkedExceptionsStrictImplicitEffects.ts, 113, 13))
+>value : Symbol(value, Decl(checkedExceptionsStrictImplicitEffects.ts, 113, 36))
+
+let assignedValue: number;
+>assignedValue : Symbol(assignedValue, Decl(checkedExceptionsStrictImplicitEffects.ts, 114, 3))
+
+function destructuringAssignment(): void throws never {
+>destructuringAssignment : Symbol(destructuringAssignment, Decl(checkedExceptionsStrictImplicitEffects.ts, 114, 26))
+
+    ({ value: assignedValue } = destructuringSource);
+>value : Symbol(value, Decl(checkedExceptionsStrictImplicitEffects.ts, 116, 6))
+>assignedValue : Symbol(assignedValue, Decl(checkedExceptionsStrictImplicitEffects.ts, 114, 3))
+>destructuringSource : Symbol(destructuringSource, Decl(checkedExceptionsStrictImplicitEffects.ts, 113, 13))
+}
+

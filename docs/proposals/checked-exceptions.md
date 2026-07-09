@@ -3,7 +3,7 @@
 - **Status:** Draft / Request for Comments
 - **Champion:** _(unassigned)_
 - **Target:** TypeScript language + `tsc` (including the native Go port, `typescript-go`)
-- **Feature flag:** `checkedExceptions` (`"off" | "warning" | "error"`, default `"off"`)
+- **Feature flag:** `checkedExceptions` (`"off" | "warning" | "error" | "strict"`, default `"off"`)
 
 ---
 
@@ -21,8 +21,8 @@ declare the error types it can raise with a Java-inspired `throws` clause, and
 the checker enforces that every such error is either **handled** (caught and
 narrowed) or **propagated** (re-declared on the caller). The enforcement is
 gated behind a single compiler option, `checkedExceptions`, whose value —
-`"off"`, `"warning"`, or `"error"` — lets teams adopt it as a no-op, a lint, or
-a hard build gate.
+`"off"`, `"warning"`, `"error"`, or `"strict"` — lets teams adopt it as a
+no-op, a lint, a gradual hard build gate, or a fail-closed effect system.
 
 The design goal is to bring the *safety* of [Effect.ts](https://effect.website/)'s
 typed error channel to *idiomatic* TypeScript — using ordinary `throw` / `try` /
@@ -95,11 +95,40 @@ there.
 3. **Idiomatic.** Uses `throw` / `try` / `catch`. No new runtime, no monad, no
    boxing. **Zero emit impact** — throws clauses are erased like type
    annotations.
-4. **Structural, inferred, and sound-leaning.** Consistent with TypeScript:
-   error sets are inferred where possible and behave structurally, not
-   nominally.
-5. **One knob.** A single option with three severities, mirroring how the
-   ecosystem already reasons about `off` / `warn` / `error`.
+4. **Structural, inferred, and honest at boundaries.** Consistent with
+   TypeScript, error sets are inferred where possible and behave structurally.
+   Strict mode represents missing information as `unknown`; it never treats an
+   unannotated external boundary as proof that no exception is possible.
+5. **Gradual and strict are distinct contracts.** Warning/error modes preserve
+   incremental adoption. Strict mode deliberately trades precision for the
+   guarantee that no untracked exception is silently omitted.
+
+### 3.1 What “sound” means here
+
+The strict claim is an **effect-soundness** claim, not a claim that TypeScript
+becomes a fully sound runtime type system. For a program accepted without
+diagnostic suppression, every modeled catchable abrupt completion caused by
+executing checked TypeScript is either:
+
+1. discharged by a control-flow boundary that can actually observe it,
+2. included in the function or promise rejection effect exposed to its caller,
+   or
+3. rejected at an escaping boundary, such as a potentially retained callback.
+
+As with all foreign-function interfaces, explicit declaration clauses are
+trusted contracts. An ambient function declared `throws never` while its native
+implementation throws is a lying declaration, just as an ambient function
+declared to return `string` while returning a number lies to today's checker.
+Missing ambient metadata is never trusted in strict mode: it becomes
+`throws unknown`. Diagnostic suppression, unchecked generated JavaScript,
+runtime code mutation, and resource-exhaustion/engine termination are outside
+the claim. Callable type assertions are not allowed to narrow an effect.
+
+This boundary is essential: a useful TypeScript feature can soundly track
+effects relative to checked source and trusted declarations, but it cannot
+prove arbitrary native code, monkey-patched runtime state, or ignored
+diagnostics. The testable invariant is therefore **no silent effect loss across
+an untrusted or dynamically executable boundary**.
 
 ## 4. Syntax
 
@@ -207,6 +236,36 @@ const nums = ["1", "2"].map(s => parseStrict(s)); // throws whatever parseStrict
 (`forEach`, `filter`, `then`, event handlers, etc.) from becoming adoption
 blockers. See §8.2.
 
+### 4.5 Runtime-filtered `catch match`
+
+The TC39 pattern-matching proposal sketches conditional catch clauses whose
+unmatched exceptions are rethrown automatically:
+
+```ts
+try {
+  loadConfig();
+} catch match (e) {
+  when IOError: recoverIO(e);
+  when { code: "E_PARSE" }: recoverParse(e);
+  // Anything not matched continues outward.
+}
+```
+
+This is stronger than a type annotation on `catch`: each arm performs a runtime
+test before TypeScript narrows the binding. If the try block has effect `E` and
+the patterns are proven to cover `H`, the catch body discharges `H` and the
+residual effect `Exclude<E, H>` is rethrown. An exhaustive wildcard/default arm
+discharges the whole set. When `E` is `unknown`, finite patterns cannot make the
+catch exhaustive; only an explicit wildcard/default arm can discharge the
+unknown remainder.
+
+Pattern evaluation is itself effectful. Structural patterns may invoke getters,
+iterators, Proxy traps, or custom matchers; the TC39 proposal specifies that an
+exception thrown by a custom matcher propagates. Strict mode therefore adds the
+pattern's own effect to the surrounding function rather than pretending the
+filter is pure. This integration remains gated on the TC39 syntax, which is
+currently a possible future enhancement rather than settled ECMAScript syntax.
+
 ## 5. Type-system semantics
 
 ### 5.1 Error sets are part of the call signature
@@ -286,6 +345,21 @@ Rules:
 - A floating promise (not `await`ed, not `.catch`ed) with a non-`never` tracked
   rejection is reported under the same option — this subsumes and strengthens
   the existing `no-floating-promises` lint at the type level.
+- A synchronous `try/catch` around a promise-producing call does not discharge
+  its rejection effect. In the strict reference implementation, a call whose
+  resolved return type is promise-like must currently be immediately `await`ed
+  or directly returned. This deliberately rejects more complex promise chains
+  until their rejection transformations can be represented precisely.
+- Directly returning a promise propagates the callee's rejection effect through
+  the enclosing function's clause. An immediate `await` transfers that effect
+  into the surrounding synchronous control-flow position, where an enclosing
+  `catch` can discharge it.
+- Callback effects require an invocation-timing contract. A callback retained
+  for an event or timer may throw after both the caller's `try/catch` and its
+  `throws` boundary have disappeared. Until `rethrows` distinguishes proven
+  synchronous invocation from an escaping callback, strict mode requires a
+  function-valued argument with a non-`never` effect to handle that effect
+  inside the callback itself. A surrounding synchronous catch is not proof.
 
 To represent a promise's rejection type in the structural type system, we extend
 the `Promise<T>` relationship with an optional second tracked slot; see §10.2
@@ -358,6 +432,7 @@ must not spuriously break builds. The resolution:
 | Local function with a visible body | **Inferred** from the body (§6.1). |
 | Ambient / `.d.ts` / no visible body, `checkedExceptions` off | Ignored. |
 | Ambient / `.d.ts` / no visible body, warning or error | Treated as `throws unknown` **only when its result is used in a checked context**, and reported at a distinct, separately-suppressible diagnostic (§7.3), so legacy typings degrade to a warning rather than a hard failure. |
+| Ambient / `.d.ts` / no visible body, strict | Always `throws unknown`; callers must catch it or propagate `unknown`. |
 
 A future `@throws` JSDoc tag and a `lib` upgrade (§10.2) let ambient
 declarations opt into precise sets over time.
@@ -370,7 +445,7 @@ declarations opt into precise sets over time.
 // tsconfig.json
 {
   "compilerOptions": {
-    "checkedExceptions": "error" // "off" (default) | "warning" | "error"
+    "checkedExceptions": "strict" // "off" | "warning" | "error" | "strict"
   }
 }
 ```
@@ -382,12 +457,15 @@ declarations opt into precise sets over time.
   `CategoryWarning`. Ideal for incremental adoption in an existing codebase:
   surfaces the problem without blocking CI.
 - **`"error"`** — reported at `CategoryError`; unhandled errors fail the build,
-  giving Java-style hard enforcement.
+  giving hard enforcement for the errors the gradual analysis tracks.
+- **`"strict"`** — fail closed. Missing declaration information, explicit
+  `throws any`, structural property effects that cannot yet be proven safe, and
+  other unclassified boundaries contribute `unknown`. Unknown effects must be
+  caught or propagated and poison optimistic catch narrowing.
 
-The tri-state maps directly onto the compiler's existing diagnostic categories
-(`CategoryWarning` / `CategoryError` in `internal/diagnostics/diagnostics.go`),
-so no new severity infrastructure is needed — the same diagnostic is emitted at
-the category selected by the option.
+The four modes reuse the compiler's existing diagnostic categories
+(`CategoryWarning` / `CategoryError` in `internal/diagnostics/diagnostics.go`).
+Strict changes the analysis contract, not the diagnostic infrastructure.
 
 A matching CLI flag (`--checkedExceptions error`) and a `strict`-family
 consideration are discussed in §10.1. Note it is intentionally **not** folded
@@ -409,16 +487,16 @@ into `strict` by default, to avoid breaking every strict codebase on upgrade.
 
 - **TSxxx4: "'{0}' comes from a declaration without throws information and is
   treated as possibly-throwing."** — the legacy-typings escape hatch from §6.4.
-  Emitted at warning severity even in `"error"` mode unless the stricter
-  `checkedExceptionsStrictLegacy` sub-option is set. This is what prevents the
-  Java "the whole ecosystem breaks at once" failure.
+  Emitted at warning severity in gradual modes. In `"strict"`, the boundary is
+  already the enforced `unknown` top effect, so no companion sub-option is
+  needed. This keeps ecosystem migration separate from the soundness contract.
 
 ### 7.4 Suppression & escape hatches
 
 - `throws unknown` (or `throws any`) on a function explicitly opts it out of
-  precise tracking — it becomes a "throws anything" boundary and its callers are
-  never forced to handle a specific type (they may `catch (e: unknown)` as
-  today). This is the deliberate "I give up on precision here" marker.
+  *precise* tracking. Gradual modes preserve the legacy escape-hatch behavior.
+  Strict mode normalizes both to the top `unknown` effect, which callers must
+  catch or propagate; giving up on precision never means claiming safety.
 - A `try { ... } catch (e: unknown) { /* swallow */ }` with an intentionally
   wide binding fully discharges everything, matching current semantics.
 - Line-level `// @ts-expect-error` / directive suppression works as with any
@@ -518,11 +596,10 @@ future `Effect.tryPromise`/`Effect.try` overload (or a codemod) can infer the
 
 ### 10.1 Compiler-option placement
 
-- Ship as a standalone `checkedExceptions` tri-state, **not** in `strict`, for at
+- Ship as a standalone four-mode `checkedExceptions` option, **not** folded into
+  TypeScript's existing `strict` boolean, for at
   least one major version, so `strict: true` upgrades don't break.
 - Provide `--checkedExceptions` on the CLI, matching the JSON option.
-- Optionally add a companion `checkedExceptionsStrictLegacy: boolean` (§7.3) for
-  teams that want to forbid the legacy-typings degradation.
 
 ### 10.2 `lib.d.ts` and ecosystem typings
 
@@ -586,7 +663,7 @@ a committed plan.
      `CategoryWarning` / `CategoryError`.
 
 4. **Options** (`internal/core/compileroptions.go`, `internal/tsoptions`)
-   - Add `CheckedExceptions` as a string/enum tri-state option with parsing,
+   - Add `CheckedExceptions` as a string/enum four-mode option with parsing,
      defaulting to `off`; wire the CLI flag and `tsconfig` key alongside the
      existing strict-family declarations in `declscompiler.go`.
 
@@ -595,6 +672,48 @@ a committed plan.
    - Serialize resolved throws sets into `.d.ts`.
    - Surface the error set on hover; add quick-fixes: "add `throws` clause",
      "surround with try/catch", "add missing catch case".
+
+6. **Strict effect boundary** (`internal/checker/checkedexceptions.go`)
+   - Normalize `any` effects and missing declaration metadata to `unknown`.
+   - Make unions, overload selection, construction, property/proxy access,
+     coercion, iteration, disposal, decorators/JSX, and inference cycles fail
+     closed whenever the checker lacks a precise clause.
+   - Prevent assignments and callable assertions from narrowing the throws set.
+   - Maintain an adversarial baseline for every dynamic execution door; adding
+     an ECMAScript operation requires classifying its abrupt completions.
+
+7. **Async and callback timing**
+   - Carry a hidden rejection effect from an async signature to immediate
+     `await`, and reject floating promise effects. A synchronous catch around a
+     promise-producing call never discharges the rejection.
+   - Add invocation timing to callback parameters: `rethrows` means proven
+     synchronous/non-escaping invocation; an escaping/event callback must
+     handle its own throws and rejection effects. Missing timing metadata is
+     escaping in strict mode.
+   - Update `Promise.then`/`catch`/`finally`, timers, event targets, Node-style
+     callbacks, and iterator callbacks only after each declaration states how
+     callback effects transform.
+
+8. **Pattern-matching catch integration** (gated on TC39 syntax)
+   - Parse `catch match` only behind an experimental syntax flag while the
+     proposal remains unsettled; keep ordinary `catch` unchanged.
+   - Reuse the pattern proposal's runtime matcher and control-flow narrowing for
+     each arm. Compute the handled type `H`, propagate `Exclude<E, H>` on the
+     implicit unmatched rethrow, and add matcher evaluation's own effect.
+   - Require a wildcard/default arm to discharge `unknown`; finite structural
+     patterns never prove an unknown set exhaustive.
+   - Test arm order, guards, custom matchers that throw, getter/proxy effects,
+     unmatched rethrow, `finally` override, async `await`, and declaration emit.
+
+9. **Proof and rollout**
+   - Run parser/emitter baselines, relation tests, adversarial effect-door tests,
+     cold full-suite builds, and browser playground cases for all four modes.
+   - Fuzz nested `try`/`catch`/`finally`, recursive call graphs, overloads,
+     unions, assertions, async chains, and match arms. A strict-mode crash,
+     missing diagnostic, or effect-narrowing path is a release blocker.
+   - Ship gradual modes first. Keep strict explicitly experimental until the
+     standard library annotations and callback timing contracts cover a useful
+     ecosystem slice; never silently weaken `unknown` to gain compatibility.
 
 ## 12. Reference implementation (this repository)
 
@@ -607,8 +726,8 @@ is implemented, and where it deliberately narrows the full design:
   and object-literal methods, interface method signatures, and function type
   nodes; `throws` is a contextual keyword recognized only on the same line as
   the preceding token, so existing members named `throws` keep parsing.
-- The `checkedExceptions` option (`"off" | "warning" | "error"`), wired through
-  tsconfig, the CLI, and build info; diagnostics TS100021–TS100025 are emitted
+- The `checkedExceptions` option (`"off" | "warning" | "error" | "strict"`), wired through
+  tsconfig, the CLI, and build info; diagnostics TS100021–TS100027 are emitted
   at the corresponding category.
 - Handle-or-declare enforcement (§4.3), including top-level code, with
   raises in `catch`/`finally` blocks correctly not discharged by their own
@@ -625,32 +744,63 @@ is implemented, and where it deliberately narrows the full design:
   any`/`throws unknown` escape hatch (§7.4).
 - Type parameters are in scope in the clause (`throws T` on generics), and the
   clause instantiates with the signature.
+- Strict mode treats ambient/legacy declarations without clauses as `unknown`,
+  normalizes `throws any` to `unknown`, includes unknown effects in enforcement
+  and catch typing, prevents callable assertions from erasing effects, checks
+  overload implementations, and conservatively treats unresolved structural
+  property access, construction, class/module evaluation, coercion, iteration,
+  destructuring, disposal, JSX, and decorators as unknown effects.
+- Strict async checks distinguish immediate `await`, direct promise propagation,
+  floating rejections, and callbacks that may escape the caller's control-flow
+  boundary.
 
 **Deliberate narrowings (future work)**
 
-- `rethrows` (§4.4) is not implemented; higher-order callees remain untracked.
-- Typed `catch` requires `"warning"` or `"error"`. With `"off"`, program types
+- `rethrows` (§4.4) syntax is not implemented. Strict mode still fails closed
+  for an unannotated callback parameter and infers `unknown` for wrappers whose
+  callback effect cannot be expressed, but it cannot yet preserve a precise
+  callback-dependent effect. Function-valued arguments that may throw are
+  rejected as potentially escaping; this is sound but intentionally rejects
+  synchronous combinators until they can declare the timing contract.
+- The reference implementation's escaping-callback check currently recognizes
+  directly function-valued arguments. A production soundness claim requires a
+  parameter-level escape contract that composes through option objects,
+  collections, index signatures, and other nested capabilities. Until that
+  contract lands, this branch is a fail-closed kernel and adversarial prototype,
+  not a formal proof for arbitrary native/FFI callback APIs.
+- Typed `catch` requires `"warning"`, `"error"`, or `"strict"`. With `"off"`, program types
   are byte-for-byte what they are today; the proposal's "typed catch in the
   editor even when off" would change types under a no-diagnostics setting.
-- The assignability rule runs only in `"error"` mode: a failed relation is a
-  hard type error, which would violate `"warning"` semantics.
-- Constructors, accessors, static blocks, class field initializers, tagged
-  templates, and JSX are untracked call/raise positions.
-- Overload signatures are not checked for consistency with their
-  implementation's clause; call sites use the resolved overload's clause.
-- The §7.3 legacy-degradation diagnostic (TSxxx4) is not implemented; ambient
-  declarations without clauses are simply untracked (permissive), matching
-  §6.4's "off" row.
+- The assignability rule runs in `"error"` and `"strict"` modes: a failed
+  relation is a hard type error, which would violate `"warning"` semantics.
+- In warning/error modes, constructors, accessors, static blocks, class field
+  initializers, tagged templates, and JSX retain the gradual implementation's
+  narrow tracking. Strict mode does not call these safe: unresolved execution
+  sites contribute `unknown` until the checker can recover a precise effect.
+- Static imports are currently rejected as `unknown` module-initialization
+  effects. A practical multi-module strict mode needs declaration emit and
+  package metadata for module initialization effects before this can become
+  precise.
+- The §7.3 gradual legacy-degradation diagnostic (TSxxx4) is not implemented;
+  warning/error modes still treat ambient declarations without clauses
+  permissively. Strict mode does not depend on that diagnostic and represents
+  every such boundary as `unknown`.
 - *Construct* signatures and constructor types do not accept a clause yet
   (standalone function types, and call signatures in interfaces and type
-  literals, do).
+  literals, do). Strict mode consequently treats construction through those
+  signatures as `unknown`, rather than `never`.
 - `throws this` is not instantiated at call sites; the clause resolves to the
   declaring class's `this` type.
-- Typed `catch` is optimistic: it reflects the *tracked* error channel only.
+- In warning/error modes, typed `catch` is optimistic: it reflects the
+  *tracked* error channel only.
   Untracked exceptions — runtime errors from getters/proxies/host operations,
   and calls to untracked functions — do not widen the catch variable. This is
   the same pragmatic stance Java takes with unchecked exceptions; annotate
   `catch (e: unknown)` to opt out per-site.
+- `catch match`/`catch (e is pattern)` is specified as a sound future
+  integration, but parser, emitter, and control-flow support are not yet
+  implemented because TC39 currently lists catch integration as a possible
+  future enhancement.
 - Throws *inference* treats a rethrown catch variable as the catch clause's
   full union rather than its flow-narrowed type (enforcement against explicit
   clauses uses the precise narrowed type). An unannotated function that
@@ -708,5 +858,4 @@ clause position, so no identifier named `throws` is broken.
 
 | Option | Type | Default | Effect |
 |---|---|---|---|
-| `checkedExceptions` | `"off" \| "warning" \| "error"` | `"off"` | Severity of unhandled/undeclared tracked errors. |
-| `checkedExceptionsStrictLegacy` | `boolean` | `false` | Escalate the "declaration without throws info" degradation (TSxxx4) to full severity instead of warning. |
+| `checkedExceptions` | `"off" \| "warning" \| "error" \| "strict"` | `"off"` | Gradual severity or fail-closed strict exception effects. |

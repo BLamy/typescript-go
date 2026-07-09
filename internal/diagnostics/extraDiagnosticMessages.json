@@ -154,5 +154,13 @@
     "Thrown value of type '{0}' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.": {
         "category": "Error",
         "code": 100025
+    },
+    "Promise-returning call may reject with '{0}'. A synchronous try/catch does not handle that rejection; await or return the promise.": {
+        "category": "Error",
+        "code": 100026
+    },
+    "Callback may throw '{0}' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.": {
+        "category": "Error",
+        "code": 100027
     }
 }

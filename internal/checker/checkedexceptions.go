@@ -9,7 +9,7 @@ import (
 // Checked exceptions (`checkedExceptions` compiler option).
 //
 // A function may declare the errors it can throw with a `throws T` clause. When
-// the option is set to "warning" or "error", the checker enforces that every
+// the option is set to "warning", "error", or "strict", the checker enforces that every
 // tracked error raised in a body — a `throw` statement, or a call to a function
 // whose signature declares (or, for unannotated functions with visible bodies,
 // infers) a throws type — is either caught by an enclosing `try` statement with
@@ -23,11 +23,13 @@ import (
 //   - A function without a clause: raises silently propagate; its throws type is
 //     inferred from its body and surfaces at *its* call sites instead.
 //   - Top level: every raise must be caught.
-//   - A callee that declares `throws any` or `throws unknown` opts out of
-//     enforcement at its call sites (the escape hatch for imprecise code), but
-//     still contributes to `catch` variable types.
-//   - Constructors, accessors, static blocks, and class field initializers are
-//     not tracked in this initial implementation.
+//   - In gradual warning/error modes, a callee that declares `throws any` or
+//     `throws unknown` opts out of enforcement at its call sites. In strict
+//     mode both are the top effect and must be caught or propagated.
+//   - Gradual modes preserve the initial implementation's narrow tracking.
+//     Strict mode fails closed for dynamic property access, construction, class
+//     evaluation, coercion/iteration, binding patterns, and other implicit
+//     operations that can execute user or host code without a precise clause.
 //
 // The option also types `catch` variables: an unannotated catch binding's type
 // becomes the union of the error types the `try` block can raise, when that set
@@ -35,6 +37,20 @@ import (
 
 func (c *Checker) checkedExceptionsEnabled() bool {
 	return c.compilerOptions.CheckedExceptions >= core.CheckedExceptionsModeWarning
+}
+
+func (c *Checker) checkedExceptionsStrict() bool {
+	return c.compilerOptions.CheckedExceptions >= core.CheckedExceptionsModeStrict
+}
+
+// normalizeThrowsType turns TypeScript's unsound `any` top type into the
+// honest `unknown` top effect in strict mode. Outside strict mode it preserves
+// the gradual implementation's existing escape-hatch behavior.
+func (c *Checker) normalizeThrowsType(t *Type) *Type {
+	if c.checkedExceptionsStrict() && t != nil && t.flags&TypeFlagsAny != 0 {
+		return c.unknownType
+	}
+	return t
 }
 
 // errorCheckedExceptions reports a checked-exceptions diagnostic at the category
@@ -113,13 +129,24 @@ func (c *Checker) getThrowsTypeOfSignatureWorker(sig *Signature, includeInferred
 	}
 	decl := sig.declaration
 	if decl == nil {
+		if c.checkedExceptionsStrict() {
+			// Synthetic/native signatures without a source declaration are another
+			// unknown boundary. Absence of syntax is not evidence of purity.
+			return c.unknownType
+		}
 		return nil
 	}
 	if clause := throwsClauseNode(decl); clause != nil {
-		return c.getTypeFromTypeNode(clause)
+		return c.normalizeThrowsType(c.getTypeFromTypeNode(clause))
 	}
 	if includeInferred && c.checkedExceptionsEnabled() && canInferThrows(decl) {
 		return c.getInferredThrowsTypeOfFunction(decl)
+	}
+	if c.checkedExceptionsStrict() && !canInferThrows(decl) {
+		// An ambient/declaration-only signature without a clause is an unknown
+		// boundary. DefinitelyTyped and legacy lib declarations therefore remain
+		// usable without pretending that they cannot throw.
+		return c.unknownType
 	}
 	return nil
 }
@@ -170,15 +197,25 @@ func (c *Checker) getInferredThrowsTypeOfFunction(decl *ast.Node) *Type {
 	// construction, ...) cannot leave the checker stuck in the in-flight state.
 	defer func() { c.throwsInference = nil }()
 	var result *Type
+	converged := false
 	// Raise sets grow monotonically, so this terminates; the cap is a backstop
-	// against pathological cycle shapes, accepting the partial result instead
-	// of iterating further.
+	// against pathological cycle shapes.
 	for range 100 {
 		state.changed = false
 		clear(state.computed)
 		result = c.inferThrowsWorker(decl, state)
 		if !state.changed {
+			converged = true
 			break
+		}
+	}
+	if !converged && c.checkedExceptionsStrict() {
+		// The cap is only a termination guard, never permission to publish an
+		// incomplete effect. A graph that does not stabilize becomes the honest
+		// top effect in strict mode.
+		result = c.unknownType
+		for d := range state.provisional {
+			state.provisional[d] = c.unknownType
 		}
 	}
 	for d, t := range state.provisional {
@@ -191,6 +228,7 @@ func (c *Checker) inferThrowsWorker(decl *ast.Node, state *throwsInferenceState)
 	state.inProgress[decl] = true
 	var raised []*Type
 	for _, parameter := range decl.Parameters() {
+		raised = append(raised, c.collectRaisedTypes(parameter.Name())...)
 		raised = append(raised, c.collectRaisedTypes(parameter.Initializer())...)
 	}
 	raised = append(raised, c.collectRaisedTypes(decl.Body())...)
@@ -211,7 +249,190 @@ func (c *Checker) inferThrowsWorker(decl *ast.Node, state *throwsInferenceState)
 // expression's resolved signature, or nil when the callee is untracked.
 func (c *Checker) getThrowsTypeOfCall(node *ast.Node) *Type {
 	signature := c.getResolvedSignature(node, nil /*candidatesOutArray*/, CheckModeNormal)
-	return c.getThrowsTypeOfSignature(signature)
+	throwsType := c.getThrowsTypeOfSignature(signature)
+	if c.checkedExceptionsStrict() {
+		target := node.Expression()
+		if target != nil && (target.Kind == ast.KindPropertyAccessExpression || target.Kind == ast.KindElementAccessExpression) {
+			// Resolving a method value can invoke a getter or Proxy trap before the
+			// resolved signature is called. Until property effects are represented,
+			// the complete call effect is unknown even when the method signature has
+			// a precise clause.
+			return c.unknownType
+		}
+	}
+	return throwsType
+}
+
+func isCallTargetPropertyAccess(node *ast.Node) bool {
+	parent := node.Parent
+	return parent != nil &&
+		(parent.Kind == ast.KindCallExpression || parent.Kind == ast.KindNewExpression || parent.Kind == ast.KindTaggedTemplateExpression) &&
+		parent.Expression() == node
+}
+
+func isAwaitedCall(node *ast.Node) bool {
+	return node.Parent != nil && node.Parent.Kind == ast.KindAwaitExpression
+}
+
+func isDirectlyReturnedCall(node *ast.Node) bool {
+	return node.Parent != nil && node.Parent.Kind == ast.KindReturnStatement && node.Parent.Expression() == node
+}
+
+func (c *Checker) callReturnsPromise(node *ast.Node) bool {
+	signature := c.getResolvedSignature(node, nil /*candidatesOutArray*/, CheckModeNormal)
+	return signature != nil && c.getAwaitedTypeOfPromise(c.getReturnTypeOfSignature(signature)) != nil
+}
+
+func (c *Checker) getThrowsTypeOfAwait(node *ast.Node) *Type {
+	expression := node.Expression()
+	if expression != nil && expression.Kind == ast.KindCallExpression {
+		return c.getThrowsTypeOfCall(expression)
+	}
+	return c.unknownType
+}
+
+// getEscapingCallbackThrowsType returns the effect of function-valued
+// arguments. Without a call-site contract that proves synchronous invocation,
+// a callee may retain and invoke a callback after the caller's try/catch and
+// throws boundary no longer exists. Strict mode therefore requires such a
+// callback to handle its own effect until `rethrows`/callback timing contracts
+// are represented in signatures.
+func (c *Checker) getEscapingCallbackThrowsType(node *ast.Node) *Type {
+	var callbackEffects []*Type
+	for _, argument := range node.Arguments() {
+		argumentType := c.getTypeOfExpression(argument)
+		for _, signature := range c.getSignaturesOfType(argumentType, SignatureKindCall) {
+			if effect := c.getThrowsTypeOfSignature(signature); effect != nil && effect.flags&TypeFlagsNever == 0 {
+				callbackEffects = append(callbackEffects, c.normalizeThrowsType(effect))
+			}
+		}
+	}
+	if len(callbackEffects) == 0 {
+		return nil
+	}
+	return c.getUnionType(callbackEffects)
+}
+
+func (c *Checker) getCombinedCallThrowsType(t *Type, unknownWhenNotCallable bool) *Type {
+	signatures := c.getSignaturesOfType(t, SignatureKindCall)
+	if len(signatures) == 0 {
+		if unknownWhenNotCallable {
+			return c.unknownType
+		}
+		return nil
+	}
+	var effects []*Type
+	for _, signature := range signatures {
+		if effect := c.getThrowsTypeOfSignature(signature); effect != nil {
+			effects = append(effects, c.normalizeThrowsType(effect))
+		}
+	}
+	if len(effects) == 0 {
+		return c.neverType
+	}
+	return c.getUnionType(effects)
+}
+
+// checkStrictAssertionEffects prevents a type assertion from erasing the
+// effect of a callable value. Assertions remain TypeScript escape hatches for
+// value shapes, but `unknown as (() => void throws never)` cannot manufacture
+// a proof that invoking unknown code is non-throwing.
+func (c *Checker) checkStrictAssertionEffects(node *ast.Node) {
+	targetType := c.getTypeFromTypeNode(node.Type())
+	targetEffect := c.getCombinedCallThrowsType(targetType, false)
+	if targetEffect == nil {
+		return
+	}
+	sourceType := c.getTypeOfExpression(node.Expression())
+	sourceEffect := c.getCombinedCallThrowsType(sourceType, true)
+	if !c.isTypeAssignableTo(sourceEffect, targetEffect) {
+		c.errorCheckedExceptions(node, diagnostics.The_source_signature_may_throw_0_but_the_target_s_throws_clause_only_permits_1, c.TypeToString(sourceEffect), c.TypeToString(targetEffect))
+	}
+}
+
+func (c *Checker) checkStrictOverloadEffects(implementation *ast.Node) {
+	if implementation.Body() == nil {
+		return
+	}
+	symbol := c.getSymbolOfDeclaration(implementation)
+	if symbol == nil {
+		return
+	}
+	implementationEffect := c.getThrowsTypeOfSignature(c.getSignatureFromDeclaration(implementation))
+	if implementationEffect == nil {
+		implementationEffect = c.neverType
+	}
+	implementationEffect = c.normalizeThrowsType(implementationEffect)
+	for _, overload := range c.getSignaturesOfSymbol(symbol) {
+		if overload.declaration == nil || overload.declaration == implementation {
+			continue
+		}
+		overloadEffect := c.getThrowsTypeOfSignature(overload)
+		if overloadEffect == nil {
+			overloadEffect = c.neverType
+		}
+		overloadEffect = c.normalizeThrowsType(overloadEffect)
+		if !c.isTypeAssignableTo(implementationEffect, overloadEffect) {
+			c.errorCheckedExceptions(overload.declaration, diagnostics.The_source_signature_may_throw_0_but_the_target_s_throws_clause_only_permits_1, c.TypeToString(implementationEffect), c.TypeToString(overloadEffect))
+		}
+	}
+}
+
+// isStrictImplicitUnknownOperation identifies ECMAScript operations whose
+// abrupt-completion behavior is not represented by a resolved call signature.
+// Strict mode fails closed on these operations until a more precise effect is
+// available. The deliberately-safe binary operators below do not perform user
+// coercion or invoke custom matchers.
+func isStrictImplicitUnknownOperation(node *ast.Node) bool {
+	switch node.Kind {
+	case ast.KindTaggedTemplateExpression,
+		ast.KindDeleteExpression,
+		ast.KindPostfixUnaryExpression,
+		ast.KindTemplateExpression,
+		ast.KindYieldExpression,
+		ast.KindSpreadElement,
+		ast.KindSpreadAssignment,
+		ast.KindForInStatement,
+		ast.KindForOfStatement,
+		ast.KindWithStatement,
+		ast.KindObjectBindingPattern,
+		ast.KindArrayBindingPattern,
+		ast.KindComputedPropertyName,
+		ast.KindDecorator,
+		ast.KindImportDeclaration,
+		ast.KindImportEqualsDeclaration,
+		ast.KindExportDeclaration,
+		ast.KindJsxElement,
+		ast.KindJsxSelfClosingElement,
+		ast.KindJsxFragment,
+		ast.KindJsxSpreadAttribute:
+		return true
+	case ast.KindVariableDeclarationList:
+		// `using` and `await using` execute user-defined disposal hooks when the
+		// scope exits, which may be later than the declaration's initializer.
+		return node.Flags&ast.NodeFlagsUsing != 0
+	case ast.KindPrefixUnaryExpression:
+		// Logical negation performs ToBoolean, which cannot invoke user code.
+		return node.AsPrefixUnaryExpression().Operator != ast.KindExclamationToken
+	case ast.KindBinaryExpression:
+		binary := node.AsBinaryExpression()
+		switch binary.OperatorToken.Kind {
+		case ast.KindEqualsEqualsEqualsToken,
+			ast.KindExclamationEqualsEqualsToken,
+			ast.KindAmpersandAmpersandToken,
+			ast.KindBarBarToken,
+			ast.KindQuestionQuestionToken,
+			ast.KindCommaToken:
+			return false
+		case ast.KindEqualsToken:
+			// Object and array assignment patterns execute property/iterator
+			// protocols even though a simple lexical assignment does not.
+			return binary.Left.Kind == ast.KindObjectLiteralExpression || binary.Left.Kind == ast.KindArrayLiteralExpression
+		default:
+			return true
+		}
+	}
+	return false
 }
 
 // collectRaisedTypes gathers the types a statement subtree can raise past any
@@ -227,10 +448,20 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 		}
 	}
 	visit = func(node *ast.Node) bool {
+		if c.checkedExceptionsStrict() && isStrictImplicitUnknownOperation(node) {
+			add(c.unknownType)
+		}
 		switch node.Kind {
 		case ast.KindFunctionDeclaration, ast.KindFunctionExpression, ast.KindArrowFunction,
 			ast.KindMethodDeclaration, ast.KindConstructor, ast.KindGetAccessor, ast.KindSetAccessor,
-			ast.KindClassStaticBlockDeclaration, ast.KindClassDeclaration, ast.KindClassExpression:
+			ast.KindClassStaticBlockDeclaration:
+			return false
+		case ast.KindClassDeclaration, ast.KindClassExpression:
+			if c.checkedExceptionsStrict() {
+				// Class evaluation may execute computed names, decorators and static
+				// initializers. Until each constituent is modeled precisely, fail closed.
+				add(c.unknownType)
+			}
 			return false
 		case ast.KindTryStatement:
 			t := node.AsTryStatement()
@@ -244,7 +475,21 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 			}
 			return false
 		case ast.KindCallExpression, ast.KindNewExpression:
+			if c.checkedExceptionsStrict() {
+				add(c.getEscapingCallbackThrowsType(node))
+			}
 			add(c.getThrowsTypeOfCall(node))
+		case ast.KindAwaitExpression:
+			if c.checkedExceptionsStrict() {
+				add(c.getThrowsTypeOfAwait(node))
+			}
+		case ast.KindPropertyAccessExpression, ast.KindElementAccessExpression:
+			if c.checkedExceptionsStrict() && !isCallTargetPropertyAccess(node) {
+				// A structural property read/write can invoke an accessor or Proxy trap.
+				// Property effects are not represented yet, so the only sound effect is
+				// unknown. Proven data properties can be refined in a later pass.
+				add(c.unknownType)
+			}
 		case ast.KindThrowStatement:
 			expr := node.Expression()
 			if catchClause := c.getCatchClauseOfRethrownVariable(expr); catchClause != nil {
@@ -294,11 +539,22 @@ func (c *Checker) getCatchClauseThrowsType(catchClause *ast.Node) *Type {
 	if c.catchClauseThrowsTypes == nil {
 		c.catchClauseThrowsTypes = make(map[*ast.Node]*Type)
 	}
+	if c.catchClauseThrowsInProgress == nil {
+		c.catchClauseThrowsInProgress = make(map[*ast.Node]bool)
+	}
+	if c.catchClauseThrowsInProgress[catchClause] {
+		// A cyclic catch-type query must not erase an effect. Strict mode uses
+		// the top effect; gradual modes preserve their permissive behavior.
+		if c.checkedExceptionsStrict() {
+			return c.unknownType
+		}
+		return nil
+	}
 	if cached, ok := c.catchClauseThrowsTypes[catchClause]; ok {
 		return cached
 	}
-	// Mark in-progress; a cyclic query contributes nothing.
-	c.catchClauseThrowsTypes[catchClause] = nil
+	c.catchClauseThrowsInProgress[catchClause] = true
+	defer delete(c.catchClauseThrowsInProgress, catchClause)
 	var result *Type
 	if tryStatement := catchClause.Parent; tryStatement != nil && tryStatement.Kind == ast.KindTryStatement {
 		raised := c.collectRaisedTypes(tryStatement.AsTryStatement().TryBlock)
@@ -309,7 +565,6 @@ func (c *Checker) getCatchClauseThrowsType(catchClause *ast.Node) *Type {
 	if c.throwsInference != nil {
 		// Computed from provisional inference results: usable now, but not safe
 		// to cache past the enclosing fixpoint iteration.
-		delete(c.catchClauseThrowsTypes, catchClause)
 		return result
 	}
 	c.catchClauseThrowsTypes[catchClause] = result
@@ -329,14 +584,25 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 
 	var visit func(node *ast.Node) bool
 	visit = func(node *ast.Node) bool {
+		if c.checkedExceptionsStrict() && tryDepth == 0 && isStrictImplicitUnknownOperation(node) {
+			c.checkRaisedType(node, c.unknownType, enclosingFn, false /*isCall*/)
+		}
 		switch node.Kind {
 		case ast.KindFunctionDeclaration, ast.KindFunctionExpression, ast.KindArrowFunction,
 			ast.KindMethodDeclaration, ast.KindConstructor, ast.KindGetAccessor, ast.KindSetAccessor,
-			ast.KindClassStaticBlockDeclaration, ast.KindClassDeclaration, ast.KindClassExpression:
+			ast.KindClassStaticBlockDeclaration:
+			if c.checkedExceptionsStrict() && (node.Kind == ast.KindFunctionDeclaration || node.Kind == ast.KindMethodDeclaration) {
+				c.checkStrictOverloadEffects(node)
+			}
 			savedFn, savedTryDepth := enclosingFn, tryDepth
 			enclosingFn, tryDepth = node, 0
 			node.ForEachChild(visit)
 			enclosingFn, tryDepth = savedFn, savedTryDepth
+			return false
+		case ast.KindClassDeclaration, ast.KindClassExpression:
+			if c.checkedExceptionsStrict() && tryDepth == 0 {
+				c.checkRaisedType(node, c.unknownType, enclosingFn, false /*isCall*/)
+			}
 			return false
 		case ast.KindTryStatement:
 			t := node.AsTryStatement()
@@ -353,8 +619,31 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 			}
 			return false
 		case ast.KindCallExpression, ast.KindNewExpression:
-			if tryDepth == 0 {
+			if c.checkedExceptionsStrict() {
+				if callbackEffect := c.getEscapingCallbackThrowsType(node); callbackEffect != nil {
+					c.errorCheckedExceptions(node, diagnostics.Callback_may_throw_0_after_the_call_returns_A_synchronous_try_catch_or_enclosing_throws_clause_cannot_handle_it_Catch_inside_the_callback_or_use_a_non_escaping_callback_contract, c.TypeToString(callbackEffect))
+				}
+			}
+			if c.checkedExceptionsStrict() && c.callReturnsPromise(node) && !isAwaitedCall(node) && !isDirectlyReturnedCall(node) {
+				throwsType := c.normalizeThrowsType(c.getThrowsTypeOfCall(node))
+				if throwsType == nil || throwsType.flags&TypeFlagsNever != 0 {
+					throwsType = c.unknownType
+				}
+				c.errorCheckedExceptions(node, diagnostics.Promise_returning_call_may_reject_with_0_A_synchronous_try_catch_does_not_handle_that_rejection_Await_or_return_the_promise, c.TypeToString(throwsType))
+			} else if tryDepth == 0 && !(c.checkedExceptionsStrict() && isAwaitedCall(node)) {
 				c.checkRaisedType(node, c.getThrowsTypeOfCall(node), enclosingFn, true /*isCall*/)
+			}
+		case ast.KindAwaitExpression:
+			if c.checkedExceptionsStrict() && tryDepth == 0 {
+				c.checkRaisedType(node, c.getThrowsTypeOfAwait(node), enclosingFn, false /*isCall*/)
+			}
+		case ast.KindPropertyAccessExpression, ast.KindElementAccessExpression:
+			if c.checkedExceptionsStrict() && tryDepth == 0 && !isCallTargetPropertyAccess(node) {
+				c.checkRaisedType(node, c.unknownType, enclosingFn, false /*isCall*/)
+			}
+		case ast.KindTypeAssertionExpression, ast.KindAsExpression:
+			if c.checkedExceptionsStrict() {
+				c.checkStrictAssertionEffects(node)
 			}
 		case ast.KindThrowStatement:
 			if tryDepth == 0 {
@@ -370,9 +659,13 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 // unless the enclosing function declares a covering `throws` clause or is an
 // unannotated function (whose raises propagate via inference instead).
 func (c *Checker) checkRaisedType(site *ast.Node, raised *Type, enclosingFn *ast.Node, isCall bool) {
-	if raised == nil || raised == c.errorType || raised.flags&(TypeFlagsNever|TypeFlagsAnyOrUnknown) != 0 {
-		// Untracked, empty, or explicitly opted out (`throws any`/`throws unknown`).
-		// `throw` of an any/unknown value is likewise not enforced.
+	raised = c.normalizeThrowsType(raised)
+	if raised == nil || raised == c.errorType || raised.flags&TypeFlagsNever != 0 {
+		// Untracked or empty.
+		return
+	}
+	if !c.checkedExceptionsStrict() && raised.flags&TypeFlagsAnyOrUnknown != 0 {
+		// Gradual modes preserve the explicit any/unknown escape hatch.
 		return
 	}
 	if enclosingFn == nil {

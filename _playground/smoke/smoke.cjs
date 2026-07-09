@@ -21,12 +21,16 @@ const SAMPLE = [
     "function mustNotThrow(): void throws never {",
     '    readFile("x");',
     "}",
+    "declare function legacy(): void;",
+    "function strictMustNotThrow(): void throws never {",
+    "    legacy();",
+    "}",
     'try { readFile("y"); } catch (e) { e; }',
     "",
 ].join("\n");
 
 const TSCONFIG = JSON.stringify({
-    compilerOptions: { strict: true, noEmit: true, checkedExceptions: "error" },
+    compilerOptions: { strict: true, noEmit: true, checkedExceptions: "strict" },
 });
 
 const FILE_URI = "file:///project/main.ts";
@@ -105,8 +109,14 @@ async function main() {
     }
     console.log("ok: textDocument/diagnostic reported TS100021 (unhandled IOError inside `throws never`)");
 
+    if (!diagnostics.some(d => String(d.code) === "100021" && d.message.includes("unknown"))) {
+        console.error("FAIL: expected strict mode to report an unknown legacy effect, got:", JSON.stringify(report, null, 2));
+        process.exit(1);
+    }
+    console.log("ok: strict mode reports an unannotated ambient call as unknown");
+
     // 2. The catch variable is typed from the try block's raises.
-    const line = 5;
+    const line = SAMPLE.split("\n").findIndex(text => text.startsWith("try {"));
     const character = SAMPLE.split("\n")[line].indexOf("{ e; }") + 2;
     const hover = await request("textDocument/hover", {
         textDocument: { uri: FILE_URI },
@@ -120,9 +130,10 @@ async function main() {
     console.log("ok: hover on catch variable shows IOError");
 
     // 3. Hover on the declaration shows the throws clause.
+    const declarationLine = SAMPLE.split("\n").findIndex(text => text.includes("declare function readFile"));
     const declHover = await request("textDocument/hover", {
         textDocument: { uri: FILE_URI },
-        position: { line: 1, character: SAMPLE.split("\n")[1].indexOf("readFile") + 1 },
+        position: { line: declarationLine, character: SAMPLE.split("\n")[declarationLine].indexOf("readFile") + 1 },
     });
     const declText = declHover && (typeof declHover.contents === "string" ? declHover.contents : declHover.contents.value);
     if (!declText || !declText.includes("throws")) {

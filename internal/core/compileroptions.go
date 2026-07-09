@@ -383,6 +383,10 @@ const (
 	CheckedExceptionsModeOff     CheckedExceptionsMode = 1
 	CheckedExceptionsModeWarning CheckedExceptionsMode = 2
 	CheckedExceptionsModeError   CheckedExceptionsMode = 3
+	// Strict is the fail-closed checked-exceptions mode. Signatures whose
+	// implementation is unavailable and whose declarations omit a throws clause
+	// are treated as `throws unknown` instead of as untracked/throw-free.
+	CheckedExceptionsModeStrict CheckedExceptionsMode = 4
 )
 
 type ModuleDetectionKind int32

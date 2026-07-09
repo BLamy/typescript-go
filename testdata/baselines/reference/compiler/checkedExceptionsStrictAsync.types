@@ -1,0 +1,151 @@
+//// [tests/cases/compiler/checkedExceptionsStrictAsync.ts] ////
+
+=== checkedExceptionsStrictAsync.ts ===
+async function rejects(): Promise<void> throws "async" {
+>rejects : () => Promise<void> throws "async"
+
+    throw "async";
+>"async" : "async"
+}
+
+// A synchronous try/catch does not handle a promise rejection.
+function fakeSynchronousHandling(): void throws never {
+>fakeSynchronousHandling : () => void throws never
+
+    try {
+        rejects();
+>rejects() : Promise<void>
+>rejects : () => Promise<void> throws "async"
+
+    } catch {
+    }
+}
+
+// Await transfers the rejection effect into the surrounding control flow.
+async function unhandledAwait(): Promise<void> throws never {
+>unhandledAwait : () => Promise<void> throws never
+
+    await rejects();
+>await rejects() : void
+>rejects() : Promise<void>
+>rejects : () => Promise<void> throws "async"
+}
+
+// Awaiting inside try/catch discharges the rejection.
+async function handledAwait(): Promise<void> throws never {
+>handledAwait : () => Promise<void> throws never
+
+    try {
+        await rejects();
+>await rejects() : void
+>rejects() : Promise<void>
+>rejects : () => Promise<void> throws "async"
+
+    } catch (e) {
+>e : "async"
+
+        const effect: "async" = e;
+>effect : "async"
+>e : "async"
+    }
+}
+
+// Directly returning a promise propagates its rejection effect through the
+// enclosing function's clause.
+async function returnedPromise(): Promise<void> throws "async" {
+>returnedPromise : () => Promise<void> throws "async"
+
+    return rejects();
+>rejects() : Promise<void>
+>rejects : () => Promise<void> throws "async"
+}
+
+// A floating ambient promise is unknown even inside synchronous try/catch.
+declare function legacyAsync(): Promise<void>;
+>legacyAsync : () => Promise<void> throws unknown
+
+function floatingLegacyPromise(): void throws never {
+>floatingLegacyPromise : () => void throws never
+
+    try {
+        legacyAsync();
+>legacyAsync() : Promise<void>
+>legacyAsync : () => Promise<void> throws unknown
+
+    } catch {
+    }
+}
+
+// Awaiting an ambient promise is catchable, but its catch value is unknown.
+async function handledLegacyAwait(): Promise<void> throws never {
+>handledLegacyAwait : () => Promise<void> throws never
+
+    try {
+        await legacyAsync();
+>await legacyAsync() : void
+>legacyAsync() : Promise<void>
+>legacyAsync : () => Promise<void> throws unknown
+
+    } catch (e) {
+>e : unknown
+
+        const effect: unknown = e;
+>effect : unknown
+>e : unknown
+    }
+}
+
+// Returning an ambient promise requires honest unknown propagation.
+async function returnedLegacyPromise(): Promise<void> throws unknown {
+>returnedLegacyPromise : () => Promise<void> throws unknown
+
+    return legacyAsync();
+>legacyAsync() : Promise<void>
+>legacyAsync : () => Promise<void> throws unknown
+}
+
+// A callback may run after the caller's control-flow boundary has disappeared.
+// Until a signature can prove synchronous non-escaping invocation, the
+// callback must discharge its own effect.
+declare function later(callback: () => void): void throws never;
+>later : (callback: () => void) => void throws never
+>callback : () => void throws unknown
+
+function callbackThrows(): void throws "later" {
+>callbackThrows : () => void throws "later"
+
+    throw "later";
+>"later" : "later"
+}
+function synchronousCatchCannotHandleCallback(): void throws never {
+>synchronousCatchCannotHandleCallback : () => void throws never
+
+    try {
+        later(callbackThrows);
+>later(callbackThrows) : void
+>later : (callback: () => void) => void throws never
+>callbackThrows : () => void throws "later"
+
+    } catch {
+    }
+}
+
+// Handling inside the callback is valid regardless of when it is invoked.
+function callbackHandlesItsOwnEffect(): void throws never {
+>callbackHandlesItsOwnEffect : () => void throws never
+
+    later(() => {
+>later(() => {        try {            callbackThrows();        } catch {        }    }) : void
+>later : (callback: () => void) => void throws never
+>() => {        try {            callbackThrows();        } catch {        }    } : () => void
+
+        try {
+            callbackThrows();
+>callbackThrows() : void
+>callbackThrows : () => void throws "later"
+
+        } catch {
+        }
+    });
+}
+

@@ -1,0 +1,266 @@
+//// [tests/cases/compiler/checkedExceptionsStrictImplicitEffects.ts] ////
+
+=== checkedExceptionsStrictImplicitEffects.ts ===
+// Minimal global required by the explicit-resource-management grammar in this
+// focused baseline; the value below is null, so no member shape is needed.
+interface Disposable {}
+
+declare function safe(): void throws never;
+>safe : () => void throws never
+
+declare function known(): void throws "known";
+>known : () => void throws "known"
+
+// A precisely declared direct call remains usable in strict code.
+function directSafeCall(): void throws never {
+>directSafeCall : () => void throws never
+
+    safe();
+>safe() : void
+>safe : () => void throws never
+}
+
+// Existing standard-library declarations have no throws metadata, so strict
+// mode treats them as unknown rather than claiming they are safe.
+function parseJson(): unknown throws never {
+>parseJson : () => unknown throws never
+
+    return JSON.parse("{");
+>JSON.parse("{") : any
+>JSON.parse : (text: string, reviver?: (this: any, key: string, value: any) => any) => any throws unknown
+>JSON : JSON
+>parse : (text: string, reviver?: (this: any, key: string, value: any) => any) => any throws unknown
+>"{" : "{"
+}
+
+// Fetching a method may itself invoke a getter or Proxy trap, even when the
+// resolved method signature explicitly promises `throws never`.
+declare const service: {
+>service : { run(): void throws never; }
+
+    run(): void throws never;
+>run : () => void throws never
+
+};
+function methodLookup(): void throws never {
+>methodLookup : () => void throws never
+
+    service.run();
+>service.run() : void
+>service.run : () => void throws never
+>service : { run(): void throws never; }
+>run : () => void throws never
+}
+
+declare const keyedService: {
+>keyedService : { run(): void throws never; }
+
+    run(): void throws never;
+>run : () => void throws never
+
+};
+function elementLookup(): void throws never {
+>elementLookup : () => void throws never
+
+    keyedService["run"]();
+>keyedService["run"]() : void
+>keyedService["run"] : () => void throws never
+>keyedService : { run(): void throws never; }
+>"run" : "run"
+}
+
+// Construct signatures without throws metadata are unknown boundaries.
+declare const LegacyConstructor: new () => object;
+>LegacyConstructor : new () => object
+
+function constructLegacy(): object throws never {
+>constructLegacy : () => object throws never
+
+    return new LegacyConstructor();
+>new LegacyConstructor() : object
+>LegacyConstructor : new () => object
+}
+
+// An untracked constituent poisons a union call instead of disappearing.
+type KnownFunction = () => void throws "known";
+>KnownFunction : KnownFunction
+
+type LegacyFunction = () => void;
+>LegacyFunction : LegacyFunction
+
+declare const unionFunction: KnownFunction | LegacyFunction;
+>unionFunction : KnownFunction | LegacyFunction
+
+function callUnion(): void throws "known" {
+>callUnion : () => void throws "known"
+
+    unionFunction();
+>unionFunction() : void
+>unionFunction : KnownFunction | LegacyFunction
+}
+
+// The selected legacy overload is unknown.
+declare function overloaded(value: 0): void throws "known";
+>overloaded : { (value: 0): void throws "known"; (value: number): void throws unknown; }
+>value : 0
+
+declare function overloaded(value: number): void;
+>overloaded : { (value: 0): void throws "known"; (value: number): void throws unknown; }
+>value : number
+
+function callLegacyOverload(): void throws never {
+>callLegacyOverload : () => void throws never
+
+    overloaded(1);
+>overloaded(1) : void
+>overloaded : { (value: 0): void throws "known"; (value: number): void throws unknown; }
+>1 : 1
+}
+
+// Class evaluation can execute static initializers, computed names, and
+// decorators. It remains unknown until those effects are modeled separately.
+declare function legacy(): void;
+>legacy : () => void throws unknown
+
+function defineClass(): void throws never {
+>defineClass : () => void throws never
+
+    class Local {
+>Local : Local
+
+        static value = legacy();
+>value : void
+>legacy() : void
+>legacy : () => void throws unknown
+    }
+}
+
+// Catching an unknown standard-library boundary is sound, but the binding must
+// remain unknown.
+function catchJson(): void throws never {
+>catchJson : () => void throws never
+
+    try {
+        JSON.parse("{");
+>JSON.parse("{") : any
+>JSON.parse : (text: string, reviver?: (this: any, key: string, value: any) => any) => any throws unknown
+>JSON : JSON
+>parse : (text: string, reviver?: (this: any, key: string, value: any) => any) => any throws unknown
+>"{" : "{"
+
+    } catch (e) {
+>e : unknown
+
+        const value: unknown = e;
+>value : unknown
+>e : unknown
+    }
+}
+
+// Operators that can perform user coercion fail closed, while strict equality
+// and logical negation remain proven-safe operations.
+declare const dynamicValue: any;
+>dynamicValue : any
+
+function coercion(): unknown throws never {
+>coercion : () => unknown throws never
+
+    return dynamicValue + 1;
+>dynamicValue + 1 : any
+>dynamicValue : any
+>1 : 1
+}
+function unaryCoercion(): number throws never {
+>unaryCoercion : () => number throws never
+
+    return +dynamicValue;
+>+dynamicValue : number
+>dynamicValue : any
+}
+function safePredicates(value: unknown): boolean throws never {
+>safePredicates : (value: unknown) => boolean throws never
+>value : unknown
+
+    return !(value === null);
+>!(value === null) : boolean
+>(value === null) : boolean
+>value === null : boolean
+>value : unknown
+}
+
+// Iteration, spreading, tagged templates, and parameter destructuring all
+// execute protocol hooks or property reads that can throw.
+declare const iterable: Iterable<number>;
+>iterable : Iterable<number>
+
+function spreadIterable(): number[] throws never {
+>spreadIterable : () => number[] throws never
+
+    return [...iterable];
+>[...iterable] : number[]
+>...iterable : number
+>iterable : Iterable<number>
+}
+function iterate(): void throws never {
+>iterate : () => void throws never
+
+    for (const value of iterable) {
+>value : number
+>iterable : Iterable<number>
+
+        safe();
+>safe() : void
+>safe : () => void throws never
+    }
+}
+
+declare const tag: (parts: TemplateStringsArray) => string throws never;
+>tag : (parts: TemplateStringsArray) => string throws never
+>parts : TemplateStringsArray
+
+function taggedTemplate(): string throws never {
+>taggedTemplate : () => string throws never
+
+    return tag`value`;
+>tag`value` : string
+>tag : (parts: TemplateStringsArray) => string throws never
+>`value` : "value"
+}
+
+function destructuredParameter({ value }: { value: number }): void throws never {
+>destructuredParameter : ({ value }: { value: number; }) => void throws never
+>value : number
+>value : number
+
+    safe();
+>safe() : void
+>safe : () => void throws never
+}
+
+// Explicit resource management invokes a disposal hook at scope exit.
+function disposalAtScopeExit(): void throws never {
+>disposalAtScopeExit : () => void throws never
+
+    using resource = null;
+>resource : null
+}
+
+declare const destructuringSource: { value: number };
+>destructuringSource : { value: number; }
+>value : number
+
+let assignedValue: number;
+>assignedValue : number
+
+function destructuringAssignment(): void throws never {
+>destructuringAssignment : () => void throws never
+
+    ({ value: assignedValue } = destructuringSource);
+>({ value: assignedValue } = destructuringSource) : { value: number; }
+>{ value: assignedValue } = destructuringSource : { value: number; }
+>{ value: assignedValue } : { value: number; }
+>value : number
+>assignedValue : number
+>destructuringSource : { value: number; }
+}
+

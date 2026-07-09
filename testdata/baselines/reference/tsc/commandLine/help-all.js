@@ -223,7 +223,7 @@ default: true
 
 [94m--checkedExceptions[39m
 Enable checked exceptions. Functions must handle the errors their callees declare with 'throws' clauses, or declare them in their own.
-one of: off, warning, error
+one of: off, warning, error, strict
 
 [94m--deduplicatePackages[39m
 Deduplicate packages with the same name and version.

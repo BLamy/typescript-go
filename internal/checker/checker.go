@@ -643,6 +643,7 @@ type Checker struct {
 	iterationTypesCache                         map[IterationTypesKey]IterationTypes
 	inferredThrowsTypes                         map[*ast.Node]*Type
 	catchClauseThrowsTypes                      map[*ast.Node]*Type
+	catchClauseThrowsInProgress                 map[*ast.Node]bool
 	throwsInference                             *throwsInferenceState
 	markerTypes                                 collections.Set[*Type]
 	undefinedSymbol                             *ast.Symbol

@@ -1,0 +1,191 @@
+//// [tests/cases/compiler/checkedExceptionsStrictSoundness.ts] ////
+
+=== checkedExceptionsStrictSoundness.ts ===
+declare function legacy(): void;
+>legacy : () => void throws unknown
+
+declare function tracked(): void throws "tracked";
+>tracked : () => void throws "tracked"
+
+declare function explicitlyUnknown(): void throws unknown;
+>explicitlyUnknown : () => void throws unknown
+
+declare function explicitlyAny(): void throws any;
+>explicitlyAny : () => void throws unknown
+
+// Ambient declarations without throws metadata are unknown, not throw-free.
+function ambientInNever(): void throws never {
+>ambientInNever : () => void throws never
+
+    legacy();
+>legacy() : void
+>legacy : () => void throws unknown
+}
+
+// Explicit unknown and any effects cannot escape through `throws never`.
+function unknownInNever(): void throws never {
+>unknownInNever : () => void throws never
+
+    explicitlyUnknown();
+>explicitlyUnknown() : void
+>explicitlyUnknown : () => void throws unknown
+}
+function anyInNever(): void throws never {
+>anyInNever : () => void throws never
+
+    explicitlyAny();
+>explicitlyAny() : void
+>explicitlyAny : () => void throws unknown
+}
+
+// Unknown effects may be caught or propagated honestly.
+function catchesLegacy(): void throws never {
+>catchesLegacy : () => void throws never
+
+    try {
+        legacy();
+>legacy() : void
+>legacy : () => void throws unknown
+
+    } catch (e) {
+>e : unknown
+
+        const value: unknown = e;
+>value : unknown
+>e : unknown
+    }
+}
+function propagatesLegacy(): void throws unknown {
+>propagatesLegacy : () => void throws unknown
+
+    legacy();
+>legacy() : void
+>legacy : () => void throws unknown
+}
+
+// A missing callback effect makes the higher-order function unknown rather
+// than silently losing an exception raised by the callback.
+function invoke(callback: () => void): void {
+>invoke : (callback: () => void) => void throws unknown
+>callback : () => void throws unknown
+
+    callback();
+>callback() : void
+>callback : () => void throws unknown
+}
+function higherOrderInNever(): void throws never {
+>higherOrderInNever : () => void throws never
+
+    invoke(() => { throw "callback"; });
+>invoke(() => { throw "callback"; }) : void
+>invoke : (callback: () => void) => void throws unknown
+>() => { throw "callback"; } : () => never throws "callback"
+>"callback" : "callback"
+}
+
+// Structural property access may invoke a getter or Proxy trap.
+const accessor = {
+>accessor : { readonly value: number; }
+>{    get value(): number {        throw "getter";    },} : { readonly value: number; }
+
+    get value(): number {
+>value : number
+
+        throw "getter";
+>"getter" : "getter"
+
+    },
+};
+function accessorInNever(): number throws never {
+>accessorInNever : () => number throws never
+
+    return accessor.value;
+>accessor.value : number
+>accessor : { readonly value: number; }
+>value : number
+}
+
+// One unknown source poisons catch precision instead of allowing an optimistic
+// tracked-only type.
+function mixedCatch(): void throws never {
+>mixedCatch : () => void throws never
+
+    try {
+        tracked();
+>tracked() : void
+>tracked : () => void throws "tracked"
+
+        legacy();
+>legacy() : void
+>legacy : () => void throws unknown
+
+    } catch (e) {
+>e : unknown
+
+        const unsound: "tracked" = e;
+>unsound : "tracked"
+>e : unknown
+    }
+}
+
+// Function types without a clause describe an unknown effect in strict mode.
+type LegacyCallback = () => void;
+>LegacyCallback : LegacyCallback
+
+type SafeCallback = () => void throws never;
+>SafeCallback : SafeCallback
+
+declare const legacyCallback: LegacyCallback;
+>legacyCallback : LegacyCallback
+
+const incorrectlyNarrowed: SafeCallback = legacyCallback;
+>incorrectlyNarrowed : SafeCallback
+>legacyCallback : LegacyCallback
+
+// Unknown effects at top level must be handled.
+legacy();
+>legacy() : void
+>legacy : () => void throws unknown
+
+try { legacy(); } catch {}
+>legacy() : void
+>legacy : () => void throws unknown
+
+// Type assertions cannot manufacture a non-throwing callable type.
+function assertionSource(): void throws "assertion" {
+>assertionSource : () => void throws "assertion"
+
+    throw "assertion";
+>"assertion" : "assertion"
+}
+const assertionErasesEffect = assertionSource as () => void throws never;
+>assertionErasesEffect : () => void throws never
+>assertionSource as () => void throws never : () => void throws never
+>assertionSource : () => void throws "assertion"
+
+function callAssertedFunction(): void throws never {
+>callAssertedFunction : () => void throws never
+
+    assertionErasesEffect();
+>assertionErasesEffect() : void
+>assertionErasesEffect : () => void throws never
+}
+
+// An overload cannot advertise a narrower effect than its implementation.
+function lyingOverload(): void throws never;
+>lyingOverload : () => void throws never
+
+function lyingOverload(): void {
+>lyingOverload : () => void throws never
+
+    throw "implementation";
+>"implementation" : "implementation"
+}
+function callLyingOverload(): void throws never {
+>callLyingOverload : () => void throws never
+
+    lyingOverload();
+>lyingOverload() : void
+>lyingOverload : () => void throws never
+}
+
