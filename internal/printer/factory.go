@@ -791,6 +791,7 @@ func (f *NodeFactory) NewImmediatelyInvokedArrowFunction(statements []*ast.State
 		nil,                          /*typeParameters*/
 		f.NewNodeList([]*ast.Node{}), /*parameters*/
 		nil,                          /*returnType*/
+		nil,                          /*throwsType*/
 		nil,                          /*fullSignature*/
 		f.NewToken(ast.KindEqualsGreaterThanToken), /*equalsGreaterThanToken*/
 		f.NewBlock(f.NewNodeList(statements), true),
@@ -960,6 +961,7 @@ func (f *NodeFactory) NewAwaiterHelper(
 		nil, /*typeParameters*/
 		params,
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		body,
 	)
@@ -1022,7 +1024,7 @@ func (f *NodeFactory) NewESDecorateClassElementAccessGetMethod(
 	arrow := f.NewArrowFunction(
 		nil, nil,
 		f.NewNodeList([]*ast.Node{objParam}),
-		nil, nil,
+		nil, nil, nil,
 		f.NewToken(ast.KindEqualsGreaterThanToken),
 		accessor,
 	)
@@ -1051,7 +1053,7 @@ func (f *NodeFactory) NewESDecorateClassElementAccessSetMethod(
 	arrow := f.NewArrowFunction(
 		nil, nil,
 		f.NewNodeList([]*ast.Node{objParam, valueParam}),
-		nil, nil,
+		nil, nil, nil,
 		f.NewToken(ast.KindEqualsGreaterThanToken),
 		body,
 	)
@@ -1077,7 +1079,7 @@ func (f *NodeFactory) NewESDecorateClassElementAccessHasMethod(
 	arrow := f.NewArrowFunction(
 		nil, nil,
 		f.NewNodeList([]*ast.Node{objParam}),
-		nil, nil,
+		nil, nil, nil,
 		f.NewToken(ast.KindEqualsGreaterThanToken),
 		inExpr,
 	)

@@ -159,7 +159,7 @@ func (tx *TypeEraserTransformer) visit(node *ast.Node) *ast.Node {
 			// TypeScript overloads are elided
 			return nil
 		}
-		return tx.Factory().UpdateMethodDeclaration(n, tx.Visitor().VisitModifiers(n.Modifiers()), n.AsteriskToken, tx.Visitor().VisitNode(n.Name()), nil, nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, tx.Visitor().VisitNode(n.Body))
+		return tx.Factory().UpdateMethodDeclaration(n, tx.Visitor().VisitModifiers(n.Modifiers()), n.AsteriskToken, tx.Visitor().VisitNode(n.Name()), nil, nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, nil, tx.Visitor().VisitNode(n.Body))
 
 	case ast.KindGetAccessor:
 		n := node.AsGetAccessorDeclaration()
@@ -215,15 +215,15 @@ func (tx *TypeEraserTransformer) visit(node *ast.Node) *ast.Node {
 			// TypeScript overloads are elided
 			return tx.elide(node)
 		}
-		return tx.Factory().UpdateFunctionDeclaration(n, tx.Visitor().VisitModifiers(n.Modifiers()), n.AsteriskToken, tx.Visitor().VisitNode(n.Name()), nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, tx.Visitor().VisitNode(n.Body))
+		return tx.Factory().UpdateFunctionDeclaration(n, tx.Visitor().VisitModifiers(n.Modifiers()), n.AsteriskToken, tx.Visitor().VisitNode(n.Name()), nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, nil, tx.Visitor().VisitNode(n.Body))
 
 	case ast.KindFunctionExpression:
 		n := node.AsFunctionExpression()
-		return tx.Factory().UpdateFunctionExpression(n, tx.Visitor().VisitModifiers(n.Modifiers()), n.AsteriskToken, tx.Visitor().VisitNode(n.Name()), nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, tx.Visitor().VisitNode(n.Body))
+		return tx.Factory().UpdateFunctionExpression(n, tx.Visitor().VisitModifiers(n.Modifiers()), n.AsteriskToken, tx.Visitor().VisitNode(n.Name()), nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, nil, tx.Visitor().VisitNode(n.Body))
 
 	case ast.KindArrowFunction:
 		n := node.AsArrowFunction()
-		return tx.Factory().UpdateArrowFunction(n, tx.Visitor().VisitModifiers(n.Modifiers()), nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, n.EqualsGreaterThanToken, tx.Visitor().VisitNode(n.Body))
+		return tx.Factory().UpdateArrowFunction(n, tx.Visitor().VisitModifiers(n.Modifiers()), nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, nil, n.EqualsGreaterThanToken, tx.Visitor().VisitNode(n.Body))
 
 	case ast.KindParameter:
 		if ast.IsThisParameter(node) {

@@ -1,0 +1,97 @@
+//// [tests/cases/compiler/checkedExceptionsInferredTargets.ts] ////
+
+=== checkedExceptionsInferredTargets.ts ===
+class E1 extends Error { readonly tag = "e1" as const; }
+>E1 : E1
+>Error : Error
+>tag : "e1"
+>"e1" as const : "e1"
+>"e1" : "e1"
+
+class E2 extends Error { readonly tag = "e2" as const; }
+>E2 : E2
+>Error : Error
+>tag : "e2"
+>"e2" as const : "e2"
+>"e2" : "e2"
+
+declare const throwsE2: () => void throws E2;
+>throwsE2 : () => void throws E2
+
+// A mutable binding whose type carries *inferred* throws constrains
+// reassignment: call sites of `f` see the initializer's inferred set (E1),
+// so assigning a wider thrower must fail.
+let f = (x?: number) => { if (x) throw new E1(); };
+>f : (x?: number) => void
+>(x?: number) => { if (x) throw new E1(); } : (x?: number) => void
+>x : number | undefined
+>x : number | undefined
+>new E1() : E1
+>E1 : typeof E1
+
+f = throwsE2; // error
+>f = throwsE2 : () => void throws E2
+>f : (x?: number) => void
+>throwsE2 : () => void throws E2
+
+f = (x?: number) => { if (x) throw new E1(); }; // ok: same set
+>f = (x?: number) => { if (x) throw new E1(); } : (x?: number) => void
+>f : (x?: number) => void
+>(x?: number) => { if (x) throw new E1(); } : (x?: number) => void
+>x : number | undefined
+>x : number | undefined
+>new E1() : E1
+>E1 : typeof E1
+
+// Same through a function declaration's type.
+function named(x?: number) { if (x) throw new E1(); }
+>named : (x?: number) => void
+>x : number | undefined
+>x : number | undefined
+>new E1() : E1
+>E1 : typeof E1
+
+let h = named;
+>h : (x?: number) => void
+>named : (x?: number) => void
+
+h = throwsE2; // error
+>h = throwsE2 : () => void throws E2
+>h : (x?: number) => void
+>throwsE2 : () => void throws E2
+
+// An untracked initializer (throws nothing) stays permissive.
+let g = (x?: number) => {};
+>g : (x?: number) => void
+>(x?: number) => {} : (x?: number) => void
+>x : number | undefined
+
+g = throwsE2; // ok
+>g = throwsE2 : () => void throws E2
+>g : (x?: number) => void
+>throwsE2 : () => void throws E2
+
+// Catch variables demanded while inference is in flight are not pinned to
+// unknown; the precise union is computed once inference completes.
+function outer(): void {
+>outer : () => void
+
+    try {
+        f();
+>f() : void
+>f : (x?: number) => void
+
+    } catch (e) {
+>e : E1
+
+        const t: "e1" = e.tag;
+>t : "e1"
+>e.tag : "e1"
+>e : E1
+>tag : "e1"
+    }
+}
+outer();
+>outer() : void
+>outer : () => void
+

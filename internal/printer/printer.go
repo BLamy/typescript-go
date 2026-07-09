@@ -1544,6 +1544,7 @@ func canEmitSimpleArrowHead(parentNode *ast.Node, parameters *ast.ParameterList)
 	return parameter.Pos() == parent.Pos() && // may not have parsed tokens between start of parent and parameter
 		parent.TypeParameters == nil && // parent may not have type parameters
 		parent.Type == nil && // parent may not have return type annotation
+		parent.ThrowsType == nil && // parent may not have a throws clause
 		(parent.Modifiers() == nil || len(parent.Modifiers().Nodes) == 0) && // parent may not have modifiers
 		!parameters.HasTrailingComma() && // parameters may not have a trailing comma
 		parameter.Modifiers() == nil && // parameter may not have decorators or modifiers
@@ -1580,6 +1581,18 @@ func (p *Printer) emitSignature(node *ast.Node) {
 
 	p.emitParameters(node, n.Parameters)
 	p.emitTypeAnnotation(n.Type)
+	p.emitThrowsClause(n.ThrowsType)
+}
+
+// Emits a `throws T` clause following a signature's return type.
+func (p *Printer) emitThrowsClause(node *ast.TypeNode) {
+	if node == nil {
+		return
+	}
+	p.writeSpace()
+	p.writeKeyword("throws")
+	p.writeSpace()
+	p.emitTypeNodeOutsideExtends(node)
 }
 
 func (p *Printer) emitFunctionBody(body *ast.Block) {
@@ -1929,6 +1942,7 @@ func (p *Printer) emitFunctionType(node *ast.FunctionTypeNode) {
 	p.emitParameters(node.AsNode(), node.Parameters)
 	p.writeSpace()
 	p.emitReturnType(node.Type)
+	p.emitThrowsClause(node.ThrowsType)
 	p.popNameGenerationScope(node.AsNode())
 	p.decreaseIndentIf(indented)
 	p.exitNode(node.AsNode(), state)
@@ -2676,6 +2690,7 @@ func (p *Printer) emitArrowFunction(node *ast.ArrowFunction) {
 	p.emitTypeParameters(node.AsNode(), node.TypeParameters)
 	p.emitParametersForArrow(node.AsNode(), node.Parameters)
 	p.emitTypeAnnotation(node.Type)
+	p.emitThrowsClause(node.ThrowsType)
 	p.writeSpace()
 	p.emitTokenNode(node.EqualsGreaterThanToken)
 	p.writeSpace()

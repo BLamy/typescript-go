@@ -641,6 +641,9 @@ type Checker struct {
 	reverseMappedCache                          map[ReverseMappedTypeKey]*Type
 	reverseHomomorphicMappedCache               map[ReverseMappedTypeKey]*Type
 	iterationTypesCache                         map[IterationTypesKey]IterationTypes
+	inferredThrowsTypes                         map[*ast.Node]*Type
+	catchClauseThrowsTypes                      map[*ast.Node]*Type
+	throwsInference                             *throwsInferenceState
 	markerTypes                                 collections.Set[*Type]
 	undefinedSymbol                             *ast.Symbol
 	argumentsSymbol                             *ast.Symbol
@@ -2199,6 +2202,9 @@ func (c *Checker) checkSourceFile(ctx context.Context, sourceFile *ast.SourceFil
 		if !sourceFile.IsDeclarationFile && !c.isCanceled() {
 			c.checkUnusedRenamedBindingElements()
 		}
+		if c.checkedExceptionsEnabled() && !sourceFile.IsDeclarationFile && !c.isCanceled() {
+			c.checkCheckedExceptionsForFile(sourceFile)
+		}
 		c.saveDeferredDiagnostics = false
 		c.produceDeferredDiagnostics()
 		c.reportedUnreachableNodes.Clear()
@@ -2733,6 +2739,9 @@ func (c *Checker) checkSignatureDeclaration(node *ast.Node) {
 	returnTypeNode := node.Type()
 	if returnTypeNode != nil {
 		c.checkSourceElement(returnTypeNode)
+	}
+	if data := node.FunctionLikeData(); data != nil && data.ThrowsType != nil {
+		c.checkSourceElement(data.ThrowsType)
 	}
 	if c.noImplicitAny && returnTypeNode == nil {
 		switch node.Kind {
@@ -11128,7 +11137,11 @@ func (c *Checker) checkIdentifier(node *ast.Node, checkMode CheckMode) *Type {
 		t != c.autoType && t != c.autoArrayType && (!c.strictNullChecks || t.flags&(TypeFlagsAnyOrUnknown|TypeFlagsVoid) != 0 || IsInTypeQuery(node) || c.isInAmbientOrTypeNode(node) || node.Parent.Kind == ast.KindExportSpecifier) ||
 		ast.IsNonNullExpression(node.Parent) ||
 		ast.IsVariableDeclaration(declaration) && declaration.AsVariableDeclaration().ExclamationToken != nil ||
-		declaration.Flags&ast.NodeFlagsAmbient != 0
+		declaration.Flags&ast.NodeFlagsAmbient != 0 ||
+		// A catch variable is always assigned when its block runs. This only matters
+		// under checkedExceptions, which can give catch variables a precise type;
+		// otherwise their unknown/any type is already assumed initialized above.
+		ast.IsCatchClauseVariableDeclarationOrBindingElement(declaration)
 	var initialType *Type
 	switch {
 	case isAutomaticTypeInNonNull:
@@ -16466,7 +16479,12 @@ func (c *Checker) getTypeOfVariableOrParameterOrProperty(symbol *ast.Symbol) *Ty
 		// to preserve this type. In fact, we need to _prefer_ that type, but it won't
 		// be assigned until contextual typing is complete, so we need to defer in
 		// cases where contextual typing may take place.
-		if links.resolvedType == nil && !c.isParameterOfContextSensitiveSignature(symbol) {
+		// Similarly, an unannotated catch variable demanded while a throws-inference
+		// fixpoint is in flight gets the unknown/any fallback (its precise union
+		// would be built from provisional data); don't pin that fallback — the
+		// precise type is computed on the next demand, after inference completes.
+		if links.resolvedType == nil && !c.isParameterOfContextSensitiveSignature(symbol) &&
+			!(c.throwsInference != nil && c.checkedExceptionsEnabled() && symbol.ValueDeclaration != nil && ast.IsCatchClauseVariableDeclarationOrBindingElement(symbol.ValueDeclaration)) {
 			links.resolvedType = t
 		}
 		return t
@@ -16595,6 +16613,15 @@ func (c *Checker) getTypeForVariableLikeDeclaration(declaration *ast.Node, inclu
 				return declaredType
 			}
 			return c.errorType
+		}
+		// Under checkedExceptions, an unannotated catch variable is typed as the
+		// union of the error types the try block can raise, when that is known.
+		// Not while a throws-inference fixpoint is in flight: the union would be
+		// computed from provisional data and cached permanently on the symbol.
+		if c.checkedExceptionsEnabled() && c.throwsInference == nil && ast.IsVariableDeclaration(declaration) && declaration.Parent != nil && declaration.Parent.Kind == ast.KindCatchClause {
+			if throwsType := c.getCatchClauseThrowsType(declaration.Parent); throwsType != nil {
+				return throwsType
+			}
 		}
 		// If the catch clause is not explicitly annotated, treat it as though it were explicitly
 		// annotated with unknown or any, depending on useUnknownInCatchVariables.
@@ -30274,7 +30301,7 @@ func (c *Checker) newSetterFunctionType(t *Type) *Type {
 
 // Creates a synthetic `Signature` corresponding to a call signature.
 func (c *Checker) newCallSignature(typeParameters []*Type, thisParameter *ast.Symbol, parameters []*ast.Symbol, returnType *Type) *Signature {
-	decl := c.factory.NewFunctionTypeNode(nil, nil, c.factory.NewKeywordTypeNode(ast.KindAnyKeyword))
+	decl := c.factory.NewFunctionTypeNode(nil, nil, c.factory.NewKeywordTypeNode(ast.KindAnyKeyword), nil /*throwsType*/)
 	return c.newSignature(SignatureFlagsNone, decl, typeParameters, thisParameter, parameters, returnType, nil, len(parameters))
 }
 

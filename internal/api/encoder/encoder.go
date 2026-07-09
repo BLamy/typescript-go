@@ -38,7 +38,7 @@ const (
 
 const (
 	NodeDataTypeMask        uint32 = 0xc0_00_00_00
-	NodeDataChildMask       uint32 = 0x00_00_00_ff
+	NodeDataChildMask       uint32 = 0x00_00_ff_ff
 	NodeDataStringIndexMask uint32 = 0x00_ff_ff_ff
 )
 
@@ -674,6 +674,13 @@ func recordExtendedData_TemplateTail(node *ast.Node, strs *stringTable, position
 	textIndex := strs.add(n.Text, node.Kind, node.Pos(), node.End())
 	rawTextIndex := strs.add(n.RawText, node.Kind, node.Pos(), node.End())
 	*extendedData = appendUint32s(*extendedData, textIndex, rawTextIndex, uint32(n.TemplateFlags))
+}
+
+func boolToUint16(b bool) uint16 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 func boolToByte(b bool) byte {

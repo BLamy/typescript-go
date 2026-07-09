@@ -15,7 +15,7 @@ import {
     NODE_EXTENDED_DATA_MASK,
     NODE_STRING_INDEX_MASK,
     type NodeDataType,
-    popcount8,
+    popcount16,
     RemoteNodeBase,
     type SourceFileInfo,
 } from "./node.infrastructure.ts";
@@ -379,7 +379,7 @@ export class RemoteNode extends RemoteNodeBase implements Node {
         // Counting the 1s gives us the number of *missing properties* before the `order`th property. If every property
         // were present, we would have `parameters = children[5]`, but since `postfixToken` and `astersiskToken` are
         // missing, we have `parameters = children[5 - 2]`.
-        const propertyIndex = order - popcount8[~(mask | ((0xff << order) & 0xff)) & 0xff];
+        const propertyIndex = popcount16(mask & ((1 << order) - 1));
         let childIndex = this.index + 1;
         for (let i = 0; i < propertyIndex; i++) {
             // Walk through children via their `next` pointer until we get to the right property index
@@ -403,7 +403,7 @@ export class RemoteNode extends RemoteNodeBase implements Node {
             "extended";
         result.push(`dataType: ${dataType}`);
         if (this.dataType === NODE_DATA_TYPE_CHILDREN) {
-            result.push(`childMask: ${this.childMask.toString(2).padStart(8, "0")}`);
+            result.push(`childMask: ${this.childMask.toString(2).padStart(16, "0")}`);
             result.push(`childProperties: ${childProperties[this.kind]?.join(", ")}`);
         }
         return result.join("\n");
@@ -792,6 +792,9 @@ export class RemoteNode extends RemoteNodeBase implements Node {
     }
     get thisArg(): RemoteNode | undefined {
         return this.getNamedChild("thisArg") as RemoteNode;
+    }
+    get throwsType(): RemoteNode | undefined {
+        return this.getNamedChild("throwsType") as RemoteNode;
     }
     get trueType(): RemoteNode | undefined {
         return this.getNamedChild("trueType") as RemoteNode;

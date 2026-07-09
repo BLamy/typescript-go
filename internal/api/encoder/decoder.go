@@ -211,7 +211,7 @@ func (it *childIterator) next() int {
 }
 
 // nextIf returns the index of the next child if the corresponding mask bit is set.
-func (it *childIterator) nextIf(mask uint8, bit uint8) int {
+func (it *childIterator) nextIf(mask uint16, bit uint8) int {
 	if mask&(1<<bit) == 0 {
 		return 0
 	}

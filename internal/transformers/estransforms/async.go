@@ -346,6 +346,7 @@ func (tx *asyncTransformer) visitMethodDeclaration(node *ast.Node) *ast.Node {
 		nil, /*typeParameters*/
 		parameters,
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		body,
 	)
@@ -417,6 +418,7 @@ func (tx *asyncTransformer) visitFunctionDeclaration(node *ast.Node) *ast.Node {
 		nil, /*typeParameters*/
 		parameters,
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		body,
 	)
@@ -452,6 +454,7 @@ func (tx *asyncTransformer) visitFunctionExpression(node *ast.Node) *ast.Node {
 		nil, /*typeParameters*/
 		parameters,
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		body,
 	)
@@ -493,6 +496,7 @@ func (tx *asyncTransformer) visitArrowFunction(node *ast.Node) *ast.Node {
 		nil, /*typeParameters*/
 		parameters,
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		decl.EqualsGreaterThanToken,
 		body,

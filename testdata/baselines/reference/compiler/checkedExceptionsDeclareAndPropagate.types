@@ -1,0 +1,184 @@
+//// [tests/cases/compiler/checkedExceptionsDeclareAndPropagate.ts] ////
+
+=== checkedExceptionsDeclareAndPropagate.ts ===
+class IOError extends Error { readonly tag = "io" as const; }
+>IOError : IOError
+>Error : Error
+>tag : "io"
+>"io" as const : "io"
+>"io" : "io"
+
+class ParseError extends Error { readonly tag = "parse" as const; }
+>ParseError : ParseError
+>Error : Error
+>tag : "parse"
+>"parse" as const : "parse"
+>"parse" : "parse"
+
+function readFile(path: string): string throws IOError {
+>readFile : (path: string) => string throws IOError
+>path : string
+
+    if (!path) throw new IOError("missing");
+>!path : boolean
+>path : string
+>new IOError("missing") : IOError
+>IOError : typeof IOError
+>"missing" : "missing"
+
+    return path;
+>path : string
+}
+
+// Unannotated functions propagate silently; their throws type is inferred.
+function passthrough(): string {
+>passthrough : () => string
+
+    return readFile("x");
+>readFile("x") : string
+>readFile : (path: string) => string throws IOError
+>"x" : "x"
+}
+
+// Error: raises IOError but declares `throws never`.
+function declaresNever(): string throws never {
+>declaresNever : () => string throws never
+
+    return readFile("x");
+>readFile("x") : string
+>readFile : (path: string) => string throws IOError
+>"x" : "x"
+}
+
+// Error: IOError is not assignable to ParseError.
+function declaresWrongType(): string throws ParseError {
+>declaresWrongType : () => string throws ParseError
+
+    return readFile("x");
+>readFile("x") : string
+>readFile : (path: string) => string throws IOError
+>"x" : "x"
+}
+
+// OK: clause is a superset.
+function declaresUnion(): string throws IOError | ParseError {
+>declaresUnion : () => string throws IOError | ParseError
+
+    return readFile("x");
+>readFile("x") : string
+>readFile : (path: string) => string throws IOError
+>"x" : "x"
+}
+
+// OK: handled by try/catch.
+function handles(): string {
+>handles : () => string
+
+    try {
+        return readFile("x");
+>readFile("x") : string
+>readFile : (path: string) => string throws IOError
+>"x" : "x"
+
+    } catch {
+        return "";
+>"" : ""
+    }
+}
+
+// Error: thrown type not in the clause.
+function throwsUndeclared(): void throws IOError {
+>throwsUndeclared : () => void throws IOError
+
+    throw new ParseError("nope");
+>new ParseError("nope") : ParseError
+>ParseError : typeof ParseError
+>"nope" : "nope"
+}
+
+// OK: throw matches the clause.
+function throwsDeclared(): void throws IOError {
+>throwsDeclared : () => void throws IOError
+
+    throw new IOError("yep");
+>new IOError("yep") : IOError
+>IOError : typeof IOError
+>"yep" : "yep"
+}
+
+// `throws any` opts callers out of enforcement.
+function escapeHatch(): void throws any {
+>escapeHatch : () => void throws any
+
+    throw new IOError("anything");
+>new IOError("anything") : IOError
+>IOError : typeof IOError
+>"anything" : "anything"
+}
+function callsEscapeHatch(): void {
+>callsEscapeHatch : () => void
+
+    escapeHatch();
+>escapeHatch() : void
+>escapeHatch : () => void throws any
+}
+
+// Raises in a catch or finally block are not discharged by that try.
+function raiseInCatch(): void throws never {
+>raiseInCatch : () => void throws never
+
+    try {
+        readFile("a");
+>readFile("a") : string
+>readFile : (path: string) => string throws IOError
+>"a" : "a"
+
+    } catch {
+        readFile("b"); // error
+>readFile("b") : string
+>readFile : (path: string) => string throws IOError
+>"b" : "b"
+
+    } finally {
+        readFile("c"); // error
+>readFile("c") : string
+>readFile : (path: string) => string throws IOError
+>"c" : "c"
+    }
+}
+
+// Top-level code must handle everything.
+readFile("top"); // error
+>readFile("top") : string
+>readFile : (path: string) => string throws IOError
+>"top" : "top"
+
+try { readFile("top"); } catch {} // ok
+>readFile("top") : string
+>readFile : (path: string) => string throws IOError
+>"top" : "top"
+
+passthrough(); // error: inferred IOError surfaces here
+>passthrough() : string
+>passthrough : () => string
+
+// Inferred throws propagate through unannotated arrows, including IIFEs.
+const arrowInferred = () => { throw new ParseError("x"); };
+>arrowInferred : () => never
+>() => { throw new ParseError("x"); } : () => never
+>new ParseError("x") : ParseError
+>ParseError : typeof ParseError
+>"x" : "x"
+
+arrowInferred(); // error
+>arrowInferred() : never
+>arrowInferred : () => never
+
+(function () { throw new IOError("iife"); })(); // error
+>(function () { throw new IOError("iife"); })() : never
+>(function () { throw new IOError("iife"); }) : () => never
+>function () { throw new IOError("iife"); } : () => never
+>new IOError("iife") : IOError
+>IOError : typeof IOError
+>"iife" : "iife"
+

@@ -1,0 +1,108 @@
+//// [tests/cases/compiler/checkedExceptionsOverloads.ts] ////
+
+=== checkedExceptionsOverloads.ts ===
+class E1 extends Error { readonly tag = "e1" as const; }
+>E1 : E1
+>Error : Error
+>tag : "e1"
+>"e1" as const : "e1"
+>"e1" : "e1"
+
+class E2 extends Error { readonly tag = "e2" as const; }
+>E2 : E2
+>Error : Error
+>tag : "e2"
+>"e2" as const : "e2"
+>"e2" : "e2"
+
+// Overloads may declare different throws types; the implementation's wider
+// clause is compatible (throws rides the return channel, which
+// overload/implementation compatibility ignores).
+function pick(x: string): string throws E1;
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
+>x : string
+
+function pick(x: number): number throws E2;
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
+>x : number
+
+function pick(x: string | number): string | number throws E1 | E2 {
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
+>x : string | number
+
+    if (typeof x === "string") throw new E1();
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"string" : "string"
+>new E1() : E1
+>E1 : typeof E1
+
+    throw new E2();
+>new E2() : E2
+>E2 : typeof E2
+}
+
+// Call sites use the resolved overload's clause.
+function callsString(): void throws E1 {
+>callsString : () => void throws E1
+
+    pick("a");
+>pick("a") : string
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
+>"a" : "a"
+}
+function callsNumber(): void throws E1 {
+>callsNumber : () => void throws E1
+
+    pick(1); // error: resolves to the E2 overload
+>pick(1) : number
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
+>1 : 1
+}
+function catchesOverload() {
+>catchesOverload : () => "e1" | undefined
+
+    try {
+        pick("x");
+>pick("x") : string
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
+>"x" : "x"
+
+    } catch (e) {
+>e : E1
+
+        const t: "e1" = e.tag; // e: E1, from the matched overload
+>t : "e1"
+>e.tag : "e1"
+>e : E1
+>tag : "e1"
+
+        return t;
+>t : "e1"
+    }
+}
+
+// A union-typed callee raises the union of all constituents' clauses.
+declare const fn: ((x: string) => void throws E1) | ((x: string) => void throws E2);
+>fn : ((x: string) => void throws E1) | ((x: string) => void throws E2)
+>x : string
+>x : string
+
+function callsUnion(): void throws E1 | E2 {
+>callsUnion : () => void throws E1 | E2
+
+    fn("a");
+>fn("a") : void
+>fn : ((x: string) => void throws E1) | ((x: string) => void throws E2)
+>"a" : "a"
+}
+function callsUnionWrong(): void throws E1 {
+>callsUnionWrong : () => void throws E1
+
+    fn("a"); // error: E2 is not declared
+>fn("a") : void
+>fn : ((x: string) => void throws E1) | ((x: string) => void throws E2)
+>"a" : "a"
+}
+

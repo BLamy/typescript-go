@@ -702,7 +702,7 @@ func (tx *classFieldsTransformer) visitMethodOrAccessorDeclaration(node *ast.Nod
 		params := tx.Visitor().VisitNodes(node.ParameterList())
 		tx.inIterationStatement = saved
 
-		funcExpr := tx.Factory().NewFunctionExpression(modifiers, node.BodyData().AsteriskToken, functionName, nil, params, nil, nil, body)
+		funcExpr := tx.Factory().NewFunctionExpression(modifiers, node.BodyData().AsteriskToken, functionName, nil, params, nil, nil, nil, body)
 		assignment := tx.Factory().NewAssignmentExpression(functionName, funcExpr)
 		tx.addPendingExpressions(assignment)
 	}
@@ -2293,6 +2293,7 @@ func (tx *classFieldsTransformer) transformClassMembers(node *ast.Node) (members
 				nil,                           /*typeParameters*/
 				tx.Factory().NewNodeList(nil), /*parameters*/
 				nil,                           /*returnType*/
+				nil,                           /*throwsType*/
 				nil,                           /*fullSignature*/
 				tx.Factory().NewToken(ast.KindEqualsGreaterThanToken), /*equalsGreaterThanToken*/
 				tx.Factory().NewBlock(tx.Factory().NewNodeList([]*ast.Node{statement}), false /*multiline*/),

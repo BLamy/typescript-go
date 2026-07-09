@@ -448,3 +448,23 @@ func BenchmarkDecodeSourceFile(b *testing.B) {
 		}
 	})
 }
+
+func TestDecodeSourceFile_MethodDeclarationRoundTrip(t *testing.T) {
+	t.Parallel()
+	// MethodDeclaration has nine encodable children (throwsType made it nine),
+	// which requires the 16-bit child mask; with an 8-bit mask the body bit
+	// overflowed and decoded bodies were silently nil.
+	sf := parseSourceFile("class C { m(x: number): number throws Error { return x; } }")
+	buf, _, err := encoder.EncodeSourceFile(sf)
+	assert.NilError(t, err)
+
+	decoded, err := encoder.DecodeSourceFile(buf)
+	assert.NilError(t, err)
+	class := decoded.Statements.Nodes[0]
+	method := class.MemberList().Nodes[0].AsMethodDeclaration()
+	assert.Assert(t, method.Name() != nil)
+	assert.Assert(t, method.Parameters != nil)
+	assert.Assert(t, method.Type != nil)
+	assert.Assert(t, method.ThrowsType != nil)
+	assert.Assert(t, method.Body != nil)
+}

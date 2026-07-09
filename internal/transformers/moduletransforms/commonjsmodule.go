@@ -629,7 +629,7 @@ func (tx *CommonJSModuleTransformer) createExportExpression(name *ast.ModuleExpo
 								nil, /*name*/
 								nil, /*typeParameters*/
 								tx.Factory().NewNodeList([]*ast.Node{}),
-								nil, /*type*/
+								nil, nil, /*type*/
 								nil, /*fullSignature*/
 								tx.Factory().NewBlock(
 									tx.Factory().NewNodeList([]*ast.Node{
@@ -946,7 +946,7 @@ func (tx *CommonJSModuleTransformer) visitTopLevelFunctionDeclaration(node *ast.
 			tx.Factory().GetDeclarationName(node.AsNode()),
 			nil, /*typeParameters*/
 			tx.Visitor().VisitNodes(node.Parameters),
-			nil, /*type*/
+			nil, nil, /*type*/
 			nil, /*fullSignature*/
 			tx.Visitor().VisitNode(node.Body),
 		)
@@ -1939,7 +1939,7 @@ func (tx *CommonJSModuleTransformer) createImportCallExpressionCommonJS(arg *ast
 		nil, /*modifiers*/
 		nil, /*typeParameters*/
 		tx.Factory().NewNodeList(parameters),
-		nil, /*type*/
+		nil, nil, /*type*/
 		nil, /*fullSignature*/
 		tx.Factory().NewToken(ast.KindEqualsGreaterThanToken), /*equalsGreaterThanToken*/
 		requireCall,

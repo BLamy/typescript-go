@@ -1,0 +1,81 @@
+//// [tests/cases/compiler/checkedExceptionsOff.ts] ////
+
+=== checkedExceptionsOff.ts ===
+// With checkedExceptions unset, `throws` clauses parse, appear in declaration
+// output, erase from JS output, and produce no diagnostics; catch variables
+// stay unknown.
+
+class IOError extends Error { readonly tag = "io" as const; }
+>IOError : IOError
+>Error : Error
+>tag : "io"
+>"io" as const : "io"
+>"io" : "io"
+
+export function readFile(path: string): string throws IOError {
+>readFile : (path: string) => string throws IOError
+>path : string
+
+    if (!path) throw new IOError("missing");
+>!path : boolean
+>path : string
+>new IOError("missing") : IOError
+>IOError : typeof IOError
+>"missing" : "missing"
+
+    return path;
+>path : string
+}
+
+export const parse = (s: string): number throws IOError => s.length;
+>parse : (s: string) => number throws IOError
+>(s: string): number throws IOError => s.length : (s: string) => number throws IOError
+>s : string
+>s.length : number
+>s : string
+>length : number
+
+export interface Api {
+    fetchUser(id: string): string throws IOError;
+>fetchUser : (id: string) => string throws IOError
+>id : string
+}
+
+export type Fn = (x: string) => number throws IOError;
+>Fn : Fn
+>x : string
+
+// No enforcement in any position.
+export function unannotated(): string {
+>unannotated : () => string
+
+    return readFile("x");
+>readFile("x") : string
+>readFile : (path: string) => string throws IOError
+>"x" : "x"
+}
+readFile("top");
+>readFile("top") : string
+>readFile : (path: string) => string throws IOError
+>"top" : "top"
+
+export function catchStaysUnknown() {
+>catchStaysUnknown : () => string
+
+    try {
+        return readFile("x");
+>readFile("x") : string
+>readFile : (path: string) => string throws IOError
+>"x" : "x"
+
+    } catch (e) {
+>e : unknown
+
+        e; // still unknown
+>e : unknown
+
+        return "";
+>"" : ""
+    }
+}
+

@@ -702,6 +702,7 @@ func getExistingNodeTreeVisitor(b *NodeBuilderImpl, bound *recoveryBoundary) *as
 					node.AsMethodSignatureDeclaration().TypeParameters,
 					node.AsMethodSignatureDeclaration().Parameters,
 					newType,
+					node.AsMethodSignatureDeclaration().ThrowsType,
 				)
 			case ast.KindCallSignature:
 				return factory.UpdateCallSignatureDeclaration(
@@ -709,6 +710,7 @@ func getExistingNodeTreeVisitor(b *NodeBuilderImpl, bound *recoveryBoundary) *as
 					node.AsCallSignatureDeclaration().TypeParameters,
 					node.AsCallSignatureDeclaration().Parameters,
 					newType,
+					node.AsCallSignatureDeclaration().ThrowsType,
 				)
 			case ast.KindJSDocSignature:
 				return factory.UpdateJSDocSignature(
@@ -737,6 +739,7 @@ func getExistingNodeTreeVisitor(b *NodeBuilderImpl, bound *recoveryBoundary) *as
 					node.AsFunctionTypeNode().TypeParameters,
 					node.AsFunctionTypeNode().Parameters,
 					newType,
+					node.AsFunctionTypeNode().ThrowsType,
 				)
 			case ast.KindConstructorType:
 				return factory.UpdateConstructorTypeNode(

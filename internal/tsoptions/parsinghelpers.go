@@ -230,6 +230,8 @@ func parseCompilerOptions(key string, value any, allOptions *core.CompilerOption
 		allOptions.BaseUrl = ParseString(value)
 	case "build":
 		allOptions.Build = ParseTristate(value)
+	case "checkedExceptions":
+		allOptions.CheckedExceptions = floatOrInt32ToFlag[core.CheckedExceptionsMode](value)
 	case "checkJs":
 		allOptions.CheckJs = ParseTristate(value)
 	case "customConditions":

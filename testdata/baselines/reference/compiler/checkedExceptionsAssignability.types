@@ -1,0 +1,90 @@
+//// [tests/cases/compiler/checkedExceptionsAssignability.ts] ////
+
+=== checkedExceptionsAssignability.ts ===
+class IOError extends Error { readonly tag = "io" as const; }
+>IOError : IOError
+>Error : Error
+>tag : "io"
+>"io" as const : "io"
+>"io" : "io"
+
+class ParseError extends Error { readonly tag = "parse" as const; }
+>ParseError : ParseError
+>Error : Error
+>tag : "parse"
+>"parse" as const : "parse"
+>"parse" : "parse"
+
+declare function risky(): void throws IOError;
+>risky : () => void throws IOError
+
+type SafeFn = () => void throws never;
+>SafeFn : SafeFn
+
+type IOFn = () => void throws IOError;
+>IOFn : IOFn
+
+type WideFn = () => void throws IOError | ParseError;
+>WideFn : WideFn
+
+type UntrackedFn = () => void;
+>UntrackedFn : UntrackedFn
+
+declare const ioFn: IOFn;
+>ioFn : IOFn
+
+// Widening is fine (covariance).
+const widened: WideFn = ioFn;
+>widened : WideFn
+>ioFn : IOFn
+
+// Narrowing is an error.
+const narrowed: SafeFn = ioFn;
+>narrowed : SafeFn
+>ioFn : IOFn
+
+// A function that throws nothing is assignable anywhere.
+declare const safeFn: SafeFn;
+>safeFn : SafeFn
+
+const safeAsIO: IOFn = safeFn;
+>safeAsIO : IOFn
+>safeFn : SafeFn
+
+const safeAsUntracked: UntrackedFn = safeFn;
+>safeAsUntracked : UntrackedFn
+>safeFn : SafeFn
+
+// Contextual arrows: inferred throws are checked against the target clause.
+const okHandler: SafeFn = () => {};
+>okHandler : SafeFn
+>() => {} : () => void
+
+const badHandler: SafeFn = () => { risky(); }; // error
+>badHandler : SafeFn
+>() => { risky(); } : () => void
+>risky() : void
+>risky : () => void throws IOError
+
+const okDeclared: IOFn = () => { risky(); };
+>okDeclared : IOFn
+>() => { risky(); } : () => void
+>risky() : void
+>risky : () => void throws IOError
+
+// Untracked declarations (no clause, no body) are treated permissively.
+declare function legacy(): void;
+>legacy : () => void
+
+const legacyAsSafe: SafeFn = legacy;
+>legacyAsSafe : SafeFn
+>legacy : () => void
+
+// `throws unknown` targets accept anything.
+type AnythingFn = () => void throws unknown;
+>AnythingFn : AnythingFn
+
+const anything: AnythingFn = ioFn;
+>anything : AnythingFn
+>ioFn : IOFn
+

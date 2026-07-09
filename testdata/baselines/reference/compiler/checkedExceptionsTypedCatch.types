@@ -1,0 +1,176 @@
+//// [tests/cases/compiler/checkedExceptionsTypedCatch.ts] ////
+
+=== checkedExceptionsTypedCatch.ts ===
+class IOError extends Error { readonly tag = "io" as const; }
+>IOError : IOError
+>Error : Error
+>tag : "io"
+>"io" as const : "io"
+>"io" : "io"
+
+class ParseError extends Error { readonly tag = "parse" as const; }
+>ParseError : ParseError
+>Error : Error
+>tag : "parse"
+>"parse" as const : "parse"
+>"parse" : "parse"
+
+declare function readFile(path: string): string throws IOError;
+>readFile : (path: string) => string throws IOError
+>path : string
+
+declare function parse(text: string): number throws ParseError;
+>parse : (text: string) => number throws ParseError
+>text : string
+
+function combined() {
+>combined : () => number
+
+    try {
+        return parse(readFile("a"));
+>parse(readFile("a")) : number
+>parse : (text: string) => number throws ParseError
+>readFile("a") : string
+>readFile : (path: string) => string throws IOError
+>"a" : "a"
+
+    } catch (e) {
+>e : IOError | ParseError
+
+        // e: IOError | ParseError
+        switch (e.tag) {
+>e.tag : "io" | "parse"
+>e : IOError | ParseError
+>tag : "io" | "parse"
+
+            case "io":
+>"io" : "io"
+
+                return e.message.length;
+>e.message.length : number
+>e.message : string
+>e : IOError
+>message : string
+>length : number
+
+            case "parse":
+>"parse" : "parse"
+
+                return -1;
+>-1 : -1
+>1 : 1
+        }
+    }
+}
+
+function throwsOnly() {
+>throwsOnly : () => "parse"
+
+    try {
+        throw new ParseError("boom");
+>new ParseError("boom") : ParseError
+>ParseError : typeof ParseError
+>"boom" : "boom"
+
+    } catch (e) {
+>e : ParseError
+
+        // e: ParseError, from the throw statement's type
+        const tag: "parse" = e.tag;
+>tag : "parse"
+>e.tag : "parse"
+>e : ParseError
+>tag : "parse"
+
+        return tag;
+>tag : "parse"
+    }
+}
+
+function rethrowNarrowed(): void throws ParseError {
+>rethrowNarrowed : () => void throws ParseError
+
+    try {
+        parse("x");
+>parse("x") : number
+>parse : (text: string) => number throws ParseError
+>"x" : "x"
+
+    } catch (e) {
+>e : ParseError
+
+        // e: ParseError — rethrowing is covered by the clause
+        throw e;
+>e : ParseError
+    }
+}
+
+function nothingTracked() {
+>nothingTracked : () => unknown
+
+    try {
+        return JSON.stringify({});
+>JSON.stringify({}) : string
+>JSON.stringify : { (value: any, replacer?: (this: any, key: string, value: any) => any, space?: string | number): string; (value: any, replacer?: (number | string)[] | null, space?: string | number): string; }
+>JSON : JSON
+>stringify : { (value: any, replacer?: (this: any, key: string, value: any) => any, space?: string | number): string; (value: any, replacer?: (number | string)[] | null, space?: string | number): string; }
+>{} : {}
+
+    } catch (e) {
+>e : unknown
+
+        // e stays unknown: nothing tracked was raised
+        return e;
+>e : unknown
+    }
+}
+
+function explicitAnnotationWins() {
+>explicitAnnotationWins : () => unknown
+
+    try {
+        return readFile("a");
+>readFile("a") : string
+>readFile : (path: string) => string throws IOError
+>"a" : "a"
+
+    } catch (e: unknown) {
+>e : unknown
+
+        // explicit annotation is respected
+        return e;
+>e : unknown
+    }
+}
+
+function innerTryDischarges() {
+>innerTryDischarges : () => "parse" | undefined
+
+    try {
+        try {
+            readFile("a");
+>readFile("a") : string
+>readFile : (path: string) => string throws IOError
+>"a" : "a"
+
+        } catch {
+            throw new ParseError("converted");
+>new ParseError("converted") : ParseError
+>ParseError : typeof ParseError
+>"converted" : "converted"
+        }
+    } catch (e) {
+>e : ParseError
+
+        // e: ParseError — the inner catch discharged IOError but raises ParseError
+        const tag: "parse" = e.tag;
+>tag : "parse"
+>e.tag : "parse"
+>e : ParseError
+>tag : "parse"
+
+        return tag;
+>tag : "parse"
+    }
+}
+

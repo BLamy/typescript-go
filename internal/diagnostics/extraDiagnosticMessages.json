@@ -130,5 +130,29 @@
     "JSDoc comment": {
         "category": "Message",
         "code": 100019
+    },
+    "Enable checked exceptions. Functions must handle the errors their callees declare with 'throws' clauses, or declare them in their own.": {
+        "category": "Message",
+        "code": 100020
+    },
+    "Call may throw '{0}', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.": {
+        "category": "Error",
+        "code": 100021
+    },
+    "Thrown value of type '{0}' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.": {
+        "category": "Error",
+        "code": 100022
+    },
+    "The source signature may throw '{0}', but the target's 'throws' clause only permits '{1}'.": {
+        "category": "Error",
+        "code": 100023
+    },
+    "Call may throw '{0}', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.": {
+        "category": "Error",
+        "code": 100024
+    },
+    "Thrown value of type '{0}' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.": {
+        "category": "Error",
+        "code": 100025
     }
 }

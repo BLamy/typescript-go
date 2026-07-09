@@ -1,0 +1,75 @@
+//// [tests/cases/compiler/checkedExceptionsOff.ts] ////
+
+=== checkedExceptionsOff.ts ===
+// With checkedExceptions unset, `throws` clauses parse, appear in declaration
+// output, erase from JS output, and produce no diagnostics; catch variables
+// stay unknown.
+
+class IOError extends Error { readonly tag = "io" as const; }
+>IOError : Symbol(IOError, Decl(checkedExceptionsOff.ts, 0, 0))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(IOError.tag, Decl(checkedExceptionsOff.ts, 4, 29))
+>const : Symbol(const)
+
+export function readFile(path: string): string throws IOError {
+>readFile : Symbol(readFile, Decl(checkedExceptionsOff.ts, 4, 61))
+>path : Symbol(path, Decl(checkedExceptionsOff.ts, 6, 25))
+>IOError : Symbol(IOError, Decl(checkedExceptionsOff.ts, 0, 0))
+
+    if (!path) throw new IOError("missing");
+>path : Symbol(path, Decl(checkedExceptionsOff.ts, 6, 25))
+>IOError : Symbol(IOError, Decl(checkedExceptionsOff.ts, 0, 0))
+
+    return path;
+>path : Symbol(path, Decl(checkedExceptionsOff.ts, 6, 25))
+}
+
+export const parse = (s: string): number throws IOError => s.length;
+>parse : Symbol(parse, Decl(checkedExceptionsOff.ts, 11, 12))
+>s : Symbol(s, Decl(checkedExceptionsOff.ts, 11, 22))
+>IOError : Symbol(IOError, Decl(checkedExceptionsOff.ts, 0, 0))
+>s.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>s : Symbol(s, Decl(checkedExceptionsOff.ts, 11, 22))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+export interface Api {
+>Api : Symbol(Api, Decl(checkedExceptionsOff.ts, 11, 68))
+
+    fetchUser(id: string): string throws IOError;
+>fetchUser : Symbol(Api.fetchUser, Decl(checkedExceptionsOff.ts, 13, 22))
+>id : Symbol(id, Decl(checkedExceptionsOff.ts, 14, 14))
+>IOError : Symbol(IOError, Decl(checkedExceptionsOff.ts, 0, 0))
+}
+
+export type Fn = (x: string) => number throws IOError;
+>Fn : Symbol(Fn, Decl(checkedExceptionsOff.ts, 15, 1))
+>x : Symbol(x, Decl(checkedExceptionsOff.ts, 17, 18))
+>IOError : Symbol(IOError, Decl(checkedExceptionsOff.ts, 0, 0))
+
+// No enforcement in any position.
+export function unannotated(): string {
+>unannotated : Symbol(unannotated, Decl(checkedExceptionsOff.ts, 17, 54))
+
+    return readFile("x");
+>readFile : Symbol(readFile, Decl(checkedExceptionsOff.ts, 4, 61))
+}
+readFile("top");
+>readFile : Symbol(readFile, Decl(checkedExceptionsOff.ts, 4, 61))
+
+export function catchStaysUnknown() {
+>catchStaysUnknown : Symbol(catchStaysUnknown, Decl(checkedExceptionsOff.ts, 23, 16))
+
+    try {
+        return readFile("x");
+>readFile : Symbol(readFile, Decl(checkedExceptionsOff.ts, 4, 61))
+
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsOff.ts, 28, 13))
+
+        e; // still unknown
+>e : Symbol(e, Decl(checkedExceptionsOff.ts, 28, 13))
+
+        return "";
+    }
+}
+

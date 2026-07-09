@@ -1587,6 +1587,15 @@ func (c *Checker) compareSignaturesRelated(source *Signature, target *Signature,
 			result &= related
 		}
 	}
+	// The throws type rides the return channel: comparisons that ignore return
+	// types (e.g. overload/implementation compatibility) ignore throws too.
+	if checkMode&SignatureCheckModeIgnoreReturnTypes == 0 {
+		throwsRelated := c.compareSignatureThrowsRelated(source, target, reportErrors, errorReporter, compareTypes)
+		if throwsRelated == TernaryFalse {
+			return TernaryFalse
+		}
+		result &= throwsRelated
+	}
 	if checkMode&SignatureCheckModeIgnoreReturnTypes == 0 {
 		// If a signature resolution is already in-flight, skip issuing a circularity error
 		// here and just use the `any` type directly
@@ -1637,6 +1646,50 @@ func (c *Checker) compareSignaturesRelated(source *Signature, target *Signature,
 		}
 	}
 	return result
+}
+
+// compareSignatureThrowsRelated implements the checked-exceptions part of
+// signature relation: a signature's throws type behaves covariantly, like its
+// return type — a source that may throw more than the target declares is not
+// assignable. Only enforced in "error" mode, since a failed relation surfaces
+// as a hard assignability error. Sources with no throws information (no clause,
+// no body to infer from) are treated permissively, as are targets declaring
+// `throws any`/`throws unknown`.
+func (c *Checker) compareSignatureThrowsRelated(source *Signature, target *Signature, reportErrors bool, errorReporter ErrorReporter, compareTypes TypeComparer) Ternary {
+	if c.compilerOptions.CheckedExceptions != core.CheckedExceptionsModeError {
+		return TernaryTrue
+	}
+	// While a throws-inference fixpoint is in flight, inferred throws types are
+	// provisional and relation results are cached permanently, so compare
+	// declared clauses only; no provisional data may poison the cache. Outside
+	// a fixpoint, both sides use declared-or-inferred throws: the target side
+	// matters for mutable bindings whose type came from a throwing initializer —
+	// call sites see the initializer's inferred throws, so assigning a wider
+	// thrower must fail.
+	inferenceInFlight := c.throwsInference != nil
+	var targetThrows *Type
+	if inferenceInFlight {
+		targetThrows = c.getDeclaredThrowsTypeOfSignature(target)
+	} else {
+		targetThrows = c.getThrowsTypeOfSignature(target)
+	}
+	if targetThrows == nil || targetThrows.flags&TypeFlagsAnyOrUnknown != 0 {
+		return TernaryTrue
+	}
+	var sourceThrows *Type
+	if inferenceInFlight {
+		sourceThrows = c.getDeclaredThrowsTypeOfSignature(source)
+	} else {
+		sourceThrows = c.getThrowsTypeOfSignature(source)
+	}
+	if sourceThrows == nil || sourceThrows.flags&TypeFlagsNever != 0 {
+		return TernaryTrue
+	}
+	related := compareTypes(sourceThrows, targetThrows, false /*reportErrors*/)
+	if related == TernaryFalse && reportErrors {
+		errorReporter(diagnostics.The_source_signature_may_throw_0_but_the_target_s_throws_clause_only_permits_1, c.TypeToString(sourceThrows), c.TypeToString(targetThrows))
+	}
+	return related
 }
 
 func (c *Checker) compareTypePredicateRelatedTo(source *TypePredicate, target *TypePredicate, reportErrors bool, errorReporter ErrorReporter, compareTypes TypeComparer) Ternary {

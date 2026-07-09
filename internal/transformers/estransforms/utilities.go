@@ -194,7 +194,7 @@ func (s *superAccessState) createSuperAccessVariableStatement() *ast.Node {
 		getterArrow := f.NewArrowFunction(
 			nil, nil,
 			f.NewNodeList([]*ast.Node{}),
-			nil, nil,
+			nil, nil, nil,
 			f.NewToken(ast.KindEqualsGreaterThanToken),
 			getterBody,
 		)
@@ -212,7 +212,7 @@ func (s *superAccessState) createSuperAccessVariableStatement() *ast.Node {
 			setterArrow := f.NewArrowFunction(
 				nil, nil,
 				f.NewNodeList([]*ast.Node{vParam}),
-				nil, nil,
+				nil, nil, nil,
 				f.NewToken(ast.KindEqualsGreaterThanToken),
 				assignExpr,
 			)

@@ -1,0 +1,26 @@
+//// [tests/cases/compiler/checkedExceptionsWarningMode.ts] ////
+
+=== checkedExceptionsWarningMode.ts ===
+class IOError extends Error {}
+>IOError : IOError
+>Error : Error
+
+declare function readFile(path: string): string throws IOError;
+>readFile : (path: string) => string throws IOError
+>path : string
+
+// Reported as a warning, not an error.
+function unhandled(): string throws never {
+>unhandled : () => string throws never
+
+    return readFile("x");
+>readFile("x") : string
+>readFile : (path: string) => string throws IOError
+>"x" : "x"
+}
+
+readFile("top");
+>readFile("top") : string
+>readFile : (path: string) => string throws IOError
+>"top" : "top"
+

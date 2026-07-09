@@ -1,0 +1,52 @@
+checkedExceptionsRecursionAndEdgeCases.ts(7,36): error TS100021: Call may throw 'E1 | E2', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsRecursionAndEdgeCases.ts(8,36): error TS100021: Call may throw 'E1 | E2', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsRecursionAndEdgeCases.ts(13,1): error TS100024: Call may throw 'E1', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsRecursionAndEdgeCases.ts(17,1): error TS100024: Call may throw 'E1', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsRecursionAndEdgeCases.ts(22,1): error TS100024: Call may throw 'E1', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsRecursionAndEdgeCases.ts(30,45): error TS2304: Cannot find name 'CompletelyUndefinedName'.
+
+
+==== checkedExceptionsRecursionAndEdgeCases.ts (6 errors) ====
+    class E1 extends Error { readonly tag = "e1" as const; }
+    class E2 extends Error { readonly tag = "e2" as const; }
+    
+    // Finding 1: symmetric mutual recursion must report symmetrically.
+    function f(x: number): void { if (x > 0) throw new E1(); g(x - 1); }
+    function g(x: number): void { if (x > 0) throw new E2(); f(x - 1); }
+    function wrapF(): void throws E1 { f(3); }  // error: E2 missing
+                                       ~~~~
+!!! error TS100021: Call may throw 'E1 | E2', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    function wrapG(): void throws E2 { g(3); }  // error: E1 missing
+                                       ~~~~
+!!! error TS100021: Call may throw 'E1 | E2', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    
+    // Finding 2: mutually recursive rethrow wrappers, no TS7022, still enforced.
+    function a(): void { try { b(); } catch (e) { throw e; } }
+    function b(): void { try { a(); } catch (e) { throw e; } throw new E1(); }
+    a(); // error: E1 surfaces at top level
+    ~~~
+!!! error TS100024: Call may throw 'E1', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+    
+    // Finding 3: union with an untracked constituent keeps the tracked side.
+    declare const uMixed: (() => void throws E1) | (() => void);
+    uMixed(); // error: E1
+    ~~~~~~~~
+!!! error TS100024: Call may throw 'E1', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+    
+    // Finding 4: default parameter initializers participate in inference.
+    declare function boom(): number throws E1;
+    function noClause(x = boom()) { return x; }
+    noClause(); // error: E1
+    ~~~~~~~~~~
+!!! error TS100024: Call may throw 'E1', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+    
+    // Parser F1: parenless-return-type arrows with clauses.
+    const t1 = () throws E1 => { throw new E1(); };
+    const t2 = async () throws E1 => { throw new E1(); };
+    function takesT1(): void throws E1 { t1(); }
+    
+    // Checker F3: unresolved clause type reports even when never called.
+    declare function neverCalled(): void throws CompletelyUndefinedName;
+                                                ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'CompletelyUndefinedName'.
+    

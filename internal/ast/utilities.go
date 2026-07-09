@@ -3345,6 +3345,7 @@ func ReplaceModifiers(factory *NodeFactory, node *Node, modifierArray *ModifierL
 			node.TypeParameterList(),
 			node.ParameterList(),
 			node.Type(),
+			node.AsMethodSignatureDeclaration().ThrowsType,
 		)
 	case KindMethodDeclaration:
 		return factory.UpdateMethodDeclaration(
@@ -3356,6 +3357,7 @@ func ReplaceModifiers(factory *NodeFactory, node *Node, modifierArray *ModifierL
 			node.TypeParameterList(),
 			node.ParameterList(),
 			node.Type(),
+			node.AsMethodDeclaration().ThrowsType,
 			node.AsMethodDeclaration().FullSignature,
 			node.Body(),
 		)
@@ -3407,6 +3409,7 @@ func ReplaceModifiers(factory *NodeFactory, node *Node, modifierArray *ModifierL
 			node.TypeParameterList(),
 			node.ParameterList(),
 			node.Type(),
+			node.AsFunctionExpression().ThrowsType,
 			node.AsFunctionExpression().FullSignature,
 			node.Body(),
 		)
@@ -3417,6 +3420,7 @@ func ReplaceModifiers(factory *NodeFactory, node *Node, modifierArray *ModifierL
 			node.TypeParameterList(),
 			node.ParameterList(),
 			node.Type(),
+			node.AsArrowFunction().ThrowsType,
 			node.AsArrowFunction().FullSignature,
 			node.AsArrowFunction().EqualsGreaterThanToken,
 			node.Body(),
@@ -3445,6 +3449,7 @@ func ReplaceModifiers(factory *NodeFactory, node *Node, modifierArray *ModifierL
 			node.TypeParameterList(),
 			node.ParameterList(),
 			node.Type(),
+			node.AsFunctionDeclaration().ThrowsType,
 			node.AsFunctionDeclaration().FullSignature,
 			node.Body(),
 		)
