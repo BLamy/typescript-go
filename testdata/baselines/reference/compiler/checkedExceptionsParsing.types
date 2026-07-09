@@ -41,6 +41,17 @@ type FnType = (x: string) => number throws E1;
 >FnType : FnType
 >x : string
 
+interface Callable {
+    (x: string): number throws E1;
+>x : string
+}
+type CallableLiteral = {
+>CallableLiteral : CallableLiteral
+
+    (x: string): number throws E1 | E2;
+>x : string
+
+};
 const obj = {
 >obj : { method(): void throws E1; }
 >{    method(): void throws E1 {},} : { method(): void throws E1; }

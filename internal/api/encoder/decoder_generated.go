@@ -454,7 +454,8 @@ func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices
 		typeParameters := d.nodeListAt(it.nextIf(mask, 0))
 		parameters := d.nodeListAt(it.nextIf(mask, 1))
 		typeNode := d.nodeAt(it.nextIf(mask, 2))
-		return d.factory.NewCallSignatureDeclaration(typeParameters, parameters, typeNode), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 3))
+		return d.factory.NewCallSignatureDeclaration(typeParameters, parameters, typeNode, throwsType), nil
 	case ast.KindConstructSignature:
 		it := newChildIter(childIndices)
 		typeParameters := d.nodeListAt(it.nextIf(mask, 0))

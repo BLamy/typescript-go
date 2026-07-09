@@ -2966,31 +2966,35 @@ type CallSignatureDeclaration struct {
 	TypeSyntaxBase
 }
 
-func (f *NodeFactory) NewCallSignatureDeclaration(typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode) *Node {
+func (f *NodeFactory) NewCallSignatureDeclaration(typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode) *Node {
 	data := &CallSignatureDeclaration{}
 	data.TypeParameters = typeParameters
 	data.Parameters = parameters
 	data.Type = typeNode
+	data.ThrowsType = throwsType
 	return f.newNode(KindCallSignature, data)
 }
 
-func (f *NodeFactory) UpdateCallSignatureDeclaration(node *CallSignatureDeclaration, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode) *Node {
-	if typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type {
-		return updateNode(f.NewCallSignatureDeclaration(typeParameters, parameters, typeNode), node.AsNode(), f.hooks)
+func (f *NodeFactory) UpdateCallSignatureDeclaration(node *CallSignatureDeclaration, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode) *Node {
+	if typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type || throwsType != node.ThrowsType {
+		return updateNode(f.NewCallSignatureDeclaration(typeParameters, parameters, typeNode, throwsType), node.AsNode(), f.hooks)
 	}
 	return node.AsNode()
 }
 
 func (node *CallSignatureDeclaration) ForEachChild(v Visitor) bool {
-	return visitNodeList(v, node.TypeParameters) || visitNodeList(v, node.Parameters) || visit(v, node.Type)
+	return visitNodeList(v, node.TypeParameters) ||
+		visitNodeList(v, node.Parameters) ||
+		visit(v, node.Type) ||
+		visit(v, node.ThrowsType)
 }
 
 func (node *CallSignatureDeclaration) VisitEachChild(v *NodeVisitor) *Node {
-	return v.Factory.UpdateCallSignatureDeclaration(node, v.visitNodes(node.TypeParameters), v.visitNodes(node.Parameters), v.visitNode(node.Type))
+	return v.Factory.UpdateCallSignatureDeclaration(node, v.visitNodes(node.TypeParameters), v.visitNodes(node.Parameters), v.visitNode(node.Type), v.visitNode(node.ThrowsType))
 }
 
 func (node *CallSignatureDeclaration) Clone(f NodeFactoryCoercible) *Node {
-	return cloneNode(f.AsNodeFactory().NewCallSignatureDeclaration(node.TypeParameters, node.Parameters, node.Type), node.AsNode(), f.AsNodeFactory().hooks)
+	return cloneNode(f.AsNodeFactory().NewCallSignatureDeclaration(node.TypeParameters, node.Parameters, node.Type, node.ThrowsType), node.AsNode(), f.AsNodeFactory().hooks)
 }
 
 func IsCallSignatureDeclaration(node *Node) bool {

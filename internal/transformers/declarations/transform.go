@@ -940,6 +940,7 @@ func (tx *DeclarationTransformer) transformCallSignatureDeclaration(input *ast.C
 		tx.ensureTypeParams(input.AsNode(), input.TypeParameters),
 		tx.updateParamList(input.AsNode(), input.Parameters),
 		tx.ensureType(input.AsNode(), false),
+		tx.Visitor().Visit(input.ThrowsType),
 	)
 }
 

@@ -19,15 +19,15 @@ class E2 extends Error { readonly tag = "e2" as const; }
 // clause is compatible (throws rides the return channel, which
 // overload/implementation compatibility ignores).
 function pick(x: string): string throws E1;
->pick : { (x: string): string; (x: number): number; }
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
 >x : string
 
 function pick(x: number): number throws E2;
->pick : { (x: string): string; (x: number): number; }
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
 >x : number
 
 function pick(x: string | number): string | number throws E1 | E2 {
->pick : { (x: string): string; (x: number): number; }
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
 >x : string | number
 
     if (typeof x === "string") throw new E1();
@@ -49,7 +49,7 @@ function callsString(): void throws E1 {
 
     pick("a");
 >pick("a") : string
->pick : { (x: string): string; (x: number): number; }
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
 >"a" : "a"
 }
 function callsNumber(): void throws E1 {
@@ -57,7 +57,7 @@ function callsNumber(): void throws E1 {
 
     pick(1); // error: resolves to the E2 overload
 >pick(1) : number
->pick : { (x: string): string; (x: number): number; }
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
 >1 : 1
 }
 function catchesOverload() {
@@ -66,7 +66,7 @@ function catchesOverload() {
     try {
         pick("x");
 >pick("x") : string
->pick : { (x: string): string; (x: number): number; }
+>pick : { (x: string): string throws E1; (x: number): number throws E2; }
 >"x" : "x"
 
     } catch (e) {
