@@ -166,12 +166,32 @@ const severityNames = { 1: "error", 2: "warning", 3: "info", 4: "hint" };
 async function main() {
     const monaco = await loadMonaco();
 
-    // The tsgo LSP server is the single source of truth; silence Monaco's
-    // built-in TypeScript workers (they cannot parse `throws` clauses).
+    // The tsgo LSP server is the single source of truth. Monaco's built-in
+    // TypeScript mode auto-registers its own hover/completion/etc. providers
+    // backed by a bundled, unmodified TS engine (it cannot parse `throws`
+    // clauses) — left enabled, they stack with ours and every hover/completion
+    // shows duplicated, conflicting entries. Disabling diagnostics alone does
+    // not stop this; every worker-backed feature must be turned off here so
+    // only our LSP-backed providers (registered below) respond.
     monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
         noSemanticValidation: true,
         noSyntaxValidation: true,
         noSuggestionDiagnostics: true,
+    });
+    monaco.languages.typescript.typescriptDefaults.setModeConfiguration({
+        completionItems: false,
+        hovers: false,
+        documentSymbols: false,
+        definitions: false,
+        references: false,
+        documentHighlights: false,
+        rename: false,
+        diagnostics: false,
+        documentRangeFormattingEdits: false,
+        signatureHelp: false,
+        onTypeFormattingEdits: false,
+        codeActions: false,
+        inlayHints: false,
     });
 
     const editor = monaco.editor.create(document.getElementById("editor"), {

@@ -62,13 +62,13 @@ const okHandler: SafeFn = () => {};
 
 const badHandler: SafeFn = () => { risky(); }; // error
 >badHandler : SafeFn
->() => { risky(); } : () => void
+>() => { risky(); } : () => void throws IOError
 >risky() : void
 >risky : () => void throws IOError
 
 const okDeclared: IOFn = () => { risky(); };
 >okDeclared : IOFn
->() => { risky(); } : () => void
+>() => { risky(); } : () => void throws IOError
 >risky() : void
 >risky : () => void throws IOError
 

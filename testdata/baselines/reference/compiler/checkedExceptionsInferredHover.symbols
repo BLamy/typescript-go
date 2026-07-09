@@ -1,0 +1,60 @@
+//// [tests/cases/compiler/checkedExceptionsInferredHover.ts] ////
+
+=== checkedExceptionsInferredHover.ts ===
+class IOError extends Error { readonly tag = "io" as const; }
+>IOError : Symbol(IOError, Decl(checkedExceptionsInferredHover.ts, 0, 0))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(IOError.tag, Decl(checkedExceptionsInferredHover.ts, 0, 29))
+>const : Symbol(const)
+
+class ParseError extends Error { readonly tag = "parse" as const; }
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsInferredHover.ts, 0, 61))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+>tag : Symbol(ParseError.tag, Decl(checkedExceptionsInferredHover.ts, 1, 32))
+>const : Symbol(const)
+
+declare function readFile(path: string): string throws IOError;
+>readFile : Symbol(readFile, Decl(checkedExceptionsInferredHover.ts, 1, 67))
+>path : Symbol(path, Decl(checkedExceptionsInferredHover.ts, 3, 26))
+>IOError : Symbol(IOError, Decl(checkedExceptionsInferredHover.ts, 0, 0))
+
+declare function parseConfig(text: string): number throws ParseError;
+>parseConfig : Symbol(parseConfig, Decl(checkedExceptionsInferredHover.ts, 3, 63))
+>text : Symbol(text, Decl(checkedExceptionsInferredHover.ts, 4, 29))
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsInferredHover.ts, 0, 61))
+
+// Unannotated: its throws type is inferred (IOError | ParseError). Signatures
+// rebuilt from types — hover/quickinfo, and declaration emit for bindings
+// without their own explicit type annotation — now surface it, not just an
+// explicit clause.
+export function loadConfig(path: string) {
+>loadConfig : Symbol(loadConfig, Decl(checkedExceptionsInferredHover.ts, 4, 69))
+>path : Symbol(path, Decl(checkedExceptionsInferredHover.ts, 10, 27))
+
+    return parseConfig(readFile(path));
+>parseConfig : Symbol(parseConfig, Decl(checkedExceptionsInferredHover.ts, 3, 63))
+>readFile : Symbol(readFile, Decl(checkedExceptionsInferredHover.ts, 1, 67))
+>path : Symbol(path, Decl(checkedExceptionsInferredHover.ts, 10, 27))
+}
+
+// Same, via an arrow assigned to a variable with no explicit type annotation:
+// the const's type must be synthesized, so this exercises the same node
+// builder path used by hover.
+export const loadConfigArrow = (path: string) => parseConfig(readFile(path));
+>loadConfigArrow : Symbol(loadConfigArrow, Decl(checkedExceptionsInferredHover.ts, 17, 12))
+>path : Symbol(path, Decl(checkedExceptionsInferredHover.ts, 17, 32))
+>parseConfig : Symbol(parseConfig, Decl(checkedExceptionsInferredHover.ts, 3, 63))
+>readFile : Symbol(readFile, Decl(checkedExceptionsInferredHover.ts, 1, 67))
+>path : Symbol(path, Decl(checkedExceptionsInferredHover.ts, 17, 32))
+
+// A function that infers to `never` (no tracked raises) gets no synthesized
+// clause at all — consistent with `throws never` not being the same as "no
+// clause", but there is nothing to show either way.
+export function safe(x: number) {
+>safe : Symbol(safe, Decl(checkedExceptionsInferredHover.ts, 17, 77))
+>x : Symbol(x, Decl(checkedExceptionsInferredHover.ts, 22, 21))
+
+    return x + 1;
+>x : Symbol(x, Decl(checkedExceptionsInferredHover.ts, 22, 21))
+}
+

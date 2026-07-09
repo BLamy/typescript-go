@@ -1,6 +1,6 @@
-checkedExceptionsInferredTargets.ts(10,1): error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number) => void'.
+checkedExceptionsInferredTargets.ts(10,1): error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number) => void throws E1'.
   The source signature may throw 'E2', but the target's 'throws' clause only permits 'E1'.
-checkedExceptionsInferredTargets.ts(16,1): error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number | undefined) => void'.
+checkedExceptionsInferredTargets.ts(16,1): error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number | undefined) => void throws E1'.
   The source signature may throw 'E2', but the target's 'throws' clause only permits 'E1'.
 
 
@@ -16,7 +16,7 @@ checkedExceptionsInferredTargets.ts(16,1): error TS2322: Type '() => void throws
     let f = (x?: number) => { if (x) throw new E1(); };
     f = throwsE2; // error
     ~
-!!! error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number) => void'.
+!!! error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number) => void throws E1'.
 !!! error TS2322:   The source signature may throw 'E2', but the target's 'throws' clause only permits 'E1'.
     f = (x?: number) => { if (x) throw new E1(); }; // ok: same set
     
@@ -25,7 +25,7 @@ checkedExceptionsInferredTargets.ts(16,1): error TS2322: Type '() => void throws
     let h = named;
     h = throwsE2; // error
     ~
-!!! error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number | undefined) => void'.
+!!! error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number | undefined) => void throws E1'.
 !!! error TS2322:   The source signature may throw 'E2', but the target's 'throws' clause only permits 'E1'.
     
     // An untracked initializer (throws nothing) stays permissive.

@@ -32,7 +32,7 @@ function readFile(path: string): string throws IOError {
 
 // Unannotated functions propagate silently; their throws type is inferred.
 function passthrough(): string {
->passthrough : () => string
+>passthrough : () => string throws IOError
 
     return readFile("x");
 >readFile("x") : string
@@ -116,7 +116,7 @@ function escapeHatch(): void throws any {
 >"anything" : "anything"
 }
 function callsEscapeHatch(): void {
->callsEscapeHatch : () => void
+>callsEscapeHatch : () => void throws any
 
     escapeHatch();
 >escapeHatch() : void
@@ -160,24 +160,24 @@ try { readFile("top"); } catch {} // ok
 
 passthrough(); // error: inferred IOError surfaces here
 >passthrough() : string
->passthrough : () => string
+>passthrough : () => string throws IOError
 
 // Inferred throws propagate through unannotated arrows, including IIFEs.
 const arrowInferred = () => { throw new ParseError("x"); };
->arrowInferred : () => never
->() => { throw new ParseError("x"); } : () => never
+>arrowInferred : () => never throws ParseError
+>() => { throw new ParseError("x"); } : () => never throws ParseError
 >new ParseError("x") : ParseError
 >ParseError : typeof ParseError
 >"x" : "x"
 
 arrowInferred(); // error
 >arrowInferred() : never
->arrowInferred : () => never
+>arrowInferred : () => never throws ParseError
 
 (function () { throw new IOError("iife"); })(); // error
 >(function () { throw new IOError("iife"); })() : never
->(function () { throw new IOError("iife"); }) : () => never
->function () { throw new IOError("iife"); } : () => never
+>(function () { throw new IOError("iife"); }) : () => never throws IOError
+>function () { throw new IOError("iife"); } : () => never throws IOError
 >new IOError("iife") : IOError
 >IOError : typeof IOError
 >"iife" : "iife"

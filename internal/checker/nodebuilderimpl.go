@@ -1821,10 +1821,14 @@ func (b *NodeBuilderImpl) signatureToSignatureDeclarationHelper(signature *Signa
 
 	returnTypeNode := b.serializeReturnTypeForSignature(signature, true)
 
-	// Reconstruct an explicit `throws` clause so hovers and declaration emit
-	// preserve it for signatures rebuilt from types.
+	// Reconstruct a `throws` clause so hovers and declaration emit preserve it
+	// for signatures rebuilt from types. Includes the *inferred* throws type
+	// for unannotated functions, not just an explicit clause — getThrowsTypeOfSignature
+	// falls back to getDeclaredThrowsTypeOfSignature's exact behavior whenever
+	// checkedExceptions is off (inference is gated off in that case), so this only
+	// changes anything for callers who opted into the feature.
 	var throwsTypeNode *ast.TypeNode
-	if throwsType := b.ch.getDeclaredThrowsTypeOfSignature(signature); throwsType != nil {
+	if throwsType := b.ch.getThrowsTypeOfSignature(signature); throwsType != nil {
 		throwsTypeNode = b.typeToTypeNode(throwsType)
 	}
 

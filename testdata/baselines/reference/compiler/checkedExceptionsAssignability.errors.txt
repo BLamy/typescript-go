@@ -1,6 +1,6 @@
 checkedExceptionsAssignability.ts(17,7): error TS2322: Type 'IOFn' is not assignable to type 'SafeFn'.
   The source signature may throw 'IOError', but the target's 'throws' clause only permits 'never'.
-checkedExceptionsAssignability.ts(26,7): error TS2322: Type '() => void' is not assignable to type 'SafeFn'.
+checkedExceptionsAssignability.ts(26,7): error TS2322: Type '() => void throws IOError' is not assignable to type 'SafeFn'.
   The source signature may throw 'IOError', but the target's 'throws' clause only permits 'never'.
 
 
@@ -35,7 +35,7 @@ checkedExceptionsAssignability.ts(26,7): error TS2322: Type '() => void' is not 
     const okHandler: SafeFn = () => {};
     const badHandler: SafeFn = () => { risky(); }; // error
           ~~~~~~~~~~
-!!! error TS2322: Type '() => void' is not assignable to type 'SafeFn'.
+!!! error TS2322: Type '() => void throws IOError' is not assignable to type 'SafeFn'.
 !!! error TS2322:   The source signature may throw 'IOError', but the target's 'throws' clause only permits 'never'.
     const okDeclared: IOFn = () => { risky(); };
     

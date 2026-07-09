@@ -1,0 +1,67 @@
+//// [tests/cases/compiler/checkedExceptionsInferredHover.ts] ////
+
+=== checkedExceptionsInferredHover.ts ===
+class IOError extends Error { readonly tag = "io" as const; }
+>IOError : IOError
+>Error : Error
+>tag : "io"
+>"io" as const : "io"
+>"io" : "io"
+
+class ParseError extends Error { readonly tag = "parse" as const; }
+>ParseError : ParseError
+>Error : Error
+>tag : "parse"
+>"parse" as const : "parse"
+>"parse" : "parse"
+
+declare function readFile(path: string): string throws IOError;
+>readFile : (path: string) => string throws IOError
+>path : string
+
+declare function parseConfig(text: string): number throws ParseError;
+>parseConfig : (text: string) => number throws ParseError
+>text : string
+
+// Unannotated: its throws type is inferred (IOError | ParseError). Signatures
+// rebuilt from types — hover/quickinfo, and declaration emit for bindings
+// without their own explicit type annotation — now surface it, not just an
+// explicit clause.
+export function loadConfig(path: string) {
+>loadConfig : (path: string) => number throws IOError | ParseError
+>path : string
+
+    return parseConfig(readFile(path));
+>parseConfig(readFile(path)) : number
+>parseConfig : (text: string) => number throws ParseError
+>readFile(path) : string
+>readFile : (path: string) => string throws IOError
+>path : string
+}
+
+// Same, via an arrow assigned to a variable with no explicit type annotation:
+// the const's type must be synthesized, so this exercises the same node
+// builder path used by hover.
+export const loadConfigArrow = (path: string) => parseConfig(readFile(path));
+>loadConfigArrow : (path: string) => number throws IOError | ParseError
+>(path: string) => parseConfig(readFile(path)) : (path: string) => number throws IOError | ParseError
+>path : string
+>parseConfig(readFile(path)) : number
+>parseConfig : (text: string) => number throws ParseError
+>readFile(path) : string
+>readFile : (path: string) => string throws IOError
+>path : string
+
+// A function that infers to `never` (no tracked raises) gets no synthesized
+// clause at all — consistent with `throws never` not being the same as "no
+// clause", but there is nothing to show either way.
+export function safe(x: number) {
+>safe : (x: number) => number
+>x : number
+
+    return x + 1;
+>x + 1 : number
+>x : number
+>1 : 1
+}
+

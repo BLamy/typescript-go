@@ -22,8 +22,8 @@ declare const throwsE2: () => void throws E2;
 // reassignment: call sites of `f` see the initializer's inferred set (E1),
 // so assigning a wider thrower must fail.
 let f = (x?: number) => { if (x) throw new E1(); };
->f : (x?: number) => void
->(x?: number) => { if (x) throw new E1(); } : (x?: number) => void
+>f : (x?: number) => void throws E1
+>(x?: number) => { if (x) throw new E1(); } : (x?: number) => void throws E1
 >x : number | undefined
 >x : number | undefined
 >new E1() : E1
@@ -31,13 +31,13 @@ let f = (x?: number) => { if (x) throw new E1(); };
 
 f = throwsE2; // error
 >f = throwsE2 : () => void throws E2
->f : (x?: number) => void
+>f : (x?: number) => void throws E1
 >throwsE2 : () => void throws E2
 
 f = (x?: number) => { if (x) throw new E1(); }; // ok: same set
->f = (x?: number) => { if (x) throw new E1(); } : (x?: number) => void
->f : (x?: number) => void
->(x?: number) => { if (x) throw new E1(); } : (x?: number) => void
+>f = (x?: number) => { if (x) throw new E1(); } : (x?: number) => void throws E1
+>f : (x?: number) => void throws E1
+>(x?: number) => { if (x) throw new E1(); } : (x?: number) => void throws E1
 >x : number | undefined
 >x : number | undefined
 >new E1() : E1
@@ -45,19 +45,19 @@ f = (x?: number) => { if (x) throw new E1(); }; // ok: same set
 
 // Same through a function declaration's type.
 function named(x?: number) { if (x) throw new E1(); }
->named : (x?: number) => void
+>named : (x?: number) => void throws E1
 >x : number | undefined
 >x : number | undefined
 >new E1() : E1
 >E1 : typeof E1
 
 let h = named;
->h : (x?: number) => void
->named : (x?: number) => void
+>h : (x?: number) => void throws E1
+>named : (x?: number) => void throws E1
 
 h = throwsE2; // error
 >h = throwsE2 : () => void throws E2
->h : (x?: number) => void
+>h : (x?: number) => void throws E1
 >throwsE2 : () => void throws E2
 
 // An untracked initializer (throws nothing) stays permissive.
@@ -79,7 +79,7 @@ function outer(): void {
     try {
         f();
 >f() : void
->f : (x?: number) => void
+>f : (x?: number) => void throws E1
 
     } catch (e) {
 >e : E1
