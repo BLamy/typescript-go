@@ -1,4 +1,4 @@
-// @checkedExceptions: error
+// @checkedExceptions: true
 // @strict: true
 
 class IOError extends Error { readonly tag = "io" as const; }
@@ -29,7 +29,7 @@ const okHandler: SafeFn = () => {};
 const badHandler: SafeFn = () => { risky(); }; // error
 const okDeclared: IOFn = () => { risky(); };
 
-// Untracked declarations (no clause, no body) are treated permissively.
+// Declarations without a clause or body have the top unknown effect.
 declare function legacy(): void;
 const legacyAsSafe: SafeFn = legacy;
 

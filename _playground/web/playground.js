@@ -50,7 +50,7 @@ loadConfig("boot.json");
 
 const mode = (() => {
     const m = new URLSearchParams(location.search).get("mode");
-    return m === "off" || m === "warning" || m === "strict" ? m : "error";
+    return m === "off" ? "off" : "on";
 })();
 
 const modeSelect = document.getElementById("mode");
@@ -70,7 +70,7 @@ function setStatus(kind, text) {
 
 function tsconfig() {
     const options = { strict: true, noEmit: true, module: "esnext", target: "esnext" };
-    if (mode !== "off") options.checkedExceptions = mode;
+    if (mode !== "off") options.checkedExceptions = true;
     return JSON.stringify({ compilerOptions: options });
 }
 

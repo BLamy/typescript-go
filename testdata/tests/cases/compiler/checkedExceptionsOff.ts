@@ -1,7 +1,8 @@
+// @checkedExceptions: false
 // @strict: true
 // @declaration: true
 
-// With checkedExceptions unset, `throws` clauses parse, appear in declaration
+// With checkedExceptions disabled, `throws` clauses parse, appear in declaration
 // output, erase from JS output, and produce no diagnostics; catch variables
 // stay unknown.
 

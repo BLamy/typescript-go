@@ -1,10 +1,10 @@
-checkedExceptionsStrictAsync.ts(8,9): error TS100026: Promise-returning call may reject with '"async"'. A synchronous try/catch does not handle that rejection; await or return the promise.
-checkedExceptionsStrictAsync.ts(15,5): error TS100022: Thrown value of type '"async"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsStrictAsync.ts(37,9): error TS100026: Promise-returning call may reject with 'unknown'. A synchronous try/catch does not handle that rejection; await or return the promise.
-checkedExceptionsStrictAsync.ts(65,9): error TS100027: Callback may throw '"later"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
+checkedExceptionsSoundAsync.ts(8,9): error TS100026: Promise-returning call may reject with '"async"'. A synchronous try/catch does not handle that rejection; await or return the promise.
+checkedExceptionsSoundAsync.ts(15,5): error TS100022: Thrown value of type '"async"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundAsync.ts(37,9): error TS100026: Promise-returning call may reject with 'unknown'. A synchronous try/catch does not handle that rejection; await or return the promise.
+checkedExceptionsSoundAsync.ts(65,9): error TS100027: Callback may throw '"later"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
 
 
-==== checkedExceptionsStrictAsync.ts (4 errors) ====
+==== checkedExceptionsSoundAsync.ts (4 errors) ====
     async function rejects(): Promise<void> throws "async" {
         throw "async";
     }

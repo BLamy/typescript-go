@@ -185,13 +185,6 @@ var moduleOptionMap = collections.NewOrderedMapFromList([]collections.MapEntry[s
 	{Key: "preserve", Value: core.ModuleKindPreserve},
 })
 
-var checkedExceptionsOptionMap = collections.NewOrderedMapFromList([]collections.MapEntry[string, any]{
-	{Key: "off", Value: core.CheckedExceptionsModeOff},
-	{Key: "warning", Value: core.CheckedExceptionsModeWarning},
-	{Key: "error", Value: core.CheckedExceptionsModeError},
-	{Key: "strict", Value: core.CheckedExceptionsModeStrict},
-})
-
 var moduleDetectionOptionMap = collections.NewOrderedMapFromList([]collections.MapEntry[string, any]{
 	{Key: "auto", Value: core.ModuleDetectionKindAuto},
 	{Key: "legacy", Value: core.ModuleDetectionKindLegacy},

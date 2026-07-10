@@ -1,4 +1,4 @@
-// @checkedExceptions: error
+// @checkedExceptions: true
 // @strict: true
 
 class E1 extends Error { readonly tag = "e1" as const; }

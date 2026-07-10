@@ -1,4 +1,4 @@
-// @checkedExceptions: strict
+// @checkedExceptions: true
 // @strict: true
 // @target: es2022
 

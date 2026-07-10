@@ -1,6 +1,6 @@
-//// [tests/cases/compiler/checkedExceptionsStrictSoundness.ts] ////
+//// [tests/cases/compiler/checkedExceptionsSoundness.ts] ////
 
-=== checkedExceptionsStrictSoundness.ts ===
+=== checkedExceptionsSoundness.ts ===
 declare function legacy(): void;
 >legacy : () => void throws unknown
 
@@ -83,6 +83,24 @@ function higherOrderInNever(): void throws never {
 >"callback" : "callback"
 }
 
+// A callback cannot hide inside an option object and escape the caller's
+// synchronous exception boundary.
+declare function register(options: {
+>register : (options: { callback: () => void throws "nested"; }) => void throws never
+>options : { callback: () => void throws "nested"; }
+
+    callback: () => void throws "nested";
+>callback : () => void throws "nested"
+
+}): void throws never;
+register({ callback: () => { throw "nested"; } });
+>register({ callback: () => { throw "nested"; } }) : void
+>register : (options: { callback: () => void throws "nested"; }) => void throws never
+>{ callback: () => { throw "nested"; } } : { callback: () => never; }
+>callback : () => never throws "nested"
+>() => { throw "nested"; } : () => never throws "nested"
+>"nested" : "nested"
+
 // Structural property access may invoke a getter or Proxy trap.
 const accessor = {
 >accessor : { readonly value: number; }
@@ -128,7 +146,7 @@ function mixedCatch(): void throws never {
     }
 }
 
-// Function types without a clause describe an unknown effect in strict mode.
+// Function types without a clause describe an unknown effect when enabled.
 type LegacyCallback = () => void;
 >LegacyCallback : LegacyCallback
 

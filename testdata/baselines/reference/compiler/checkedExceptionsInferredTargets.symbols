@@ -51,7 +51,7 @@ h = throwsE2; // error
 >h : Symbol(h, Decl(checkedExceptionsInferredTargets.ts, 14, 3))
 >throwsE2 : Symbol(throwsE2, Decl(checkedExceptionsInferredTargets.ts, 3, 13))
 
-// An untracked initializer (throws nothing) stays permissive.
+// An initializer whose visible body throws nothing is proven safe.
 let g = (x?: number) => {};
 >g : Symbol(g, Decl(checkedExceptionsInferredTargets.ts, 18, 3))
 >x : Symbol(x, Decl(checkedExceptionsInferredTargets.ts, 18, 9))
@@ -74,9 +74,7 @@ function outer(): void {
 
         const t: "e1" = e.tag;
 >t : Symbol(t, Decl(checkedExceptionsInferredTargets.ts, 27, 13))
->e.tag : Symbol(E1.tag, Decl(checkedExceptionsInferredTargets.ts, 0, 24))
 >e : Symbol(e, Decl(checkedExceptionsInferredTargets.ts, 26, 13))
->tag : Symbol(E1.tag, Decl(checkedExceptionsInferredTargets.ts, 0, 24))
     }
 }
 outer();

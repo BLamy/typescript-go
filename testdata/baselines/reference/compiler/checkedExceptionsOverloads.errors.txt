@@ -1,19 +1,37 @@
+checkedExceptionsOverloads.ts(1,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsOverloads.ts(2,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsOverloads.ts(7,10): error TS100023: The source signature may throw 'E1 | E2', but the target's 'throws' clause only permits 'E1'.
+checkedExceptionsOverloads.ts(8,10): error TS100023: The source signature may throw 'E1 | E2', but the target's 'throws' clause only permits 'E2'.
+checkedExceptionsOverloads.ts(10,38): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsOverloads.ts(11,11): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 checkedExceptionsOverloads.ts(19,5): error TS100021: Call may throw 'E2', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 checkedExceptionsOverloads.ts(36,5): error TS100021: Call may throw 'E1 | E2', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 
 
-==== checkedExceptionsOverloads.ts (2 errors) ====
+==== checkedExceptionsOverloads.ts (8 errors) ====
     class E1 extends Error { readonly tag = "e1" as const; }
+          ~~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
     class E2 extends Error { readonly tag = "e2" as const; }
+          ~~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
     
     // Overloads may declare different throws types; the implementation's wider
     // clause is compatible (throws rides the return channel, which
     // overload/implementation compatibility ignores).
     function pick(x: string): string throws E1;
+             ~~~~
+!!! error TS100023: The source signature may throw 'E1 | E2', but the target's 'throws' clause only permits 'E1'.
     function pick(x: number): number throws E2;
+             ~~~~
+!!! error TS100023: The source signature may throw 'E1 | E2', but the target's 'throws' clause only permits 'E2'.
     function pick(x: string | number): string | number throws E1 | E2 {
         if (typeof x === "string") throw new E1();
+                                         ~~~~~~~~
+!!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
         throw new E2();
+              ~~~~~~~~
+!!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
     }
     
     // Call sites use the resolved overload's clause.

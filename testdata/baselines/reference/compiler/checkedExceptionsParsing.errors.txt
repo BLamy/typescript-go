@@ -1,0 +1,75 @@
+checkedExceptionsParsing.ts(1,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsParsing.ts(2,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsParsing.ts(8,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsParsing.ts(27,11): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsParsing.ts(44,20): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsParsing.ts(46,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+
+
+==== checkedExceptionsParsing.ts (6 errors) ====
+    class E1 extends Error { readonly tag = "e1" as const; }
+          ~~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+    class E2 extends Error { readonly tag = "e2" as const; }
+          ~~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+    
+    // Clause forms on every supported declaration shape.
+    function decl(): void throws E1 {}
+    const funcExpr = function (): void throws E1 {};
+    const arrow = (): void throws E1 => {};
+    class C {
+          ~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+        method(): void throws E1 {}
+    }
+    interface I {
+        method(): void throws E1 | E2;
+    }
+    type FnType = (x: string) => number throws E1;
+    interface Callable {
+        (x: string): number throws E1;
+    }
+    type CallableLiteral = {
+        (x: string): number throws E1 | E2;
+    };
+    const obj = {
+        method(): void throws E1 {},
+    };
+    
+    // A clause without a return type annotation.
+    function noReturnType() throws E1 {
+        throw new E1();
+              ~~~~~~~~
+!!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    }
+    
+    // The clause type may be any type expression, greedily parsed.
+    function unionClause(): void throws E1 | E2 {}
+    type Alias = E1 | E2;
+    function aliasClause(): void throws Alias {}
+    function genericClause<T extends Error>(x: T): void throws T {
+        throw x;
+    }
+    
+    // `throws` is contextual: members named `throws` on a following line still work.
+    interface Legacy {
+        m(): void
+        throws: boolean
+    }
+    declare const legacy: Legacy;
+    const b: boolean = legacy.throws;
+                       ~~~~~~~~~~~~~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+    
+    class LegacyClass {
+          ~~~~~~~~~~~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+        m(): void {}
+        throws = 1;
+    }
+    
+    const throwsAsName = { throws: true };
+    function throws(): void {}
+    throws();
+    

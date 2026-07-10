@@ -177,17 +177,16 @@ var commandLineOptionElements = map[string]*CommandLineOption{
 
 // CommandLineOption.EnumMap()
 var commandLineOptionEnumMap = map[string]*collections.OrderedMap[string, any]{
-	"lib":               LibMap,
-	"moduleResolution":  moduleResolutionOptionMap,
-	"module":            moduleOptionMap,
-	"target":            targetOptionMap,
-	"moduleDetection":   moduleDetectionOptionMap,
-	"checkedExceptions": checkedExceptionsOptionMap,
-	"jsx":               jsxOptionMap,
-	"newLine":           newLineOptionMap,
-	"watchFile":         watchFileEnumMap,
-	"watchDirectory":    watchDirectoryEnumMap,
-	"fallbackPolling":   fallbackEnumMap,
+	"lib":              LibMap,
+	"moduleResolution": moduleResolutionOptionMap,
+	"module":           moduleOptionMap,
+	"target":           targetOptionMap,
+	"moduleDetection":  moduleDetectionOptionMap,
+	"jsx":              jsxOptionMap,
+	"newLine":          newLineOptionMap,
+	"watchFile":        watchFileEnumMap,
+	"watchDirectory":   watchDirectoryEnumMap,
+	"fallbackPolling":  fallbackEnumMap,
 }
 
 // CommandLineOption.DeprecatedKeys()

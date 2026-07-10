@@ -16,8 +16,8 @@ Nothing leaves the browser.
 - `web/` — the static site: Monaco (from CDN) plus a small hand-rolled LSP
   client (`playground.js`). Diagnostics use the pull model
   (`textDocument/diagnostic`); hover and completions are forwarded to the
-  server. The `checkedExceptions` mode selector reloads the page with a
-  different generated tsconfig.
+  server. The `checkedExceptions` selector reloads the page with checking on or
+  off in the generated tsconfig.
 - `smoke/smoke.cjs` — headless end-to-end test: boots the wasm module under
   Node, performs the LSP handshake, and asserts that checked-exceptions
   diagnostics (TS100021), typed-catch hover, and `throws`-clause hover all

@@ -1,6 +1,6 @@
-//// [tests/cases/compiler/checkedExceptionsWarningMode.ts] ////
+//// [tests/cases/compiler/checkedExceptionsEnabled.ts] ////
 
-=== checkedExceptionsWarningMode.ts ===
+=== checkedExceptionsEnabled.ts ===
 class IOError extends Error {}
 >IOError : IOError
 >Error : Error
@@ -9,7 +9,7 @@ declare function readFile(path: string): string throws IOError;
 >readFile : (path: string) => string throws IOError
 >path : string
 
-// Reported as a warning, not an error.
+// Enabled checked exceptions are always build-blocking and fail closed.
 function unhandled(): string throws never {
 >unhandled : () => string throws never
 

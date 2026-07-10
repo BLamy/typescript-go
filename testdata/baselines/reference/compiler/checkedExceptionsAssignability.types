@@ -72,13 +72,13 @@ const okDeclared: IOFn = () => { risky(); };
 >risky() : void
 >risky : () => void throws IOError
 
-// Untracked declarations (no clause, no body) are treated permissively.
+// Declarations without a clause or body have the top unknown effect.
 declare function legacy(): void;
->legacy : () => void
+>legacy : () => void throws unknown
 
 const legacyAsSafe: SafeFn = legacy;
 >legacyAsSafe : SafeFn
->legacy : () => void
+>legacy : () => void throws unknown
 
 // `throws unknown` targets accept anything.
 type AnythingFn = () => void throws unknown;

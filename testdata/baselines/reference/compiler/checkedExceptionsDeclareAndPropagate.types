@@ -108,7 +108,7 @@ function throwsDeclared(): void throws IOError {
 
 // `throws any` opts callers out of enforcement.
 function escapeHatch(): void throws any {
->escapeHatch : () => void throws any
+>escapeHatch : () => void throws unknown
 
     throw new IOError("anything");
 >new IOError("anything") : IOError
@@ -116,11 +116,11 @@ function escapeHatch(): void throws any {
 >"anything" : "anything"
 }
 function callsEscapeHatch(): void {
->callsEscapeHatch : () => void throws any
+>callsEscapeHatch : () => void throws unknown
 
     escapeHatch();
 >escapeHatch() : void
->escapeHatch : () => void throws any
+>escapeHatch : () => void throws unknown
 }
 
 // Raises in a catch or finally block are not discharged by that try.
@@ -164,20 +164,20 @@ passthrough(); // error: inferred IOError surfaces here
 
 // Inferred throws propagate through unannotated arrows, including IIFEs.
 const arrowInferred = () => { throw new ParseError("x"); };
->arrowInferred : () => never throws ParseError
->() => { throw new ParseError("x"); } : () => never throws ParseError
+>arrowInferred : () => never throws unknown
+>() => { throw new ParseError("x"); } : () => never throws unknown
 >new ParseError("x") : ParseError
 >ParseError : typeof ParseError
 >"x" : "x"
 
 arrowInferred(); // error
 >arrowInferred() : never
->arrowInferred : () => never throws ParseError
+>arrowInferred : () => never throws unknown
 
 (function () { throw new IOError("iife"); })(); // error
 >(function () { throw new IOError("iife"); })() : never
->(function () { throw new IOError("iife"); }) : () => never throws IOError
->function () { throw new IOError("iife"); } : () => never throws IOError
+>(function () { throw new IOError("iife"); }) : () => never throws unknown
+>function () { throw new IOError("iife"); } : () => never throws unknown
 >new IOError("iife") : IOError
 >IOError : typeof IOError
 >"iife" : "iife"

@@ -1,4 +1,4 @@
-// @checkedExceptions: strict
+// @checkedExceptions: true
 // @strict: true
 
 declare function legacy(): void;
@@ -40,6 +40,13 @@ function higherOrderInNever(): void throws never {
     invoke(() => { throw "callback"; });
 }
 
+// A callback cannot hide inside an option object and escape the caller's
+// synchronous exception boundary.
+declare function register(options: {
+    callback: () => void throws "nested";
+}): void throws never;
+register({ callback: () => { throw "nested"; } });
+
 // Structural property access may invoke a getter or Proxy trap.
 const accessor = {
     get value(): number {
@@ -61,7 +68,7 @@ function mixedCatch(): void throws never {
     }
 }
 
-// Function types without a clause describe an unknown effect in strict mode.
+// Function types without a clause describe an unknown effect when enabled.
 type LegacyCallback = () => void;
 type SafeCallback = () => void throws never;
 declare const legacyCallback: LegacyCallback;

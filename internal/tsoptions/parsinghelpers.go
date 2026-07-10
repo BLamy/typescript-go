@@ -231,7 +231,7 @@ func parseCompilerOptions(key string, value any, allOptions *core.CompilerOption
 	case "build":
 		allOptions.Build = ParseTristate(value)
 	case "checkedExceptions":
-		allOptions.CheckedExceptions = floatOrInt32ToFlag[core.CheckedExceptionsMode](value)
+		allOptions.CheckedExceptions = ParseTristate(value)
 	case "checkJs":
 		allOptions.CheckJs = ParseTristate(value)
 	case "customConditions":

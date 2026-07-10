@@ -1,18 +1,19 @@
-checkedExceptionsStrictSoundness.ts(8,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsStrictSoundness.ts(13,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsStrictSoundness.ts(16,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsStrictSoundness.ts(37,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsStrictSoundness.ts(37,5): error TS100027: Callback may throw '"callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
-checkedExceptionsStrictSoundness.ts(47,12): error TS100022: Thrown value of type 'unknown' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsStrictSoundness.ts(57,15): error TS2322: Type 'unknown' is not assignable to type '"tracked"'.
-checkedExceptionsStrictSoundness.ts(65,7): error TS2322: Type 'LegacyCallback' is not assignable to type 'SafeCallback'.
+checkedExceptionsSoundness.ts(8,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(13,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(16,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(37,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(37,5): error TS100027: Callback may throw '"callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
+checkedExceptionsSoundness.ts(45,1): error TS100027: Callback may throw '"nested"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
+checkedExceptionsSoundness.ts(54,12): error TS100022: Thrown value of type 'unknown' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(64,15): error TS2322: Type 'unknown' is not assignable to type '"tracked"'.
+checkedExceptionsSoundness.ts(72,7): error TS2322: Type 'LegacyCallback' is not assignable to type 'SafeCallback'.
   The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
-checkedExceptionsStrictSoundness.ts(68,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
-checkedExceptionsStrictSoundness.ts(75,31): error TS100023: The source signature may throw '"assertion"', but the target's 'throws' clause only permits 'never'.
-checkedExceptionsStrictSoundness.ts(81,10): error TS100023: The source signature may throw '"implementation"', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(75,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsSoundness.ts(82,31): error TS100023: The source signature may throw '"assertion"', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(88,10): error TS100023: The source signature may throw '"implementation"', but the target's 'throws' clause only permits 'never'.
 
 
-==== checkedExceptionsStrictSoundness.ts (11 errors) ====
+==== checkedExceptionsSoundness.ts (12 errors) ====
     declare function legacy(): void;
     declare function tracked(): void throws "tracked";
     declare function explicitlyUnknown(): void throws unknown;
@@ -62,6 +63,15 @@ checkedExceptionsStrictSoundness.ts(81,10): error TS100023: The source signature
 !!! error TS100027: Callback may throw '"callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
     }
     
+    // A callback cannot hide inside an option object and escape the caller's
+    // synchronous exception boundary.
+    declare function register(options: {
+        callback: () => void throws "nested";
+    }): void throws never;
+    register({ callback: () => { throw "nested"; } });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100027: Callback may throw '"nested"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
+    
     // Structural property access may invoke a getter or Proxy trap.
     const accessor = {
         get value(): number {
@@ -87,7 +97,7 @@ checkedExceptionsStrictSoundness.ts(81,10): error TS100023: The source signature
         }
     }
     
-    // Function types without a clause describe an unknown effect in strict mode.
+    // Function types without a clause describe an unknown effect when enabled.
     type LegacyCallback = () => void;
     type SafeCallback = () => void throws never;
     declare const legacyCallback: LegacyCallback;

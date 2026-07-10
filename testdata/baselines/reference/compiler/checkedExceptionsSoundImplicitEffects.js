@@ -1,6 +1,6 @@
-//// [tests/cases/compiler/checkedExceptionsStrictImplicitEffects.ts] ////
+//// [tests/cases/compiler/checkedExceptionsSoundImplicitEffects.ts] ////
 
-//// [checkedExceptionsStrictImplicitEffects.ts]
+//// [checkedExceptionsSoundImplicitEffects.ts]
 // Minimal global required by the explicit-resource-management grammar in this
 // focused baseline; the value below is null, so no member shape is needed.
 interface Disposable {}
@@ -121,7 +121,7 @@ function destructuringAssignment(): void throws never {
 }
 
 
-//// [checkedExceptionsStrictImplicitEffects.js]
+//// [checkedExceptionsSoundImplicitEffects.js]
 "use strict";
 var __addDisposableResource = (this && this.__addDisposableResource) || function (env, value, async) {
     if (value !== null && value !== void 0) {

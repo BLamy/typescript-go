@@ -1,4 +1,4 @@
-// @checkedExceptions: error
+// @checkedExceptions: true
 // @strict: true
 
 class IOError extends Error { readonly tag = "io" as const; }

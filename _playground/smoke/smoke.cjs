@@ -30,7 +30,7 @@ const SAMPLE = [
 ].join("\n");
 
 const TSCONFIG = JSON.stringify({
-    compilerOptions: { strict: true, noEmit: true, checkedExceptions: "strict" },
+    compilerOptions: { strict: true, noEmit: true, checkedExceptions: true },
 });
 
 const FILE_URI = "file:///project/main.ts";
@@ -110,10 +110,10 @@ async function main() {
     console.log("ok: textDocument/diagnostic reported TS100021 (unhandled IOError inside `throws never`)");
 
     if (!diagnostics.some(d => String(d.code) === "100021" && d.message.includes("unknown"))) {
-        console.error("FAIL: expected strict mode to report an unknown legacy effect, got:", JSON.stringify(report, null, 2));
+        console.error("FAIL: expected enabled checked exceptions to report an unknown legacy effect, got:", JSON.stringify(report, null, 2));
         process.exit(1);
     }
-    console.log("ok: strict mode reports an unannotated ambient call as unknown");
+    console.log("ok: enabled checked exceptions report an unannotated ambient call as unknown");
 
     // 2. The catch variable is typed from the try block's raises.
     const line = SAMPLE.split("\n").findIndex(text => text.startsWith("try {"));

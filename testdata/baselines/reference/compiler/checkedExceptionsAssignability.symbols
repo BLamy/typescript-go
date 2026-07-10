@@ -78,7 +78,7 @@ const okDeclared: IOFn = () => { risky(); };
 >IOFn : Symbol(IOFn, Decl(checkedExceptionsAssignability.ts, 5, 38))
 >risky : Symbol(risky, Decl(checkedExceptionsAssignability.ts, 1, 67))
 
-// Untracked declarations (no clause, no body) are treated permissively.
+// Declarations without a clause or body have the top unknown effect.
 declare function legacy(): void;
 >legacy : Symbol(legacy, Decl(checkedExceptionsAssignability.ts, 26, 44))
 

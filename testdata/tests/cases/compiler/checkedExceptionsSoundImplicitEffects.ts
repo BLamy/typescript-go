@@ -1,4 +1,4 @@
-// @checkedExceptions: strict
+// @checkedExceptions: true
 // @strict: true
 
 // Minimal global required by the explicit-resource-management grammar in this

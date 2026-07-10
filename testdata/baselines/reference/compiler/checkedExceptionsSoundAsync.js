@@ -1,6 +1,6 @@
-//// [tests/cases/compiler/checkedExceptionsStrictAsync.ts] ////
+//// [tests/cases/compiler/checkedExceptionsSoundAsync.ts] ////
 
-//// [checkedExceptionsStrictAsync.ts]
+//// [checkedExceptionsSoundAsync.ts]
 async function rejects(): Promise<void> throws "async" {
     throw "async";
 }
@@ -81,7 +81,7 @@ function callbackHandlesItsOwnEffect(): void throws never {
 }
 
 
-//// [checkedExceptionsStrictAsync.js]
+//// [checkedExceptionsSoundAsync.js]
 "use strict";
 async function rejects() {
     throw "async";

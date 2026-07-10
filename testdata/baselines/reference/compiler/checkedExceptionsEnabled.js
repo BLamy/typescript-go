@@ -1,11 +1,11 @@
-//// [tests/cases/compiler/checkedExceptionsWarningMode.ts] ////
+//// [tests/cases/compiler/checkedExceptionsEnabled.ts] ////
 
-//// [checkedExceptionsWarningMode.ts]
+//// [checkedExceptionsEnabled.ts]
 class IOError extends Error {}
 
 declare function readFile(path: string): string throws IOError;
 
-// Reported as a warning, not an error.
+// Enabled checked exceptions are always build-blocking and fail closed.
 function unhandled(): string throws never {
     return readFile("x");
 }
@@ -13,11 +13,11 @@ function unhandled(): string throws never {
 readFile("top");
 
 
-//// [checkedExceptionsWarningMode.js]
+//// [checkedExceptionsEnabled.js]
 "use strict";
 class IOError extends Error {
 }
-// Reported as a warning, not an error.
+// Enabled checked exceptions are always build-blocking and fail closed.
 function unhandled() {
     return readFile("x");
 }

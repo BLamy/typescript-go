@@ -1,8 +1,8 @@
-//// [tests/cases/compiler/checkedExceptionsStrictAsync.ts] ////
+//// [tests/cases/compiler/checkedExceptionsSoundAsync.ts] ////
 
-=== checkedExceptionsStrictAsync.ts ===
+=== checkedExceptionsSoundAsync.ts ===
 async function rejects(): Promise<void> throws "async" {
->rejects : Symbol(rejects, Decl(checkedExceptionsStrictAsync.ts, 0, 0))
+>rejects : Symbol(rejects, Decl(checkedExceptionsSoundAsync.ts, 0, 0))
 >Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
 
     throw "async";
@@ -10,11 +10,11 @@ async function rejects(): Promise<void> throws "async" {
 
 // A synchronous try/catch does not handle a promise rejection.
 function fakeSynchronousHandling(): void throws never {
->fakeSynchronousHandling : Symbol(fakeSynchronousHandling, Decl(checkedExceptionsStrictAsync.ts, 2, 1))
+>fakeSynchronousHandling : Symbol(fakeSynchronousHandling, Decl(checkedExceptionsSoundAsync.ts, 2, 1))
 
     try {
         rejects();
->rejects : Symbol(rejects, Decl(checkedExceptionsStrictAsync.ts, 0, 0))
+>rejects : Symbol(rejects, Decl(checkedExceptionsSoundAsync.ts, 0, 0))
 
     } catch {
     }
@@ -22,52 +22,52 @@ function fakeSynchronousHandling(): void throws never {
 
 // Await transfers the rejection effect into the surrounding control flow.
 async function unhandledAwait(): Promise<void> throws never {
->unhandledAwait : Symbol(unhandledAwait, Decl(checkedExceptionsStrictAsync.ts, 10, 1))
+>unhandledAwait : Symbol(unhandledAwait, Decl(checkedExceptionsSoundAsync.ts, 10, 1))
 >Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
 
     await rejects();
->rejects : Symbol(rejects, Decl(checkedExceptionsStrictAsync.ts, 0, 0))
+>rejects : Symbol(rejects, Decl(checkedExceptionsSoundAsync.ts, 0, 0))
 }
 
 // Awaiting inside try/catch discharges the rejection.
 async function handledAwait(): Promise<void> throws never {
->handledAwait : Symbol(handledAwait, Decl(checkedExceptionsStrictAsync.ts, 15, 1))
+>handledAwait : Symbol(handledAwait, Decl(checkedExceptionsSoundAsync.ts, 15, 1))
 >Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
 
     try {
         await rejects();
->rejects : Symbol(rejects, Decl(checkedExceptionsStrictAsync.ts, 0, 0))
+>rejects : Symbol(rejects, Decl(checkedExceptionsSoundAsync.ts, 0, 0))
 
     } catch (e) {
->e : Symbol(e, Decl(checkedExceptionsStrictAsync.ts, 21, 13))
+>e : Symbol(e, Decl(checkedExceptionsSoundAsync.ts, 21, 13))
 
         const effect: "async" = e;
->effect : Symbol(effect, Decl(checkedExceptionsStrictAsync.ts, 22, 13))
->e : Symbol(e, Decl(checkedExceptionsStrictAsync.ts, 21, 13))
+>effect : Symbol(effect, Decl(checkedExceptionsSoundAsync.ts, 22, 13))
+>e : Symbol(e, Decl(checkedExceptionsSoundAsync.ts, 21, 13))
     }
 }
 
 // Directly returning a promise propagates its rejection effect through the
 // enclosing function's clause.
 async function returnedPromise(): Promise<void> throws "async" {
->returnedPromise : Symbol(returnedPromise, Decl(checkedExceptionsStrictAsync.ts, 24, 1))
+>returnedPromise : Symbol(returnedPromise, Decl(checkedExceptionsSoundAsync.ts, 24, 1))
 >Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
 
     return rejects();
->rejects : Symbol(rejects, Decl(checkedExceptionsStrictAsync.ts, 0, 0))
+>rejects : Symbol(rejects, Decl(checkedExceptionsSoundAsync.ts, 0, 0))
 }
 
 // A floating ambient promise is unknown even inside synchronous try/catch.
 declare function legacyAsync(): Promise<void>;
->legacyAsync : Symbol(legacyAsync, Decl(checkedExceptionsStrictAsync.ts, 30, 1))
+>legacyAsync : Symbol(legacyAsync, Decl(checkedExceptionsSoundAsync.ts, 30, 1))
 >Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
 
 function floatingLegacyPromise(): void throws never {
->floatingLegacyPromise : Symbol(floatingLegacyPromise, Decl(checkedExceptionsStrictAsync.ts, 33, 46))
+>floatingLegacyPromise : Symbol(floatingLegacyPromise, Decl(checkedExceptionsSoundAsync.ts, 33, 46))
 
     try {
         legacyAsync();
->legacyAsync : Symbol(legacyAsync, Decl(checkedExceptionsStrictAsync.ts, 30, 1))
+>legacyAsync : Symbol(legacyAsync, Decl(checkedExceptionsSoundAsync.ts, 30, 1))
 
     } catch {
     }
@@ -75,50 +75,50 @@ function floatingLegacyPromise(): void throws never {
 
 // Awaiting an ambient promise is catchable, but its catch value is unknown.
 async function handledLegacyAwait(): Promise<void> throws never {
->handledLegacyAwait : Symbol(handledLegacyAwait, Decl(checkedExceptionsStrictAsync.ts, 39, 1))
+>handledLegacyAwait : Symbol(handledLegacyAwait, Decl(checkedExceptionsSoundAsync.ts, 39, 1))
 >Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
 
     try {
         await legacyAsync();
->legacyAsync : Symbol(legacyAsync, Decl(checkedExceptionsStrictAsync.ts, 30, 1))
+>legacyAsync : Symbol(legacyAsync, Decl(checkedExceptionsSoundAsync.ts, 30, 1))
 
     } catch (e) {
->e : Symbol(e, Decl(checkedExceptionsStrictAsync.ts, 45, 13))
+>e : Symbol(e, Decl(checkedExceptionsSoundAsync.ts, 45, 13))
 
         const effect: unknown = e;
->effect : Symbol(effect, Decl(checkedExceptionsStrictAsync.ts, 46, 13))
->e : Symbol(e, Decl(checkedExceptionsStrictAsync.ts, 45, 13))
+>effect : Symbol(effect, Decl(checkedExceptionsSoundAsync.ts, 46, 13))
+>e : Symbol(e, Decl(checkedExceptionsSoundAsync.ts, 45, 13))
     }
 }
 
 // Returning an ambient promise requires honest unknown propagation.
 async function returnedLegacyPromise(): Promise<void> throws unknown {
->returnedLegacyPromise : Symbol(returnedLegacyPromise, Decl(checkedExceptionsStrictAsync.ts, 48, 1))
+>returnedLegacyPromise : Symbol(returnedLegacyPromise, Decl(checkedExceptionsSoundAsync.ts, 48, 1))
 >Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
 
     return legacyAsync();
->legacyAsync : Symbol(legacyAsync, Decl(checkedExceptionsStrictAsync.ts, 30, 1))
+>legacyAsync : Symbol(legacyAsync, Decl(checkedExceptionsSoundAsync.ts, 30, 1))
 }
 
 // A callback may run after the caller's control-flow boundary has disappeared.
 // Until a signature can prove synchronous non-escaping invocation, the
 // callback must discharge its own effect.
 declare function later(callback: () => void): void throws never;
->later : Symbol(later, Decl(checkedExceptionsStrictAsync.ts, 53, 1))
->callback : Symbol(callback, Decl(checkedExceptionsStrictAsync.ts, 58, 23))
+>later : Symbol(later, Decl(checkedExceptionsSoundAsync.ts, 53, 1))
+>callback : Symbol(callback, Decl(checkedExceptionsSoundAsync.ts, 58, 23))
 
 function callbackThrows(): void throws "later" {
->callbackThrows : Symbol(callbackThrows, Decl(checkedExceptionsStrictAsync.ts, 58, 64))
+>callbackThrows : Symbol(callbackThrows, Decl(checkedExceptionsSoundAsync.ts, 58, 64))
 
     throw "later";
 }
 function synchronousCatchCannotHandleCallback(): void throws never {
->synchronousCatchCannotHandleCallback : Symbol(synchronousCatchCannotHandleCallback, Decl(checkedExceptionsStrictAsync.ts, 61, 1))
+>synchronousCatchCannotHandleCallback : Symbol(synchronousCatchCannotHandleCallback, Decl(checkedExceptionsSoundAsync.ts, 61, 1))
 
     try {
         later(callbackThrows);
->later : Symbol(later, Decl(checkedExceptionsStrictAsync.ts, 53, 1))
->callbackThrows : Symbol(callbackThrows, Decl(checkedExceptionsStrictAsync.ts, 58, 64))
+>later : Symbol(later, Decl(checkedExceptionsSoundAsync.ts, 53, 1))
+>callbackThrows : Symbol(callbackThrows, Decl(checkedExceptionsSoundAsync.ts, 58, 64))
 
     } catch {
     }
@@ -126,14 +126,14 @@ function synchronousCatchCannotHandleCallback(): void throws never {
 
 // Handling inside the callback is valid regardless of when it is invoked.
 function callbackHandlesItsOwnEffect(): void throws never {
->callbackHandlesItsOwnEffect : Symbol(callbackHandlesItsOwnEffect, Decl(checkedExceptionsStrictAsync.ts, 67, 1))
+>callbackHandlesItsOwnEffect : Symbol(callbackHandlesItsOwnEffect, Decl(checkedExceptionsSoundAsync.ts, 67, 1))
 
     later(() => {
->later : Symbol(later, Decl(checkedExceptionsStrictAsync.ts, 53, 1))
+>later : Symbol(later, Decl(checkedExceptionsSoundAsync.ts, 53, 1))
 
         try {
             callbackThrows();
->callbackThrows : Symbol(callbackThrows, Decl(checkedExceptionsStrictAsync.ts, 58, 64))
+>callbackThrows : Symbol(callbackThrows, Decl(checkedExceptionsSoundAsync.ts, 58, 64))
 
         } catch {
         }

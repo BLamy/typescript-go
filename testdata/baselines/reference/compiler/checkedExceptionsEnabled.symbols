@@ -1,0 +1,23 @@
+//// [tests/cases/compiler/checkedExceptionsEnabled.ts] ////
+
+=== checkedExceptionsEnabled.ts ===
+class IOError extends Error {}
+>IOError : Symbol(IOError, Decl(checkedExceptionsEnabled.ts, 0, 0))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+
+declare function readFile(path: string): string throws IOError;
+>readFile : Symbol(readFile, Decl(checkedExceptionsEnabled.ts, 0, 30))
+>path : Symbol(path, Decl(checkedExceptionsEnabled.ts, 2, 26))
+>IOError : Symbol(IOError, Decl(checkedExceptionsEnabled.ts, 0, 0))
+
+// Enabled checked exceptions are always build-blocking and fail closed.
+function unhandled(): string throws never {
+>unhandled : Symbol(unhandled, Decl(checkedExceptionsEnabled.ts, 2, 63))
+
+    return readFile("x");
+>readFile : Symbol(readFile, Decl(checkedExceptionsEnabled.ts, 0, 30))
+}
+
+readFile("top");
+>readFile : Symbol(readFile, Decl(checkedExceptionsEnabled.ts, 0, 30))
+

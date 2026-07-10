@@ -1,0 +1,23 @@
+checkedExceptionsEnabled.ts(1,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsEnabled.ts(7,12): error TS100021: Call may throw 'IOError', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsEnabled.ts(10,1): error TS100024: Call may throw 'IOError', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+
+
+==== checkedExceptionsEnabled.ts (3 errors) ====
+    class IOError extends Error {}
+          ~~~~~~~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+    
+    declare function readFile(path: string): string throws IOError;
+    
+    // Enabled checked exceptions are always build-blocking and fail closed.
+    function unhandled(): string throws never {
+        return readFile("x");
+               ~~~~~~~~~~~~~
+!!! error TS100021: Call may throw 'IOError', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    }
+    
+    readFile("top");
+    ~~~~~~~~~~~~~~~
+!!! error TS100024: Call may throw 'IOError', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+    

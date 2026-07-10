@@ -26,7 +26,7 @@ type CompilerOptions struct {
 	AllowUnreachableCode                      Tristate                                  `json:"allowUnreachableCode,omitzero"`
 	AllowUnusedLabels                         Tristate                                  `json:"allowUnusedLabels,omitzero"`
 	AssumeChangesOnlyAffectDirectDependencies Tristate                                  `json:"assumeChangesOnlyAffectDirectDependencies,omitzero"`
-	CheckedExceptions                         CheckedExceptionsMode                     `json:"checkedExceptions,omitzero"`
+	CheckedExceptions                         Tristate                                  `json:"checkedExceptions,omitzero"`
 	CheckJs                                   Tristate                                  `json:"checkJs,omitzero"`
 	CustomConditions                          []string                                  `json:"customConditions,omitzero"`
 	Composite                                 Tristate                                  `json:"composite,omitzero"`
@@ -372,22 +372,6 @@ func (options *CompilerOptions) GetPathsBasePath(currentDirectory string) string
 	}
 	return currentDirectory
 }
-
-// CheckedExceptionsMode controls enforcement of checked exceptions: whether the
-// errors a function can throw (declared with `throws` clauses) must be handled by
-// a surrounding try...catch or declared by the enclosing function.
-type CheckedExceptionsMode int32
-
-const (
-	CheckedExceptionsModeNone    CheckedExceptionsMode = 0
-	CheckedExceptionsModeOff     CheckedExceptionsMode = 1
-	CheckedExceptionsModeWarning CheckedExceptionsMode = 2
-	CheckedExceptionsModeError   CheckedExceptionsMode = 3
-	// Strict is the fail-closed checked-exceptions mode. Signatures whose
-	// implementation is unavailable and whose declarations omit a throws clause
-	// are treated as `throws unknown` instead of as untracked/throw-free.
-	CheckedExceptionsModeStrict CheckedExceptionsMode = 4
-)
 
 type ModuleDetectionKind int32
 

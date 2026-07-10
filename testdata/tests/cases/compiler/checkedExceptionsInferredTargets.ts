@@ -1,4 +1,4 @@
-// @checkedExceptions: error
+// @checkedExceptions: true
 // @strict: true
 
 class E1 extends Error { readonly tag = "e1" as const; }
@@ -18,7 +18,7 @@ function named(x?: number) { if (x) throw new E1(); }
 let h = named;
 h = throwsE2; // error
 
-// An untracked initializer (throws nothing) stays permissive.
+// An initializer whose visible body throws nothing is proven safe.
 let g = (x?: number) => {};
 g = throwsE2; // ok
 

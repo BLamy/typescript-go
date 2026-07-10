@@ -91,7 +91,7 @@ function genericClause<T extends Error>(x: T): void throws T {
 // `throws` is contextual: members named `throws` on a following line still work.
 interface Legacy {
     m(): void
->m : () => void
+>m : () => void throws unknown
 
     throws: boolean
 >throws : boolean

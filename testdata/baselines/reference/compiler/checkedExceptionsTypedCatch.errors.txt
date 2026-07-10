@@ -1,0 +1,86 @@
+checkedExceptionsTypedCatch.ts(1,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsTypedCatch.ts(2,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsTypedCatch.ts(26,30): error TS18046: 'e' is of type 'unknown'.
+checkedExceptionsTypedCatch.ts(67,30): error TS18046: 'e' is of type 'unknown'.
+
+
+==== checkedExceptionsTypedCatch.ts (4 errors) ====
+    class IOError extends Error { readonly tag = "io" as const; }
+          ~~~~~~~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+    class ParseError extends Error { readonly tag = "parse" as const; }
+          ~~~~~~~~~~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+    
+    declare function readFile(path: string): string throws IOError;
+    declare function parse(text: string): number throws ParseError;
+    
+    function combined() {
+        try {
+            return parse(readFile("a"));
+        } catch (e) {
+            // e: IOError | ParseError
+            switch (e.tag) {
+                case "io":
+                    return e.message.length;
+                case "parse":
+                    return -1;
+            }
+        }
+    }
+    
+    function throwsOnly() {
+        try {
+            throw new ParseError("boom");
+        } catch (e) {
+            // e: ParseError, from the throw statement's type
+            const tag: "parse" = e.tag;
+                                 ~
+!!! error TS18046: 'e' is of type 'unknown'.
+            return tag;
+        }
+    }
+    
+    function rethrowNarrowed(): void throws ParseError {
+        try {
+            parse("x");
+        } catch (e) {
+            // e: ParseError — rethrowing is covered by the clause
+            throw e;
+        }
+    }
+    
+    function nothingTracked() {
+        try {
+            return JSON.stringify({});
+        } catch (e) {
+            // e stays unknown: nothing tracked was raised
+            return e;
+        }
+    }
+    
+    function explicitAnnotationWins() {
+        try {
+            return readFile("a");
+        } catch (e: unknown) {
+            // explicit annotation is respected
+            return e;
+        }
+    }
+    
+    function innerTryDischarges() {
+        try {
+            try {
+                readFile("a");
+            } catch {
+                throw new ParseError("converted");
+            }
+        } catch (e) {
+            // e: ParseError — the inner catch discharged IOError but raises ParseError
+            const tag: "parse" = e.tag;
+                                 ~
+!!! error TS18046: 'e' is of type 'unknown'.
+            return tag;
+        }
+    }
+    

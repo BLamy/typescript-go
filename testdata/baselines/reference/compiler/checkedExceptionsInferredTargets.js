@@ -18,7 +18,7 @@ function named(x?: number) { if (x) throw new E1(); }
 let h = named;
 h = throwsE2; // error
 
-// An untracked initializer (throws nothing) stays permissive.
+// An initializer whose visible body throws nothing is proven safe.
 let g = (x?: number) => {};
 g = throwsE2; // ok
 
@@ -55,7 +55,7 @@ function named(x) { if (x)
     throw new E1(); }
 let h = named;
 h = throwsE2; // error
-// An untracked initializer (throws nothing) stays permissive.
+// An initializer whose visible body throws nothing is proven safe.
 let g = (x) => { };
 g = throwsE2; // ok
 // Catch variables demanded while inference is in flight are not pinned to

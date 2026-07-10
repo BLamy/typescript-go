@@ -1,6 +1,6 @@
-//// [tests/cases/compiler/checkedExceptionsStrictAsync.ts] ////
+//// [tests/cases/compiler/checkedExceptionsSoundAsync.ts] ////
 
-=== checkedExceptionsStrictAsync.ts ===
+=== checkedExceptionsSoundAsync.ts ===
 async function rejects(): Promise<void> throws "async" {
 >rejects : () => Promise<void> throws "async"
 

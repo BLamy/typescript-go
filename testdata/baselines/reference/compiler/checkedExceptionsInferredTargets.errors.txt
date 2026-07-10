@@ -1,12 +1,16 @@
-checkedExceptionsInferredTargets.ts(10,1): error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number) => void throws E1'.
-  The source signature may throw 'E2', but the target's 'throws' clause only permits 'E1'.
-checkedExceptionsInferredTargets.ts(16,1): error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number | undefined) => void throws E1'.
-  The source signature may throw 'E2', but the target's 'throws' clause only permits 'E1'.
+checkedExceptionsInferredTargets.ts(1,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsInferredTargets.ts(2,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsInferredTargets.ts(28,25): error TS18046: 'e' is of type 'unknown'.
+checkedExceptionsInferredTargets.ts(31,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
 
 
-==== checkedExceptionsInferredTargets.ts (2 errors) ====
+==== checkedExceptionsInferredTargets.ts (4 errors) ====
     class E1 extends Error { readonly tag = "e1" as const; }
+          ~~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
     class E2 extends Error { readonly tag = "e2" as const; }
+          ~~
+!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
     
     declare const throwsE2: () => void throws E2;
     
@@ -15,20 +19,14 @@ checkedExceptionsInferredTargets.ts(16,1): error TS2322: Type '() => void throws
     // so assigning a wider thrower must fail.
     let f = (x?: number) => { if (x) throw new E1(); };
     f = throwsE2; // error
-    ~
-!!! error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number) => void throws E1'.
-!!! error TS2322:   The source signature may throw 'E2', but the target's 'throws' clause only permits 'E1'.
     f = (x?: number) => { if (x) throw new E1(); }; // ok: same set
     
     // Same through a function declaration's type.
     function named(x?: number) { if (x) throw new E1(); }
     let h = named;
     h = throwsE2; // error
-    ~
-!!! error TS2322: Type '() => void throws E2' is not assignable to type '(x?: number | undefined) => void throws E1'.
-!!! error TS2322:   The source signature may throw 'E2', but the target's 'throws' clause only permits 'E1'.
     
-    // An untracked initializer (throws nothing) stays permissive.
+    // An initializer whose visible body throws nothing is proven safe.
     let g = (x?: number) => {};
     g = throwsE2; // ok
     
@@ -39,7 +37,11 @@ checkedExceptionsInferredTargets.ts(16,1): error TS2322: Type '() => void throws
             f();
         } catch (e) {
             const t: "e1" = e.tag;
+                            ~
+!!! error TS18046: 'e' is of type 'unknown'.
         }
     }
     outer();
+    ~~~~~~~
+!!! error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
     

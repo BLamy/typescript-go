@@ -1,11 +1,11 @@
-//// [tests/cases/compiler/checkedExceptionsStrictModules.ts] ////
+//// [tests/cases/compiler/checkedExceptionsSoundModules.ts] ////
 
 //// [dependency.ts]
 export const value = 1;
 
 //// [main.ts]
 // Static module evaluation is an effect boundary. Until modules can publish an
-// initialization effect, strict mode must not silently call an import safe.
+// initialization effect, checked exceptions must not silently call an import safe.
 import { value } from "./dependency";
 value;
 
@@ -14,6 +14,6 @@ value;
 export const value = 1;
 //// [main.js]
 // Static module evaluation is an effect boundary. Until modules can publish an
-// initialization effect, strict mode must not silently call an import safe.
+// initialization effect, checked exceptions must not silently call an import safe.
 import { value } from "./dependency";
 value;

@@ -9,7 +9,7 @@ import (
 // Checked exceptions (`checkedExceptions` compiler option).
 //
 // A function may declare the errors it can throw with a `throws T` clause. When
-// the option is set to "warning", "error", or "strict", the checker enforces that every
+// the option is true, the checker enforces that every
 // tracked error raised in a body — a `throw` statement, or a call to a function
 // whose signature declares (or, for unannotated functions with visible bodies,
 // infers) a throws type — is either caught by an enclosing `try` statement with
@@ -23,11 +23,9 @@ import (
 //   - A function without a clause: raises silently propagate; its throws type is
 //     inferred from its body and surfaces at *its* call sites instead.
 //   - Top level: every raise must be caught.
-//   - In gradual warning/error modes, a callee that declares `throws any` or
-//     `throws unknown` opts out of enforcement at its call sites. In strict
-//     mode both are the top effect and must be caught or propagated.
-//   - Gradual modes preserve the initial implementation's narrow tracking.
-//     Strict mode fails closed for dynamic property access, construction, class
+//   - A callee that declares `throws any` or `throws unknown` has the top
+//     `unknown` effect and must be caught or propagated.
+//   - Enabled analysis fails closed for dynamic property access, construction, class
 //     evaluation, coercion/iteration, binding patterns, and other implicit
 //     operations that can execute user or host code without a precise clause.
 //
@@ -36,30 +34,25 @@ import (
 // is known and non-empty; otherwise it stays `unknown`/`any` as before.
 
 func (c *Checker) checkedExceptionsEnabled() bool {
-	return c.compilerOptions.CheckedExceptions >= core.CheckedExceptionsModeWarning
+	return c.compilerOptions.CheckedExceptions.IsTrue()
 }
 
-func (c *Checker) checkedExceptionsStrict() bool {
-	return c.compilerOptions.CheckedExceptions >= core.CheckedExceptionsModeStrict
+func (c *Checker) checkedExceptionsFailClosed() bool {
+	return c.checkedExceptionsEnabled()
 }
 
 // normalizeThrowsType turns TypeScript's unsound `any` top type into the
-// honest `unknown` top effect in strict mode. Outside strict mode it preserves
-// the gradual implementation's existing escape-hatch behavior.
+// honest `unknown` top effect whenever checked exceptions are enabled.
 func (c *Checker) normalizeThrowsType(t *Type) *Type {
-	if c.checkedExceptionsStrict() && t != nil && t.flags&TypeFlagsAny != 0 {
+	if c.checkedExceptionsFailClosed() && t != nil && t.flags&TypeFlagsAny != 0 {
 		return c.unknownType
 	}
 	return t
 }
 
-// errorCheckedExceptions reports a checked-exceptions diagnostic at the category
-// selected by the option ("warning" downgrades the message's error category).
+// errorCheckedExceptions reports a build-blocking checked-exceptions diagnostic.
 func (c *Checker) errorCheckedExceptions(location *ast.Node, message *diagnostics.Message, args ...any) {
 	diagnostic := NewDiagnosticForNode(location, message, args...)
-	if c.compilerOptions.CheckedExceptions == core.CheckedExceptionsModeWarning {
-		diagnostic.SetCategory(diagnostics.CategoryWarning)
-	}
 	c.addDiagnostic(diagnostic)
 }
 
@@ -94,8 +87,8 @@ func (c *Checker) getDeclaredThrowsTypeOfSignature(sig *Signature) *Type {
 
 // getThrowsTypeOfSignature returns the signature's throws type: the explicit
 // clause when present, or the type inferred from the declaration's body for
-// unannotated functions. Returns nil for untracked signatures (no clause and no
-// body to infer from), which callers must treat permissively.
+// unannotated functions. Returns nil for signatures whose visible body proves
+// no escaping effect, and for all signatures while the feature is disabled.
 func (c *Checker) getThrowsTypeOfSignature(sig *Signature) *Type {
 	return c.getThrowsTypeOfSignatureWorker(sig, true /*includeInferred*/)
 }
@@ -113,9 +106,8 @@ func (c *Checker) getThrowsTypeOfSignatureWorker(sig *Signature, includeInferred
 	}
 	if sig.composite != nil {
 		// A composite (union/intersection) signature raises the union of its
-		// tracked constituents' throws types. Untracked constituents contribute
-		// nothing (they are permissive everywhere else too); if none are
-		// tracked, the composite is untracked.
+		// constituents' throws types. When checking is enabled, a constituent
+		// without enough declaration information contributes `unknown` below.
 		var throwsTypes []*Type
 		for _, constituent := range sig.composite.signatures {
 			if t := c.getThrowsTypeOfSignatureWorker(constituent, includeInferred); t != nil {
@@ -129,7 +121,7 @@ func (c *Checker) getThrowsTypeOfSignatureWorker(sig *Signature, includeInferred
 	}
 	decl := sig.declaration
 	if decl == nil {
-		if c.checkedExceptionsStrict() {
+		if c.checkedExceptionsFailClosed() {
 			// Synthetic/native signatures without a source declaration are another
 			// unknown boundary. Absence of syntax is not evidence of purity.
 			return c.unknownType
@@ -142,7 +134,7 @@ func (c *Checker) getThrowsTypeOfSignatureWorker(sig *Signature, includeInferred
 	if includeInferred && c.checkedExceptionsEnabled() && canInferThrows(decl) {
 		return c.getInferredThrowsTypeOfFunction(decl)
 	}
-	if c.checkedExceptionsStrict() && !canInferThrows(decl) {
+	if c.checkedExceptionsFailClosed() && !canInferThrows(decl) {
 		// An ambient/declaration-only signature without a clause is an unknown
 		// boundary. DefinitelyTyped and legacy lib declarations therefore remain
 		// usable without pretending that they cannot throw.
@@ -209,10 +201,10 @@ func (c *Checker) getInferredThrowsTypeOfFunction(decl *ast.Node) *Type {
 			break
 		}
 	}
-	if !converged && c.checkedExceptionsStrict() {
+	if !converged && c.checkedExceptionsFailClosed() {
 		// The cap is only a termination guard, never permission to publish an
 		// incomplete effect. A graph that does not stabilize becomes the honest
-		// top effect in strict mode.
+		// top effect in fail-closed mode.
 		result = c.unknownType
 		for d := range state.provisional {
 			state.provisional[d] = c.unknownType
@@ -250,7 +242,7 @@ func (c *Checker) inferThrowsWorker(decl *ast.Node, state *throwsInferenceState)
 func (c *Checker) getThrowsTypeOfCall(node *ast.Node) *Type {
 	signature := c.getResolvedSignature(node, nil /*candidatesOutArray*/, CheckModeNormal)
 	throwsType := c.getThrowsTypeOfSignature(signature)
-	if c.checkedExceptionsStrict() {
+	if c.checkedExceptionsFailClosed() {
 		target := node.Expression()
 		if target != nil && (target.Kind == ast.KindPropertyAccessExpression || target.Kind == ast.KindElementAccessExpression) {
 			// Resolving a method value can invoke a getter or Proxy trap before the
@@ -291,26 +283,59 @@ func (c *Checker) getThrowsTypeOfAwait(node *ast.Node) *Type {
 	return c.unknownType
 }
 
-// getEscapingCallbackThrowsType returns the effect of function-valued
-// arguments. Without a call-site contract that proves synchronous invocation,
-// a callee may retain and invoke a callback after the caller's try/catch and
-// throws boundary no longer exists. Strict mode therefore requires such a
-// callback to handle its own effect until `rethrows`/callback timing contracts
-// are represented in signatures.
+// getEscapingCallbackThrowsType returns the effect of callable capabilities in
+// arguments, including callbacks nested in option objects and collections.
+// Without a call-site contract that proves synchronous invocation, a callee may
+// retain and invoke one after the caller's try/catch and throws boundary no
+// longer exists. Fail-closed analysis therefore requires such a callback to
+// handle its own effect until `rethrows`/callback timing contracts are
+// represented in signatures.
 func (c *Checker) getEscapingCallbackThrowsType(node *ast.Node) *Type {
 	var callbackEffects []*Type
+	seen := make(map[*Type]bool)
 	for _, argument := range node.Arguments() {
-		argumentType := c.getTypeOfExpression(argument)
-		for _, signature := range c.getSignaturesOfType(argumentType, SignatureKindCall) {
-			if effect := c.getThrowsTypeOfSignature(signature); effect != nil && effect.flags&TypeFlagsNever == 0 {
-				callbackEffects = append(callbackEffects, c.normalizeThrowsType(effect))
-			}
-		}
+		c.collectEscapingCallbackEffects(c.getTypeOfExpression(argument), seen, &callbackEffects)
 	}
 	if len(callbackEffects) == 0 {
 		return nil
 	}
 	return c.getUnionType(callbackEffects)
+}
+
+func (c *Checker) collectEscapingCallbackEffects(t *Type, seen map[*Type]bool, effects *[]*Type) {
+	if t == nil || seen[t] {
+		return
+	}
+	seen[t] = true
+
+	// `any`, `unknown`, and unresolved type variables may hide a callable
+	// capability. Treating them as inert would reopen the same boundary hole as
+	// an unannotated ambient declaration.
+	if t.flags&(TypeFlagsAnyOrUnknown|TypeFlagsInstantiableNonPrimitive) != 0 {
+		*effects = append(*effects, c.unknownType)
+		return
+	}
+	if t.flags&TypeFlagsUnionOrIntersection != 0 {
+		for _, constituent := range t.Types() {
+			c.collectEscapingCallbackEffects(constituent, seen, effects)
+		}
+		return
+	}
+
+	for _, signature := range c.getSignaturesOfType(t, SignatureKindCall) {
+		if effect := c.getThrowsTypeOfSignature(signature); effect != nil && effect.flags&TypeFlagsNever == 0 {
+			*effects = append(*effects, c.normalizeThrowsType(effect))
+		}
+	}
+	if t.flags&TypeFlagsObject == 0 {
+		return
+	}
+	for _, property := range c.getPropertiesOfType(t) {
+		c.collectEscapingCallbackEffects(c.getTypeOfSymbol(property), seen, effects)
+	}
+	for _, indexInfo := range c.getIndexInfosOfType(t) {
+		c.collectEscapingCallbackEffects(indexInfo.valueType, seen, effects)
+	}
 }
 
 func (c *Checker) getCombinedCallThrowsType(t *Type, unknownWhenNotCallable bool) *Type {
@@ -333,11 +358,11 @@ func (c *Checker) getCombinedCallThrowsType(t *Type, unknownWhenNotCallable bool
 	return c.getUnionType(effects)
 }
 
-// checkStrictAssertionEffects prevents a type assertion from erasing the
-// effect of a callable value. Assertions remain TypeScript escape hatches for
-// value shapes, but `unknown as (() => void throws never)` cannot manufacture
-// a proof that invoking unknown code is non-throwing.
-func (c *Checker) checkStrictAssertionEffects(node *ast.Node) {
+// checkFailClosedAssertionEffects prevents a type assertion from erasing the
+// effect of a callable value. Assertions may change value shapes, but
+// `unknown as (() => void throws never)` cannot manufacture a proof that
+// invoking unknown code is non-throwing.
+func (c *Checker) checkFailClosedAssertionEffects(node *ast.Node) {
 	targetType := c.getTypeFromTypeNode(node.Type())
 	targetEffect := c.getCombinedCallThrowsType(targetType, false)
 	if targetEffect == nil {
@@ -350,7 +375,7 @@ func (c *Checker) checkStrictAssertionEffects(node *ast.Node) {
 	}
 }
 
-func (c *Checker) checkStrictOverloadEffects(implementation *ast.Node) {
+func (c *Checker) checkFailClosedOverloadEffects(implementation *ast.Node) {
 	if implementation.Body() == nil {
 		return
 	}
@@ -378,12 +403,12 @@ func (c *Checker) checkStrictOverloadEffects(implementation *ast.Node) {
 	}
 }
 
-// isStrictImplicitUnknownOperation identifies ECMAScript operations whose
+// isFailClosedImplicitUnknownOperation identifies ECMAScript operations whose
 // abrupt-completion behavior is not represented by a resolved call signature.
-// Strict mode fails closed on these operations until a more precise effect is
+// Checked-exceptions analysis fails closed on these operations until a precise effect is
 // available. The deliberately-safe binary operators below do not perform user
 // coercion or invoke custom matchers.
-func isStrictImplicitUnknownOperation(node *ast.Node) bool {
+func isFailClosedImplicitUnknownOperation(node *ast.Node) bool {
 	switch node.Kind {
 	case ast.KindTaggedTemplateExpression,
 		ast.KindDeleteExpression,
@@ -448,7 +473,7 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 		}
 	}
 	visit = func(node *ast.Node) bool {
-		if c.checkedExceptionsStrict() && isStrictImplicitUnknownOperation(node) {
+		if c.checkedExceptionsFailClosed() && isFailClosedImplicitUnknownOperation(node) {
 			add(c.unknownType)
 		}
 		switch node.Kind {
@@ -457,7 +482,7 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 			ast.KindClassStaticBlockDeclaration:
 			return false
 		case ast.KindClassDeclaration, ast.KindClassExpression:
-			if c.checkedExceptionsStrict() {
+			if c.checkedExceptionsFailClosed() {
 				// Class evaluation may execute computed names, decorators and static
 				// initializers. Until each constituent is modeled precisely, fail closed.
 				add(c.unknownType)
@@ -475,16 +500,16 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 			}
 			return false
 		case ast.KindCallExpression, ast.KindNewExpression:
-			if c.checkedExceptionsStrict() {
+			if c.checkedExceptionsFailClosed() {
 				add(c.getEscapingCallbackThrowsType(node))
 			}
 			add(c.getThrowsTypeOfCall(node))
 		case ast.KindAwaitExpression:
-			if c.checkedExceptionsStrict() {
+			if c.checkedExceptionsFailClosed() {
 				add(c.getThrowsTypeOfAwait(node))
 			}
 		case ast.KindPropertyAccessExpression, ast.KindElementAccessExpression:
-			if c.checkedExceptionsStrict() && !isCallTargetPropertyAccess(node) {
+			if c.checkedExceptionsFailClosed() && !isCallTargetPropertyAccess(node) {
 				// A structural property read/write can invoke an accessor or Proxy trap.
 				// Property effects are not represented yet, so the only sound effect is
 				// unknown. Proven data properties can be refined in a later pass.
@@ -543,9 +568,9 @@ func (c *Checker) getCatchClauseThrowsType(catchClause *ast.Node) *Type {
 		c.catchClauseThrowsInProgress = make(map[*ast.Node]bool)
 	}
 	if c.catchClauseThrowsInProgress[catchClause] {
-		// A cyclic catch-type query must not erase an effect. Strict mode uses
-		// the top effect; gradual modes preserve their permissive behavior.
-		if c.checkedExceptionsStrict() {
+		// A cyclic catch-type query must not erase an effect. Enabled analysis
+		// uses the top effect; disabled analysis retains existing behavior.
+		if c.checkedExceptionsFailClosed() {
 			return c.unknownType
 		}
 		return nil
@@ -584,15 +609,15 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 
 	var visit func(node *ast.Node) bool
 	visit = func(node *ast.Node) bool {
-		if c.checkedExceptionsStrict() && tryDepth == 0 && isStrictImplicitUnknownOperation(node) {
+		if c.checkedExceptionsFailClosed() && tryDepth == 0 && isFailClosedImplicitUnknownOperation(node) {
 			c.checkRaisedType(node, c.unknownType, enclosingFn, false /*isCall*/)
 		}
 		switch node.Kind {
 		case ast.KindFunctionDeclaration, ast.KindFunctionExpression, ast.KindArrowFunction,
 			ast.KindMethodDeclaration, ast.KindConstructor, ast.KindGetAccessor, ast.KindSetAccessor,
 			ast.KindClassStaticBlockDeclaration:
-			if c.checkedExceptionsStrict() && (node.Kind == ast.KindFunctionDeclaration || node.Kind == ast.KindMethodDeclaration) {
-				c.checkStrictOverloadEffects(node)
+			if c.checkedExceptionsFailClosed() && (node.Kind == ast.KindFunctionDeclaration || node.Kind == ast.KindMethodDeclaration) {
+				c.checkFailClosedOverloadEffects(node)
 			}
 			savedFn, savedTryDepth := enclosingFn, tryDepth
 			enclosingFn, tryDepth = node, 0
@@ -600,7 +625,7 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 			enclosingFn, tryDepth = savedFn, savedTryDepth
 			return false
 		case ast.KindClassDeclaration, ast.KindClassExpression:
-			if c.checkedExceptionsStrict() && tryDepth == 0 {
+			if c.checkedExceptionsFailClosed() && tryDepth == 0 {
 				c.checkRaisedType(node, c.unknownType, enclosingFn, false /*isCall*/)
 			}
 			return false
@@ -619,31 +644,31 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 			}
 			return false
 		case ast.KindCallExpression, ast.KindNewExpression:
-			if c.checkedExceptionsStrict() {
+			if c.checkedExceptionsFailClosed() {
 				if callbackEffect := c.getEscapingCallbackThrowsType(node); callbackEffect != nil {
 					c.errorCheckedExceptions(node, diagnostics.Callback_may_throw_0_after_the_call_returns_A_synchronous_try_catch_or_enclosing_throws_clause_cannot_handle_it_Catch_inside_the_callback_or_use_a_non_escaping_callback_contract, c.TypeToString(callbackEffect))
 				}
 			}
-			if c.checkedExceptionsStrict() && c.callReturnsPromise(node) && !isAwaitedCall(node) && !isDirectlyReturnedCall(node) {
+			if c.checkedExceptionsFailClosed() && c.callReturnsPromise(node) && !isAwaitedCall(node) && !isDirectlyReturnedCall(node) {
 				throwsType := c.normalizeThrowsType(c.getThrowsTypeOfCall(node))
 				if throwsType == nil || throwsType.flags&TypeFlagsNever != 0 {
 					throwsType = c.unknownType
 				}
 				c.errorCheckedExceptions(node, diagnostics.Promise_returning_call_may_reject_with_0_A_synchronous_try_catch_does_not_handle_that_rejection_Await_or_return_the_promise, c.TypeToString(throwsType))
-			} else if tryDepth == 0 && !(c.checkedExceptionsStrict() && isAwaitedCall(node)) {
+			} else if tryDepth == 0 && !(c.checkedExceptionsFailClosed() && isAwaitedCall(node)) {
 				c.checkRaisedType(node, c.getThrowsTypeOfCall(node), enclosingFn, true /*isCall*/)
 			}
 		case ast.KindAwaitExpression:
-			if c.checkedExceptionsStrict() && tryDepth == 0 {
+			if c.checkedExceptionsFailClosed() && tryDepth == 0 {
 				c.checkRaisedType(node, c.getThrowsTypeOfAwait(node), enclosingFn, false /*isCall*/)
 			}
 		case ast.KindPropertyAccessExpression, ast.KindElementAccessExpression:
-			if c.checkedExceptionsStrict() && tryDepth == 0 && !isCallTargetPropertyAccess(node) {
+			if c.checkedExceptionsFailClosed() && tryDepth == 0 && !isCallTargetPropertyAccess(node) {
 				c.checkRaisedType(node, c.unknownType, enclosingFn, false /*isCall*/)
 			}
 		case ast.KindTypeAssertionExpression, ast.KindAsExpression:
-			if c.checkedExceptionsStrict() {
-				c.checkStrictAssertionEffects(node)
+			if c.checkedExceptionsFailClosed() {
+				c.checkFailClosedAssertionEffects(node)
 			}
 		case ast.KindThrowStatement:
 			if tryDepth == 0 {
@@ -662,10 +687,6 @@ func (c *Checker) checkRaisedType(site *ast.Node, raised *Type, enclosingFn *ast
 	raised = c.normalizeThrowsType(raised)
 	if raised == nil || raised == c.errorType || raised.flags&TypeFlagsNever != 0 {
 		// Untracked or empty.
-		return
-	}
-	if !c.checkedExceptionsStrict() && raised.flags&TypeFlagsAnyOrUnknown != 0 {
-		// Gradual modes preserve the explicit any/unknown escape hatch.
 		return
 	}
 	if enclosingFn == nil {

@@ -24,7 +24,7 @@ declare function parse(text: string): number throws ParseError;
 >text : string
 
 function combined() {
->combined : () => number
+>combined : () => number throws unknown
 
     try {
         return parse(readFile("a"));
@@ -64,7 +64,7 @@ function combined() {
 }
 
 function throwsOnly() {
->throwsOnly : () => "parse"
+>throwsOnly : () => "parse" throws unknown
 
     try {
         throw new ParseError("boom");
@@ -73,14 +73,14 @@ function throwsOnly() {
 >"boom" : "boom"
 
     } catch (e) {
->e : ParseError
+>e : unknown
 
         // e: ParseError, from the throw statement's type
         const tag: "parse" = e.tag;
 >tag : "parse"
->e.tag : "parse"
->e : ParseError
->tag : "parse"
+>e.tag : any
+>e : unknown
+>tag : any
 
         return tag;
 >tag : "parse"
@@ -111,9 +111,9 @@ function nothingTracked() {
     try {
         return JSON.stringify({});
 >JSON.stringify({}) : string
->JSON.stringify : { (value: any, replacer?: (this: any, key: string, value: any) => any, space?: string | number): string; (value: any, replacer?: (number | string)[] | null, space?: string | number): string; }
+>JSON.stringify : { (value: any, replacer?: (this: any, key: string, value: any) => any, space?: string | number): string throws unknown; (value: any, replacer?: (number | string)[] | null, space?: string | number): string throws unknown; }
 >JSON : JSON
->stringify : { (value: any, replacer?: (this: any, key: string, value: any) => any, space?: string | number): string; (value: any, replacer?: (number | string)[] | null, space?: string | number): string; }
+>stringify : { (value: any, replacer?: (this: any, key: string, value: any) => any, space?: string | number): string throws unknown; (value: any, replacer?: (number | string)[] | null, space?: string | number): string throws unknown; }
 >{} : {}
 
     } catch (e) {
@@ -144,7 +144,7 @@ function explicitAnnotationWins() {
 }
 
 function innerTryDischarges() {
->innerTryDischarges : () => "parse" | undefined
+>innerTryDischarges : () => "parse" | undefined throws unknown
 
     try {
         try {
@@ -160,14 +160,14 @@ function innerTryDischarges() {
 >"converted" : "converted"
         }
     } catch (e) {
->e : ParseError
+>e : unknown
 
         // e: ParseError — the inner catch discharged IOError but raises ParseError
         const tag: "parse" = e.tag;
 >tag : "parse"
->e.tag : "parse"
->e : ParseError
->tag : "parse"
+>e.tag : any
+>e : unknown
+>tag : any
 
         return tag;
 >tag : "parse"

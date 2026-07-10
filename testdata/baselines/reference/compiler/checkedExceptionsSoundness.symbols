@@ -1,0 +1,186 @@
+//// [tests/cases/compiler/checkedExceptionsSoundness.ts] ////
+
+=== checkedExceptionsSoundness.ts ===
+declare function legacy(): void;
+>legacy : Symbol(legacy, Decl(checkedExceptionsSoundness.ts, 0, 0))
+
+declare function tracked(): void throws "tracked";
+>tracked : Symbol(tracked, Decl(checkedExceptionsSoundness.ts, 0, 32))
+
+declare function explicitlyUnknown(): void throws unknown;
+>explicitlyUnknown : Symbol(explicitlyUnknown, Decl(checkedExceptionsSoundness.ts, 1, 50))
+
+declare function explicitlyAny(): void throws any;
+>explicitlyAny : Symbol(explicitlyAny, Decl(checkedExceptionsSoundness.ts, 2, 58))
+
+// Ambient declarations without throws metadata are unknown, not throw-free.
+function ambientInNever(): void throws never {
+>ambientInNever : Symbol(ambientInNever, Decl(checkedExceptionsSoundness.ts, 3, 50))
+
+    legacy();
+>legacy : Symbol(legacy, Decl(checkedExceptionsSoundness.ts, 0, 0))
+}
+
+// Explicit unknown and any effects cannot escape through `throws never`.
+function unknownInNever(): void throws never {
+>unknownInNever : Symbol(unknownInNever, Decl(checkedExceptionsSoundness.ts, 8, 1))
+
+    explicitlyUnknown();
+>explicitlyUnknown : Symbol(explicitlyUnknown, Decl(checkedExceptionsSoundness.ts, 1, 50))
+}
+function anyInNever(): void throws never {
+>anyInNever : Symbol(anyInNever, Decl(checkedExceptionsSoundness.ts, 13, 1))
+
+    explicitlyAny();
+>explicitlyAny : Symbol(explicitlyAny, Decl(checkedExceptionsSoundness.ts, 2, 58))
+}
+
+// Unknown effects may be caught or propagated honestly.
+function catchesLegacy(): void throws never {
+>catchesLegacy : Symbol(catchesLegacy, Decl(checkedExceptionsSoundness.ts, 16, 1))
+
+    try {
+        legacy();
+>legacy : Symbol(legacy, Decl(checkedExceptionsSoundness.ts, 0, 0))
+
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 22, 13))
+
+        const value: unknown = e;
+>value : Symbol(value, Decl(checkedExceptionsSoundness.ts, 23, 13))
+>e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 22, 13))
+    }
+}
+function propagatesLegacy(): void throws unknown {
+>propagatesLegacy : Symbol(propagatesLegacy, Decl(checkedExceptionsSoundness.ts, 25, 1))
+
+    legacy();
+>legacy : Symbol(legacy, Decl(checkedExceptionsSoundness.ts, 0, 0))
+}
+
+// A missing callback effect makes the higher-order function unknown rather
+// than silently losing an exception raised by the callback.
+function invoke(callback: () => void): void {
+>invoke : Symbol(invoke, Decl(checkedExceptionsSoundness.ts, 28, 1))
+>callback : Symbol(callback, Decl(checkedExceptionsSoundness.ts, 32, 16))
+
+    callback();
+>callback : Symbol(callback, Decl(checkedExceptionsSoundness.ts, 32, 16))
+}
+function higherOrderInNever(): void throws never {
+>higherOrderInNever : Symbol(higherOrderInNever, Decl(checkedExceptionsSoundness.ts, 34, 1))
+
+    invoke(() => { throw "callback"; });
+>invoke : Symbol(invoke, Decl(checkedExceptionsSoundness.ts, 28, 1))
+}
+
+// A callback cannot hide inside an option object and escape the caller's
+// synchronous exception boundary.
+declare function register(options: {
+>register : Symbol(register, Decl(checkedExceptionsSoundness.ts, 37, 1))
+>options : Symbol(options, Decl(checkedExceptionsSoundness.ts, 41, 26))
+
+    callback: () => void throws "nested";
+>callback : Symbol(callback, Decl(checkedExceptionsSoundness.ts, 41, 36))
+
+}): void throws never;
+register({ callback: () => { throw "nested"; } });
+>register : Symbol(register, Decl(checkedExceptionsSoundness.ts, 37, 1))
+>callback : Symbol(callback, Decl(checkedExceptionsSoundness.ts, 44, 10))
+
+// Structural property access may invoke a getter or Proxy trap.
+const accessor = {
+>accessor : Symbol(accessor, Decl(checkedExceptionsSoundness.ts, 47, 5))
+
+    get value(): number {
+>value : Symbol(value, Decl(checkedExceptionsSoundness.ts, 47, 18))
+
+        throw "getter";
+    },
+};
+function accessorInNever(): number throws never {
+>accessorInNever : Symbol(accessorInNever, Decl(checkedExceptionsSoundness.ts, 51, 2))
+
+    return accessor.value;
+>accessor.value : Symbol(value, Decl(checkedExceptionsSoundness.ts, 47, 18))
+>accessor : Symbol(accessor, Decl(checkedExceptionsSoundness.ts, 47, 5))
+>value : Symbol(value, Decl(checkedExceptionsSoundness.ts, 47, 18))
+}
+
+// One unknown source poisons catch precision instead of allowing an optimistic
+// tracked-only type.
+function mixedCatch(): void throws never {
+>mixedCatch : Symbol(mixedCatch, Decl(checkedExceptionsSoundness.ts, 54, 1))
+
+    try {
+        tracked();
+>tracked : Symbol(tracked, Decl(checkedExceptionsSoundness.ts, 0, 32))
+
+        legacy();
+>legacy : Symbol(legacy, Decl(checkedExceptionsSoundness.ts, 0, 0))
+
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 62, 13))
+
+        const unsound: "tracked" = e;
+>unsound : Symbol(unsound, Decl(checkedExceptionsSoundness.ts, 63, 13))
+>e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 62, 13))
+    }
+}
+
+// Function types without a clause describe an unknown effect when enabled.
+type LegacyCallback = () => void;
+>LegacyCallback : Symbol(LegacyCallback, Decl(checkedExceptionsSoundness.ts, 65, 1))
+
+type SafeCallback = () => void throws never;
+>SafeCallback : Symbol(SafeCallback, Decl(checkedExceptionsSoundness.ts, 68, 33))
+
+declare const legacyCallback: LegacyCallback;
+>legacyCallback : Symbol(legacyCallback, Decl(checkedExceptionsSoundness.ts, 70, 13))
+>LegacyCallback : Symbol(LegacyCallback, Decl(checkedExceptionsSoundness.ts, 65, 1))
+
+const incorrectlyNarrowed: SafeCallback = legacyCallback;
+>incorrectlyNarrowed : Symbol(incorrectlyNarrowed, Decl(checkedExceptionsSoundness.ts, 71, 5))
+>SafeCallback : Symbol(SafeCallback, Decl(checkedExceptionsSoundness.ts, 68, 33))
+>legacyCallback : Symbol(legacyCallback, Decl(checkedExceptionsSoundness.ts, 70, 13))
+
+// Unknown effects at top level must be handled.
+legacy();
+>legacy : Symbol(legacy, Decl(checkedExceptionsSoundness.ts, 0, 0))
+
+try { legacy(); } catch {}
+>legacy : Symbol(legacy, Decl(checkedExceptionsSoundness.ts, 0, 0))
+
+// Type assertions cannot manufacture a non-throwing callable type.
+function assertionSource(): void throws "assertion" {
+>assertionSource : Symbol(assertionSource, Decl(checkedExceptionsSoundness.ts, 75, 26))
+
+    throw "assertion";
+}
+const assertionErasesEffect = assertionSource as () => void throws never;
+>assertionErasesEffect : Symbol(assertionErasesEffect, Decl(checkedExceptionsSoundness.ts, 81, 5))
+>assertionSource : Symbol(assertionSource, Decl(checkedExceptionsSoundness.ts, 75, 26))
+
+function callAssertedFunction(): void throws never {
+>callAssertedFunction : Symbol(callAssertedFunction, Decl(checkedExceptionsSoundness.ts, 81, 73))
+
+    assertionErasesEffect();
+>assertionErasesEffect : Symbol(assertionErasesEffect, Decl(checkedExceptionsSoundness.ts, 81, 5))
+}
+
+// An overload cannot advertise a narrower effect than its implementation.
+function lyingOverload(): void throws never;
+>lyingOverload : Symbol(lyingOverload, Decl(checkedExceptionsSoundness.ts, 84, 1), Decl(checkedExceptionsSoundness.ts, 87, 44))
+
+function lyingOverload(): void {
+>lyingOverload : Symbol(lyingOverload, Decl(checkedExceptionsSoundness.ts, 84, 1), Decl(checkedExceptionsSoundness.ts, 87, 44))
+
+    throw "implementation";
+}
+function callLyingOverload(): void throws never {
+>callLyingOverload : Symbol(callLyingOverload, Decl(checkedExceptionsSoundness.ts, 90, 1))
+
+    lyingOverload();
+>lyingOverload : Symbol(lyingOverload, Decl(checkedExceptionsSoundness.ts, 84, 1), Decl(checkedExceptionsSoundness.ts, 87, 44))
+}
+

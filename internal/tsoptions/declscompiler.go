@@ -372,12 +372,12 @@ var optionsForCompiler = []*CommandLineOption{
 	},
 	{
 		Name:                       "checkedExceptions",
-		Kind:                       CommandLineOptionTypeEnum,
+		Kind:                       CommandLineOptionTypeBoolean,
 		AffectsSemanticDiagnostics: true,
 		AffectsBuildInfo:           true,
 		Category:                   diagnostics.Type_Checking,
 		Description:                diagnostics.Enable_checked_exceptions_Functions_must_handle_the_errors_their_callees_declare_with_throws_clauses_or_declare_them_in_their_own,
-		DefaultValueDescription:    "off",
+		DefaultValueDescription:    false,
 	},
 	{
 		Name:                       "checkJs",

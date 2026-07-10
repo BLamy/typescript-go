@@ -1,4 +1,4 @@
-// @checkedExceptions: error
+// @checkedExceptions: true
 // @strict: true
 // @declaration: true
 

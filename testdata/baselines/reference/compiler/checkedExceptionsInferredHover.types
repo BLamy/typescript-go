@@ -56,7 +56,7 @@ export const loadConfigArrow = (path: string) => parseConfig(readFile(path));
 // clause at all — consistent with `throws never` not being the same as "no
 // clause", but there is nothing to show either way.
 export function safe(x: number) {
->safe : (x: number) => number
+>safe : (x: number) => number throws unknown
 >x : number
 
     return x + 1;

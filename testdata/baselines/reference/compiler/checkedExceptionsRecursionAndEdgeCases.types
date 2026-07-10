@@ -17,7 +17,7 @@ class E2 extends Error { readonly tag = "e2" as const; }
 
 // Finding 1: symmetric mutual recursion must report symmetrically.
 function f(x: number): void { if (x > 0) throw new E1(); g(x - 1); }
->f : (x: number) => void throws E1 | E2
+>f : (x: number) => void throws unknown
 >x : number
 >x > 0 : boolean
 >x : number
@@ -25,13 +25,13 @@ function f(x: number): void { if (x > 0) throw new E1(); g(x - 1); }
 >new E1() : E1
 >E1 : typeof E1
 >g(x - 1) : void
->g : (x: number) => void throws E1 | E2
+>g : (x: number) => void throws unknown
 >x - 1 : number
 >x : number
 >1 : 1
 
 function g(x: number): void { if (x > 0) throw new E2(); f(x - 1); }
->g : (x: number) => void throws E1 | E2
+>g : (x: number) => void throws unknown
 >x : number
 >x > 0 : boolean
 >x : number
@@ -39,7 +39,7 @@ function g(x: number): void { if (x > 0) throw new E2(); f(x - 1); }
 >new E2() : E2
 >E2 : typeof E2
 >f(x - 1) : void
->f : (x: number) => void throws E1 | E2
+>f : (x: number) => void throws unknown
 >x - 1 : number
 >x : number
 >1 : 1
@@ -47,43 +47,43 @@ function g(x: number): void { if (x > 0) throw new E2(); f(x - 1); }
 function wrapF(): void throws E1 { f(3); }  // error: E2 missing
 >wrapF : () => void throws E1
 >f(3) : void
->f : (x: number) => void throws E1 | E2
+>f : (x: number) => void throws unknown
 >3 : 3
 
 function wrapG(): void throws E2 { g(3); }  // error: E1 missing
 >wrapG : () => void throws E2
 >g(3) : void
->g : (x: number) => void throws E1 | E2
+>g : (x: number) => void throws unknown
 >3 : 3
 
 // Finding 2: mutually recursive rethrow wrappers, no TS7022, still enforced.
 function a(): void { try { b(); } catch (e) { throw e; } }
->a : () => void throws E1
+>a : () => void throws unknown
 >b() : void
->b : () => void throws E1
->e : E1
->e : E1
+>b : () => void throws unknown
+>e : unknown
+>e : unknown
 
 function b(): void { try { a(); } catch (e) { throw e; } throw new E1(); }
->b : () => void throws E1
+>b : () => void throws unknown
 >a() : void
->a : () => void throws E1
->e : E1
->e : E1
+>a : () => void throws unknown
+>e : unknown
+>e : unknown
 >new E1() : E1
 >E1 : typeof E1
 
 a(); // error: E1 surfaces at top level
 >a() : void
->a : () => void throws E1
+>a : () => void throws unknown
 
 // Finding 3: union with an untracked constituent keeps the tracked side.
 declare const uMixed: (() => void throws E1) | (() => void);
->uMixed : (() => void throws E1) | (() => void)
+>uMixed : (() => void throws E1) | (() => void throws unknown)
 
 uMixed(); // error: E1
 >uMixed() : void
->uMixed : (() => void throws E1) | (() => void)
+>uMixed : (() => void throws E1) | (() => void throws unknown)
 
 // Finding 4: default parameter initializers participate in inference.
 declare function boom(): number throws E1;
@@ -120,5 +120,5 @@ function takesT1(): void throws E1 { t1(); }
 
 // Checker F3: unresolved clause type reports even when never called.
 declare function neverCalled(): void throws CompletelyUndefinedName;
->neverCalled : () => void throws CompletelyUndefinedName
+>neverCalled : () => void throws unknown
 

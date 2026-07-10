@@ -1,11 +1,11 @@
-// @checkedExceptions: warning
+// @checkedExceptions: true
 // @strict: true
 
 class IOError extends Error {}
 
 declare function readFile(path: string): string throws IOError;
 
-// Reported as a warning, not an error.
+// Enabled checked exceptions are always build-blocking and fail closed.
 function unhandled(): string throws never {
     return readFile("x");
 }
