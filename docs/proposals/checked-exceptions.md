@@ -360,6 +360,12 @@ Rules:
   synchronous invocation from an escaping callback, checked exceptions require a
   function-valued argument with a non-`never` effect to handle that effect
   inside the callback itself. A surrounding synchronous catch is not proof.
+- The same lifetime rule applies to every executable capability passed as an
+  argument, not only a directly callable value. Throwing getters, constructors,
+  methods nested in option objects, and factories that return throwing
+  callbacks can also be retained and executed after the call returns. Until a
+  parameter contract proves non-retention, their effects must be discharged
+  inside the capability.
 
 To represent a promise's rejection type in the structural type system, we extend
 the `Promise<T>` relationship with an optional second tracked slot; see §10.2
@@ -701,10 +707,11 @@ is implemented, and where it deliberately narrows the full design:
 
 **Implemented**
 
-- `throws T` clause syntax on function declarations/expressions, arrows, class
-  and object-literal methods, interface method signatures, and function type
-  nodes; `throws` is a contextual keyword recognized only on the same line as
-  the preceding token, so existing members named `throws` keep parsing.
+- `throws T` clause syntax on function declarations/expressions, arrows,
+  methods, constructors, getters/setters, call and construct signatures, and
+  function and constructor type nodes; `throws` is a contextual keyword
+  recognized only on the same line as the preceding token, so existing members
+  named `throws` keep parsing.
 - The boolean `checkedExceptions` option, wired through
   tsconfig, the CLI, and build info; diagnostics TS100021–TS100028 are emitted
   as build-blocking errors when it is enabled.
@@ -725,8 +732,9 @@ is implemented, and where it deliberately narrows the full design:
   clause instantiates with the signature.
 - Enabled checked-exceptions analysis treats ambient/legacy declarations without clauses as `unknown`,
   normalizes `throws any` to `unknown`, includes unknown effects in enforcement
-  and catch typing, prevents callable and property assertions from erasing
-  effects, checks overload implementations, and conservatively treats
+  and catch typing, prevents assertions or `any` assignments from manufacturing
+  callable/property effect proofs, checks function/method/constructor overload
+  implementations, and conservatively treats
   unresolved structural property access, construction, class/module
   evaluation, coercion, iteration, destructuring, disposal, JSX, and decorators
   as unknown effects.
@@ -749,16 +757,17 @@ is implemented, and where it deliberately narrows the full design:
   synchronous combinators until they can declare the timing contract.
 - Until parameter-level timing contracts land, the implementation recursively
   examines option objects, collections, index signatures, unions, and generic
-  capabilities for callbacks. A throwing or imprecise callable capability is
-  rejected at the call site because it may escape. This is intentionally
-  conservative; `rethrows` and explicit non-escaping contracts can later admit
-  synchronous combinators without weakening the sound boundary.
+  capabilities for executable code. Throwing or imprecise callbacks,
+  constructors, accessors, and returned capabilities are rejected at the call
+  site because they may escape. This is intentionally conservative; `rethrows`
+  and explicit non-escaping contracts can later admit synchronous combinators
+  without weakening the sound boundary.
 - Typed `catch` requires `checkedExceptions: true`. With the option disabled, program types
   are byte-for-byte what they are today; the proposal's "typed catch in the
   editor even when off" would change types under a no-diagnostics setting.
 - The assignability rule runs whenever checked exceptions are enabled and a
   failed relation is a hard type error.
-- Ambient construct signatures, structural property signatures, static blocks,
+- Ambient construct signatures without clauses, structural property signatures, static blocks,
   computed/decorated class elements, tagged templates, and JSX contribute
   `unknown` until their declarations carry a precise effect contract. Visible
   local constructors, accessors, and field initializers are inferred.
@@ -766,10 +775,6 @@ is implemented, and where it deliberately narrows the full design:
   effects. A practical multi-module project needs declaration emit and
   package metadata for module initialization effects before this can become
   precise.
-- *Construct* signatures and constructor types do not accept a clause yet
-  (standalone function types, and call signatures in interfaces and type
-  literals, do). Enabled analysis consequently treats construction through those
-  signatures as `unknown`, rather than `never`.
 - `throws this` is not instantiated at call sites; the clause resolves to the
   declaring class's `this` type.
 - `catch match`/`catch (e is pattern)` is specified as a sound future

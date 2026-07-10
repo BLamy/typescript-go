@@ -440,6 +440,7 @@ export interface FunctionLikeBase extends DeclarationBase {
     readonly typeParameters?: NodeArray<TypeParameterDeclaration>;
     readonly parameters: NodeArray<ParameterDeclaration>;
     readonly type?: TypeNode;
+    readonly throwsType?: TypeNode;
     readonly fullSignature?: TypeNode;
 }
 export interface BodyBase extends Node {

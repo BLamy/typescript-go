@@ -97,7 +97,7 @@ func (f *missingMemberFixer) createMemberFromSymbol(symbol *ast.Symbol, enclosin
 					nodes,
 					f.changeTracker.NodeFactory.NewGetAccessorDeclaration(
 						modifiers, createPropertyName(f.changeTracker.NodeFactory, declarationName, quotePreference),
-						nil /*typeParameters*/, nil /*parameters*/, f.createTypeNode(t, enclosingDeclaration, flags, nodeBuilder, idToSymbol), nil /*fullSignature*/, f.createBody(body, ambient, quotePreference),
+						nil /*typeParameters*/, nil /*parameters*/, f.createTypeNode(t, enclosingDeclaration, flags, nodeBuilder, idToSymbol), accessor.FunctionLikeData().ThrowsType, nil /*fullSignature*/, f.createBody(body, ambient, quotePreference),
 					),
 				)
 			}
@@ -112,7 +112,7 @@ func (f *missingMemberFixer) createMemberFromSymbol(symbol *ast.Symbol, enclosin
 					nodes, f.changeTracker.NodeFactory.NewSetAccessorDeclaration(
 						modifiers, createPropertyName(f.changeTracker.NodeFactory, declarationName, quotePreference),
 						nil /*typeParameters*/, createDummyParameters(f.changeTracker.NodeFactory, 1, []string{parameter.Name().Text()}, []*ast.TypeNode{f.createTypeNode(t, enclosingDeclaration, flags, nodeBuilder, idToSymbol)}, 1, ast.IsInJSFile(enclosingDeclaration)),
-						nil /*type*/, nil /*fullSignature*/, f.createBody(body, ambient, quotePreference),
+						nil /*type*/, accessor.FunctionLikeData().ThrowsType, nil /*fullSignature*/, f.createBody(body, ambient, quotePreference),
 					),
 				)
 			}

@@ -75,62 +75,125 @@ function constructLegacy(): object throws never {
 >LegacyConstructor : Symbol(LegacyConstructor, Decl(checkedExceptionsSoundImplicitEffects.ts, 35, 13))
 }
 
+// Construct signatures can opt into precise contracts without rewriting the
+// rest of a legacy declaration surface.
+declare const SafeConstructor: new () => object throws never;
+>SafeConstructor : Symbol(SafeConstructor, Decl(checkedExceptionsSoundImplicitEffects.ts, 42, 13))
+
+declare const KnownConstructor: new () => object throws "construct";
+>KnownConstructor : Symbol(KnownConstructor, Decl(checkedExceptionsSoundImplicitEffects.ts, 43, 13))
+
+function constructSafe(): object throws never {
+>constructSafe : Symbol(constructSafe, Decl(checkedExceptionsSoundImplicitEffects.ts, 43, 68))
+
+    return new SafeConstructor();
+>SafeConstructor : Symbol(SafeConstructor, Decl(checkedExceptionsSoundImplicitEffects.ts, 42, 13))
+}
+function constructKnownInNever(): object throws never {
+>constructKnownInNever : Symbol(constructKnownInNever, Decl(checkedExceptionsSoundImplicitEffects.ts, 46, 1))
+
+    return new KnownConstructor();
+>KnownConstructor : Symbol(KnownConstructor, Decl(checkedExceptionsSoundImplicitEffects.ts, 43, 13))
+}
+
+// Accessor declarations carry distinct read and write effects.
+declare const declaredAccessor: {
+>declaredAccessor : Symbol(declaredAccessor, Decl(checkedExceptionsSoundImplicitEffects.ts, 52, 13))
+
+    get value(): number throws "read accessor";
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 52, 33), Decl(checkedExceptionsSoundImplicitEffects.ts, 53, 47))
+
+    set value(next: number) throws "write accessor";
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 52, 33), Decl(checkedExceptionsSoundImplicitEffects.ts, 53, 47))
+>next : Symbol(next, Decl(checkedExceptionsSoundImplicitEffects.ts, 54, 14))
+
+};
+function readDeclaredAccessor(): number throws never {
+>readDeclaredAccessor : Symbol(readDeclaredAccessor, Decl(checkedExceptionsSoundImplicitEffects.ts, 55, 2))
+
+    return declaredAccessor.value;
+>declaredAccessor.value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 52, 33), Decl(checkedExceptionsSoundImplicitEffects.ts, 53, 47))
+>declaredAccessor : Symbol(declaredAccessor, Decl(checkedExceptionsSoundImplicitEffects.ts, 52, 13))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 52, 33), Decl(checkedExceptionsSoundImplicitEffects.ts, 53, 47))
+}
+function writeDeclaredAccessor(): void throws never {
+>writeDeclaredAccessor : Symbol(writeDeclaredAccessor, Decl(checkedExceptionsSoundImplicitEffects.ts, 58, 1))
+
+    declaredAccessor.value = 1;
+>declaredAccessor.value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 52, 33), Decl(checkedExceptionsSoundImplicitEffects.ts, 53, 47))
+>declaredAccessor : Symbol(declaredAccessor, Decl(checkedExceptionsSoundImplicitEffects.ts, 52, 13))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 52, 33), Decl(checkedExceptionsSoundImplicitEffects.ts, 53, 47))
+}
+
 // An untracked constituent poisons a union call instead of disappearing.
 type KnownFunction = () => void throws "known";
->KnownFunction : Symbol(KnownFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 38, 1))
+>KnownFunction : Symbol(KnownFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 61, 1))
 
 type LegacyFunction = () => void;
->LegacyFunction : Symbol(LegacyFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 41, 47))
+>LegacyFunction : Symbol(LegacyFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 64, 47))
 
 declare const unionFunction: KnownFunction | LegacyFunction;
->unionFunction : Symbol(unionFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 43, 13))
->KnownFunction : Symbol(KnownFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 38, 1))
->LegacyFunction : Symbol(LegacyFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 41, 47))
+>unionFunction : Symbol(unionFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 66, 13))
+>KnownFunction : Symbol(KnownFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 61, 1))
+>LegacyFunction : Symbol(LegacyFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 64, 47))
 
 function callUnion(): void throws "known" {
->callUnion : Symbol(callUnion, Decl(checkedExceptionsSoundImplicitEffects.ts, 43, 60))
+>callUnion : Symbol(callUnion, Decl(checkedExceptionsSoundImplicitEffects.ts, 66, 60))
 
     unionFunction();
->unionFunction : Symbol(unionFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 43, 13))
+>unionFunction : Symbol(unionFunction, Decl(checkedExceptionsSoundImplicitEffects.ts, 66, 13))
 }
 
 // The selected legacy overload is unknown.
 declare function overloaded(value: 0): void throws "known";
->overloaded : Symbol(overloaded, Decl(checkedExceptionsSoundImplicitEffects.ts, 46, 1), Decl(checkedExceptionsSoundImplicitEffects.ts, 49, 59))
->value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 49, 28))
+>overloaded : Symbol(overloaded, Decl(checkedExceptionsSoundImplicitEffects.ts, 69, 1), Decl(checkedExceptionsSoundImplicitEffects.ts, 72, 59))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 72, 28))
 
 declare function overloaded(value: number): void;
->overloaded : Symbol(overloaded, Decl(checkedExceptionsSoundImplicitEffects.ts, 46, 1), Decl(checkedExceptionsSoundImplicitEffects.ts, 49, 59))
->value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 50, 28))
+>overloaded : Symbol(overloaded, Decl(checkedExceptionsSoundImplicitEffects.ts, 69, 1), Decl(checkedExceptionsSoundImplicitEffects.ts, 72, 59))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 73, 28))
 
 function callLegacyOverload(): void throws never {
->callLegacyOverload : Symbol(callLegacyOverload, Decl(checkedExceptionsSoundImplicitEffects.ts, 50, 49))
+>callLegacyOverload : Symbol(callLegacyOverload, Decl(checkedExceptionsSoundImplicitEffects.ts, 73, 49))
 
     overloaded(1);
->overloaded : Symbol(overloaded, Decl(checkedExceptionsSoundImplicitEffects.ts, 46, 1), Decl(checkedExceptionsSoundImplicitEffects.ts, 49, 59))
+>overloaded : Symbol(overloaded, Decl(checkedExceptionsSoundImplicitEffects.ts, 69, 1), Decl(checkedExceptionsSoundImplicitEffects.ts, 72, 59))
 }
 
 // Class evaluation can execute static initializers, computed names, and
 // decorators. It remains unknown until those effects are modeled separately.
 declare function legacy(): void;
->legacy : Symbol(legacy, Decl(checkedExceptionsSoundImplicitEffects.ts, 53, 1))
+>legacy : Symbol(legacy, Decl(checkedExceptionsSoundImplicitEffects.ts, 76, 1))
 
 function defineClass(): void throws never {
->defineClass : Symbol(defineClass, Decl(checkedExceptionsSoundImplicitEffects.ts, 57, 32))
+>defineClass : Symbol(defineClass, Decl(checkedExceptionsSoundImplicitEffects.ts, 80, 32))
 
     class Local {
->Local : Symbol(Local, Decl(checkedExceptionsSoundImplicitEffects.ts, 58, 43))
+>Local : Symbol(Local, Decl(checkedExceptionsSoundImplicitEffects.ts, 81, 43))
 
         static value = legacy();
->value : Symbol(Local.value, Decl(checkedExceptionsSoundImplicitEffects.ts, 59, 17))
->legacy : Symbol(legacy, Decl(checkedExceptionsSoundImplicitEffects.ts, 53, 1))
+>value : Symbol(Local.value, Decl(checkedExceptionsSoundImplicitEffects.ts, 82, 17))
+>legacy : Symbol(legacy, Decl(checkedExceptionsSoundImplicitEffects.ts, 76, 1))
     }
+}
+
+// A dynamic base may fail IsConstructor while the class definition is being
+// evaluated; merely reading the identifier is not the whole class effect.
+declare const dynamicBase: any;
+>dynamicBase : Symbol(dynamicBase, Decl(checkedExceptionsSoundImplicitEffects.ts, 89, 13))
+
+function defineDynamicSubclass(): void throws never {
+>defineDynamicSubclass : Symbol(defineDynamicSubclass, Decl(checkedExceptionsSoundImplicitEffects.ts, 89, 31))
+
+    class Local extends dynamicBase {}
+>Local : Symbol(Local, Decl(checkedExceptionsSoundImplicitEffects.ts, 90, 53))
+>dynamicBase : Symbol(dynamicBase, Decl(checkedExceptionsSoundImplicitEffects.ts, 89, 13))
 }
 
 // Catching an unknown standard-library boundary is sound, but the binding must
 // remain unknown.
 function catchJson(): void throws never {
->catchJson : Symbol(catchJson, Decl(checkedExceptionsSoundImplicitEffects.ts, 62, 1))
+>catchJson : Symbol(catchJson, Decl(checkedExceptionsSoundImplicitEffects.ts, 92, 1))
 
     try {
         JSON.parse("{");
@@ -139,57 +202,57 @@ function catchJson(): void throws never {
 >parse : Symbol(JSON.parse, Decl(lib.es5.d.ts, --, --))
 
     } catch (e) {
->e : Symbol(e, Decl(checkedExceptionsSoundImplicitEffects.ts, 69, 13))
+>e : Symbol(e, Decl(checkedExceptionsSoundImplicitEffects.ts, 99, 13))
 
         const value: unknown = e;
->value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 70, 13))
->e : Symbol(e, Decl(checkedExceptionsSoundImplicitEffects.ts, 69, 13))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 100, 13))
+>e : Symbol(e, Decl(checkedExceptionsSoundImplicitEffects.ts, 99, 13))
     }
 }
 
 // Operators that can perform user coercion fail closed, while strict equality
 // and logical negation remain proven-safe operations.
 declare const dynamicValue: any;
->dynamicValue : Symbol(dynamicValue, Decl(checkedExceptionsSoundImplicitEffects.ts, 76, 13))
+>dynamicValue : Symbol(dynamicValue, Decl(checkedExceptionsSoundImplicitEffects.ts, 106, 13))
 
 function coercion(): unknown throws never {
->coercion : Symbol(coercion, Decl(checkedExceptionsSoundImplicitEffects.ts, 76, 32))
+>coercion : Symbol(coercion, Decl(checkedExceptionsSoundImplicitEffects.ts, 106, 32))
 
     return dynamicValue + 1;
->dynamicValue : Symbol(dynamicValue, Decl(checkedExceptionsSoundImplicitEffects.ts, 76, 13))
+>dynamicValue : Symbol(dynamicValue, Decl(checkedExceptionsSoundImplicitEffects.ts, 106, 13))
 }
 function unaryCoercion(): number throws never {
->unaryCoercion : Symbol(unaryCoercion, Decl(checkedExceptionsSoundImplicitEffects.ts, 79, 1))
+>unaryCoercion : Symbol(unaryCoercion, Decl(checkedExceptionsSoundImplicitEffects.ts, 109, 1))
 
     return +dynamicValue;
->dynamicValue : Symbol(dynamicValue, Decl(checkedExceptionsSoundImplicitEffects.ts, 76, 13))
+>dynamicValue : Symbol(dynamicValue, Decl(checkedExceptionsSoundImplicitEffects.ts, 106, 13))
 }
 function safePredicates(value: unknown): boolean throws never {
->safePredicates : Symbol(safePredicates, Decl(checkedExceptionsSoundImplicitEffects.ts, 82, 1))
->value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 83, 24))
+>safePredicates : Symbol(safePredicates, Decl(checkedExceptionsSoundImplicitEffects.ts, 112, 1))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 113, 24))
 
     return !(value === null);
->value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 83, 24))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 113, 24))
 }
 
 // Iteration, spreading, tagged templates, and parameter destructuring all
 // execute protocol hooks or property reads that can throw.
 declare const iterable: Iterable<number>;
->iterable : Symbol(iterable, Decl(checkedExceptionsSoundImplicitEffects.ts, 89, 13))
+>iterable : Symbol(iterable, Decl(checkedExceptionsSoundImplicitEffects.ts, 119, 13))
 >Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
 
 function spreadIterable(): number[] throws never {
->spreadIterable : Symbol(spreadIterable, Decl(checkedExceptionsSoundImplicitEffects.ts, 89, 41))
+>spreadIterable : Symbol(spreadIterable, Decl(checkedExceptionsSoundImplicitEffects.ts, 119, 41))
 
     return [...iterable];
->iterable : Symbol(iterable, Decl(checkedExceptionsSoundImplicitEffects.ts, 89, 13))
+>iterable : Symbol(iterable, Decl(checkedExceptionsSoundImplicitEffects.ts, 119, 13))
 }
 function iterate(): void throws never {
->iterate : Symbol(iterate, Decl(checkedExceptionsSoundImplicitEffects.ts, 92, 1))
+>iterate : Symbol(iterate, Decl(checkedExceptionsSoundImplicitEffects.ts, 122, 1))
 
     for (const value of iterable) {
->value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 94, 14))
->iterable : Symbol(iterable, Decl(checkedExceptionsSoundImplicitEffects.ts, 89, 13))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 124, 14))
+>iterable : Symbol(iterable, Decl(checkedExceptionsSoundImplicitEffects.ts, 119, 13))
 
         safe();
 >safe : Symbol(safe, Decl(checkedExceptionsSoundImplicitEffects.ts, 2, 23))
@@ -197,21 +260,21 @@ function iterate(): void throws never {
 }
 
 declare const tag: (parts: TemplateStringsArray) => string throws never;
->tag : Symbol(tag, Decl(checkedExceptionsSoundImplicitEffects.ts, 99, 13))
->parts : Symbol(parts, Decl(checkedExceptionsSoundImplicitEffects.ts, 99, 20))
+>tag : Symbol(tag, Decl(checkedExceptionsSoundImplicitEffects.ts, 129, 13))
+>parts : Symbol(parts, Decl(checkedExceptionsSoundImplicitEffects.ts, 129, 20))
 >TemplateStringsArray : Symbol(TemplateStringsArray, Decl(lib.es5.d.ts, --, --))
 
 function taggedTemplate(): string throws never {
->taggedTemplate : Symbol(taggedTemplate, Decl(checkedExceptionsSoundImplicitEffects.ts, 99, 72))
+>taggedTemplate : Symbol(taggedTemplate, Decl(checkedExceptionsSoundImplicitEffects.ts, 129, 72))
 
     return tag`value`;
->tag : Symbol(tag, Decl(checkedExceptionsSoundImplicitEffects.ts, 99, 13))
+>tag : Symbol(tag, Decl(checkedExceptionsSoundImplicitEffects.ts, 129, 13))
 }
 
 function destructuredParameter({ value }: { value: number }): void throws never {
->destructuredParameter : Symbol(destructuredParameter, Decl(checkedExceptionsSoundImplicitEffects.ts, 102, 1))
->value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 104, 32))
->value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 104, 43))
+>destructuredParameter : Symbol(destructuredParameter, Decl(checkedExceptionsSoundImplicitEffects.ts, 132, 1))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 134, 32))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 134, 43))
 
     safe();
 >safe : Symbol(safe, Decl(checkedExceptionsSoundImplicitEffects.ts, 2, 23))
@@ -219,25 +282,25 @@ function destructuredParameter({ value }: { value: number }): void throws never 
 
 // Explicit resource management invokes a disposal hook at scope exit.
 function disposalAtScopeExit(): void throws never {
->disposalAtScopeExit : Symbol(disposalAtScopeExit, Decl(checkedExceptionsSoundImplicitEffects.ts, 106, 1))
+>disposalAtScopeExit : Symbol(disposalAtScopeExit, Decl(checkedExceptionsSoundImplicitEffects.ts, 136, 1))
 
     using resource = null;
->resource : Symbol(resource, Decl(checkedExceptionsSoundImplicitEffects.ts, 110, 9))
+>resource : Symbol(resource, Decl(checkedExceptionsSoundImplicitEffects.ts, 140, 9))
 }
 
 declare const destructuringSource: { value: number };
->destructuringSource : Symbol(destructuringSource, Decl(checkedExceptionsSoundImplicitEffects.ts, 113, 13))
->value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 113, 36))
+>destructuringSource : Symbol(destructuringSource, Decl(checkedExceptionsSoundImplicitEffects.ts, 143, 13))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 143, 36))
 
 let assignedValue: number;
->assignedValue : Symbol(assignedValue, Decl(checkedExceptionsSoundImplicitEffects.ts, 114, 3))
+>assignedValue : Symbol(assignedValue, Decl(checkedExceptionsSoundImplicitEffects.ts, 144, 3))
 
 function destructuringAssignment(): void throws never {
->destructuringAssignment : Symbol(destructuringAssignment, Decl(checkedExceptionsSoundImplicitEffects.ts, 114, 26))
+>destructuringAssignment : Symbol(destructuringAssignment, Decl(checkedExceptionsSoundImplicitEffects.ts, 144, 26))
 
     ({ value: assignedValue } = destructuringSource);
->value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 116, 6))
->assignedValue : Symbol(assignedValue, Decl(checkedExceptionsSoundImplicitEffects.ts, 114, 3))
->destructuringSource : Symbol(destructuringSource, Decl(checkedExceptionsSoundImplicitEffects.ts, 113, 13))
+>value : Symbol(value, Decl(checkedExceptionsSoundImplicitEffects.ts, 146, 6))
+>assignedValue : Symbol(assignedValue, Decl(checkedExceptionsSoundImplicitEffects.ts, 144, 3))
+>destructuringSource : Symbol(destructuringSource, Decl(checkedExceptionsSoundImplicitEffects.ts, 143, 13))
 }
 

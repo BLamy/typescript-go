@@ -1283,6 +1283,7 @@ func (f *NodeFactory) NewAssignmentTargetWrapper(paramName *ast.IdentifierNode, 
 			f.NewParameterDeclaration(nil, nil, paramName, nil, nil, nil),
 		}),
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		f.NewBlock(f.NewNodeList([]*ast.Node{
 			f.NewExpressionStatement(expression),

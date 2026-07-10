@@ -321,7 +321,7 @@ func (b *NodeBuilderImpl) serializeConstructors(staticType *Type, staticBaseType
 	if isNonConstructable {
 		b.ctx.approximateLength += 21
 		modifiers := ast.CreateModifiersFromModifierFlags(ast.ModifierFlagsPrivate, b.f.NewModifier)
-		return []*ast.Node{b.f.NewConstructorDeclaration(b.f.NewModifierList(modifiers), nil, b.f.NewNodeList(nil), nil, nil, nil)}
+		return []*ast.Node{b.f.NewConstructorDeclaration(b.f.NewModifierList(modifiers), nil, b.f.NewNodeList(nil), nil, nil, nil, nil)}
 	}
 	signatures := b.ch.getSignaturesOfType(staticType, SignatureKindConstruct)
 	if staticBaseType != nil {
@@ -350,7 +350,7 @@ func (b *NodeBuilderImpl) serializeConstructors(staticType *Type, staticBaseType
 		if privateProtected != 0 {
 			return []*ast.Node{b.f.NewConstructorDeclaration(
 				b.f.NewModifierList(ast.CreateModifiersFromModifierFlags(privateProtected, b.f.NewModifier)),
-				nil, b.f.NewNodeList(nil), nil, nil, nil,
+				nil, b.f.NewNodeList(nil), nil, nil, nil, nil,
 			)}
 		}
 	} else if core.Every(signatures, func(sig *Signature) bool { return len(sig.parameters) == 0 }) {

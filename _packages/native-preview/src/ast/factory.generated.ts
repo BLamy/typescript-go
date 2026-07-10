@@ -604,6 +604,9 @@ export class NodeObject {
     get thisArg(): any {
         return this._data?.thisArg;
     }
+    get throwsType(): any {
+        return this._data?.throwsType;
+    }
     get token(): any {
         return this._data?.token;
     }
@@ -783,7 +786,7 @@ function cloneNodeData(node: Node): any {
         case SyntaxKind.MissingDeclaration:
             return { modifiers: n.modifiers };
         case SyntaxKind.FunctionDeclaration:
-            return { modifiers: n.modifiers, asteriskToken: n.asteriskToken, name: n.name, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, body: n.body };
+            return { modifiers: n.modifiers, asteriskToken: n.asteriskToken, name: n.name, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType, body: n.body };
         case SyntaxKind.ClassDeclaration:
             return { modifiers: n.modifiers, name: n.name, typeParameters: n.typeParameters, heritageClauses: n.heritageClauses, members: n.members };
         case SyntaxKind.ClassExpression:
@@ -821,21 +824,21 @@ function cloneNodeData(node: Node): any {
         case SyntaxKind.ExportSpecifier:
             return { isTypeOnly: n.isTypeOnly, propertyName: n.propertyName, name: n.name };
         case SyntaxKind.CallSignature:
-            return { typeParameters: n.typeParameters, parameters: n.parameters, type: n.type };
+            return { typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType };
         case SyntaxKind.ConstructSignature:
-            return { typeParameters: n.typeParameters, parameters: n.parameters, type: n.type };
+            return { typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType };
         case SyntaxKind.Constructor:
-            return { modifiers: n.modifiers, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, body: n.body };
+            return { modifiers: n.modifiers, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType, body: n.body };
         case SyntaxKind.GetAccessor:
-            return { modifiers: n.modifiers, name: n.name, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, body: n.body };
+            return { modifiers: n.modifiers, name: n.name, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType, body: n.body };
         case SyntaxKind.SetAccessor:
-            return { modifiers: n.modifiers, name: n.name, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, body: n.body };
+            return { modifiers: n.modifiers, name: n.name, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType, body: n.body };
         case SyntaxKind.IndexSignature:
             return { modifiers: n.modifiers, parameters: n.parameters, type: n.type };
         case SyntaxKind.MethodSignature:
-            return { modifiers: n.modifiers, name: n.name, postfixToken: n.postfixToken, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type };
+            return { modifiers: n.modifiers, name: n.name, postfixToken: n.postfixToken, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType };
         case SyntaxKind.MethodDeclaration:
-            return { modifiers: n.modifiers, asteriskToken: n.asteriskToken, name: n.name, postfixToken: n.postfixToken, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, body: n.body };
+            return { modifiers: n.modifiers, asteriskToken: n.asteriskToken, name: n.name, postfixToken: n.postfixToken, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType, body: n.body };
         case SyntaxKind.PropertySignature:
             return { modifiers: n.modifiers, name: n.name, postfixToken: n.postfixToken, type: n.type, initializer: n.initializer };
         case SyntaxKind.PropertyDeclaration:
@@ -861,9 +864,9 @@ function cloneNodeData(node: Node): any {
         case SyntaxKind.YieldExpression:
             return { asteriskToken: n.asteriskToken, expression: n.expression };
         case SyntaxKind.ArrowFunction:
-            return { modifiers: n.modifiers, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, equalsGreaterThanToken: n.equalsGreaterThanToken, body: n.body };
+            return { modifiers: n.modifiers, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType, equalsGreaterThanToken: n.equalsGreaterThanToken, body: n.body };
         case SyntaxKind.FunctionExpression:
-            return { modifiers: n.modifiers, asteriskToken: n.asteriskToken, name: n.name, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, body: n.body };
+            return { modifiers: n.modifiers, asteriskToken: n.asteriskToken, name: n.name, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType, body: n.body };
         case SyntaxKind.AsExpression:
             return { expression: n.expression, type: n.type };
         case SyntaxKind.SatisfiesExpression:
@@ -955,9 +958,9 @@ function cloneNodeData(node: Node): any {
         case SyntaxKind.ParenthesizedType:
             return { type: n.type };
         case SyntaxKind.FunctionType:
-            return { typeParameters: n.typeParameters, parameters: n.parameters, type: n.type };
+            return { typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType };
         case SyntaxKind.ConstructorType:
-            return { modifiers: n.modifiers, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type };
+            return { modifiers: n.modifiers, typeParameters: n.typeParameters, parameters: n.parameters, type: n.type, throwsType: n.throwsType };
         case SyntaxKind.TemplateHead:
             return { text: n.text, rawText: n.rawText, templateFlags: n.templateFlags };
         case SyntaxKind.TemplateMiddle:
@@ -1176,6 +1179,7 @@ const forEachChildTable: Record<number, ForEachChildFunction> = {
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
         visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType) ||
         visitNode(cbNode, data.body),
     [SyntaxKind.ClassDeclaration]: (data, cbNode, cbNodes) =>
         visitNodes(cbNode, cbNodes, data.modifiers) ||
@@ -1242,16 +1246,19 @@ const forEachChildTable: Record<number, ForEachChildFunction> = {
     [SyntaxKind.CallSignature]: (data, cbNode, cbNodes) =>
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
-        visitNode(cbNode, data.type),
+        visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType),
     [SyntaxKind.ConstructSignature]: (data, cbNode, cbNodes) =>
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
-        visitNode(cbNode, data.type),
+        visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType),
     [SyntaxKind.Constructor]: (data, cbNode, cbNodes) =>
         visitNodes(cbNode, cbNodes, data.modifiers) ||
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
         visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType) ||
         visitNode(cbNode, data.body),
     [SyntaxKind.GetAccessor]: (data, cbNode, cbNodes) =>
         visitNodes(cbNode, cbNodes, data.modifiers) ||
@@ -1259,6 +1266,7 @@ const forEachChildTable: Record<number, ForEachChildFunction> = {
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
         visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType) ||
         visitNode(cbNode, data.body),
     [SyntaxKind.SetAccessor]: (data, cbNode, cbNodes) =>
         visitNodes(cbNode, cbNodes, data.modifiers) ||
@@ -1266,6 +1274,7 @@ const forEachChildTable: Record<number, ForEachChildFunction> = {
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
         visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType) ||
         visitNode(cbNode, data.body),
     [SyntaxKind.IndexSignature]: (data, cbNode, cbNodes) =>
         visitNodes(cbNode, cbNodes, data.modifiers) ||
@@ -1277,7 +1286,8 @@ const forEachChildTable: Record<number, ForEachChildFunction> = {
         visitNode(cbNode, data.postfixToken) ||
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
-        visitNode(cbNode, data.type),
+        visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType),
     [SyntaxKind.MethodDeclaration]: (data, cbNode, cbNodes) =>
         visitNodes(cbNode, cbNodes, data.modifiers) ||
         visitNode(cbNode, data.asteriskToken) ||
@@ -1286,6 +1296,7 @@ const forEachChildTable: Record<number, ForEachChildFunction> = {
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
         visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType) ||
         visitNode(cbNode, data.body),
     [SyntaxKind.PropertySignature]: (data, cbNode, cbNodes) =>
         visitNodes(cbNode, cbNodes, data.modifiers) ||
@@ -1318,6 +1329,7 @@ const forEachChildTable: Record<number, ForEachChildFunction> = {
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
         visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType) ||
         visitNode(cbNode, data.equalsGreaterThanToken) ||
         visitNode(cbNode, data.body),
     [SyntaxKind.FunctionExpression]: (data, cbNode, cbNodes) =>
@@ -1327,6 +1339,7 @@ const forEachChildTable: Record<number, ForEachChildFunction> = {
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
         visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType) ||
         visitNode(cbNode, data.body),
     [SyntaxKind.AsExpression]: (data, cbNode, cbNodes) =>
         visitNode(cbNode, data.expression) ||
@@ -1446,12 +1459,14 @@ const forEachChildTable: Record<number, ForEachChildFunction> = {
     [SyntaxKind.FunctionType]: (data, cbNode, cbNodes) =>
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
-        visitNode(cbNode, data.type),
+        visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType),
     [SyntaxKind.ConstructorType]: (data, cbNode, cbNodes) =>
         visitNodes(cbNode, cbNodes, data.modifiers) ||
         visitNodes(cbNode, cbNodes, data.typeParameters) ||
         visitNodes(cbNode, cbNodes, data.parameters) ||
-        visitNode(cbNode, data.type),
+        visitNode(cbNode, data.type) ||
+        visitNode(cbNode, data.throwsType),
     [SyntaxKind.TemplateLiteralType]: (data, cbNode, cbNodes) =>
         visitNode(cbNode, data.head) ||
         visitNodes(cbNode, cbNodes, data.templateSpans),
@@ -1859,7 +1874,7 @@ export function createMissingDeclaration(modifiers?: readonly ModifierLike[]): M
     }) as unknown as MissingDeclaration;
 }
 
-export function createFunctionDeclaration(modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, body?: FunctionBody): FunctionDeclaration {
+export function createFunctionDeclaration(modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode, body?: FunctionBody): FunctionDeclaration {
     return new NodeObject(SyntaxKind.FunctionDeclaration, {
         modifiers: modifiers ? createNodeArray(modifiers) : undefined,
         asteriskToken,
@@ -1867,6 +1882,7 @@ export function createFunctionDeclaration(modifiers: readonly ModifierLike[] | u
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
         body,
     }) as unknown as FunctionDeclaration;
 }
@@ -2009,50 +2025,55 @@ export function createExportSpecifier(isTypeOnly: boolean = false, propertyName:
     }) as unknown as ExportSpecifier;
 }
 
-export function createCallSignatureDeclaration(typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode): CallSignatureDeclaration {
+export function createCallSignatureDeclaration(typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode): CallSignatureDeclaration {
     return new NodeObject(SyntaxKind.CallSignature, {
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
     }) as unknown as CallSignatureDeclaration;
 }
 
-export function createConstructSignatureDeclaration(typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode): ConstructSignatureDeclaration {
+export function createConstructSignatureDeclaration(typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode): ConstructSignatureDeclaration {
     return new NodeObject(SyntaxKind.ConstructSignature, {
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
     }) as unknown as ConstructSignatureDeclaration;
 }
 
-export function createConstructorDeclaration(modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, body?: FunctionBody): ConstructorDeclaration {
+export function createConstructorDeclaration(modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode, body?: FunctionBody): ConstructorDeclaration {
     return new NodeObject(SyntaxKind.Constructor, {
         modifiers: modifiers ? createNodeArray(modifiers) : undefined,
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
         body,
     }) as unknown as ConstructorDeclaration;
 }
 
-export function createGetAccessorDeclaration(modifiers: readonly ModifierLike[] | undefined, name: PropertyName, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, body?: FunctionBody): GetAccessorDeclaration {
+export function createGetAccessorDeclaration(modifiers: readonly ModifierLike[] | undefined, name: PropertyName, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode, body?: FunctionBody): GetAccessorDeclaration {
     return new NodeObject(SyntaxKind.GetAccessor, {
         modifiers: modifiers ? createNodeArray(modifiers) : undefined,
         name,
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
         body,
     }) as unknown as GetAccessorDeclaration;
 }
 
-export function createSetAccessorDeclaration(modifiers: readonly ModifierLike[] | undefined, name: PropertyName, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, body?: FunctionBody): SetAccessorDeclaration {
+export function createSetAccessorDeclaration(modifiers: readonly ModifierLike[] | undefined, name: PropertyName, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode, body?: FunctionBody): SetAccessorDeclaration {
     return new NodeObject(SyntaxKind.SetAccessor, {
         modifiers: modifiers ? createNodeArray(modifiers) : undefined,
         name,
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
         body,
     }) as unknown as SetAccessorDeclaration;
 }
@@ -2065,7 +2086,7 @@ export function createIndexSignatureDeclaration(modifiers: readonly ModifierLike
     }) as unknown as IndexSignatureDeclaration;
 }
 
-export function createMethodSignatureDeclaration(modifiers: readonly ModifierLike[] | undefined, name: PropertyName, postfixToken: QuestionToken | ExclamationToken | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode): MethodSignatureDeclaration {
+export function createMethodSignatureDeclaration(modifiers: readonly ModifierLike[] | undefined, name: PropertyName, postfixToken: QuestionToken | ExclamationToken | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode): MethodSignatureDeclaration {
     return new NodeObject(SyntaxKind.MethodSignature, {
         modifiers: modifiers ? createNodeArray(modifiers) : undefined,
         name,
@@ -2073,10 +2094,11 @@ export function createMethodSignatureDeclaration(modifiers: readonly ModifierLik
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
     }) as unknown as MethodSignatureDeclaration;
 }
 
-export function createMethodDeclaration(modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: PropertyName, postfixToken: QuestionToken | ExclamationToken | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, body?: FunctionBody): MethodDeclaration {
+export function createMethodDeclaration(modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: PropertyName, postfixToken: QuestionToken | ExclamationToken | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode, body?: FunctionBody): MethodDeclaration {
     return new NodeObject(SyntaxKind.MethodDeclaration, {
         modifiers: modifiers ? createNodeArray(modifiers) : undefined,
         asteriskToken,
@@ -2085,6 +2107,7 @@ export function createMethodDeclaration(modifiers: readonly ModifierLike[] | und
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
         body,
     }) as unknown as MethodDeclaration;
 }
@@ -2194,18 +2217,19 @@ export function createYieldExpression(asteriskToken?: AsteriskToken, expression?
     }) as unknown as YieldExpression;
 }
 
-export function createArrowFunction(modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, equalsGreaterThanToken: EqualsGreaterThanToken, body: ConciseBody): ArrowFunction {
+export function createArrowFunction(modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, throwsType: TypeNode | undefined, equalsGreaterThanToken: EqualsGreaterThanToken, body: ConciseBody): ArrowFunction {
     return new NodeObject(SyntaxKind.ArrowFunction, {
         modifiers: modifiers ? createNodeArray(modifiers) : undefined,
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
         equalsGreaterThanToken,
         body,
     }) as unknown as ArrowFunction;
 }
 
-export function createFunctionExpression(modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, body: FunctionBody): FunctionExpression {
+export function createFunctionExpression(modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, throwsType: TypeNode | undefined, body: FunctionBody): FunctionExpression {
     return new NodeObject(SyntaxKind.FunctionExpression, {
         modifiers: modifiers ? createNodeArray(modifiers) : undefined,
         asteriskToken,
@@ -2213,6 +2237,7 @@ export function createFunctionExpression(modifiers: readonly ModifierLike[] | un
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
         body,
     }) as unknown as FunctionExpression;
 }
@@ -2559,20 +2584,22 @@ export function createParenthesizedTypeNode(type: TypeNode): ParenthesizedTypeNo
     }) as unknown as ParenthesizedTypeNode;
 }
 
-export function createFunctionTypeNode(typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode): FunctionTypeNode {
+export function createFunctionTypeNode(typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode): FunctionTypeNode {
     return new NodeObject(SyntaxKind.FunctionType, {
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
     }) as unknown as FunctionTypeNode;
 }
 
-export function createConstructorTypeNode(modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode): ConstructorTypeNode {
+export function createConstructorTypeNode(modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode): ConstructorTypeNode {
     return new NodeObject(SyntaxKind.ConstructorType, {
         modifiers: modifiers ? createNodeArray(modifiers) : undefined,
         typeParameters: typeParameters ? createNodeArray(typeParameters) : undefined,
         parameters: createNodeArray(parameters),
         type,
+        throwsType,
     }) as unknown as ConstructorTypeNode;
 }
 
@@ -3204,8 +3231,8 @@ export function updateMissingDeclaration(node: MissingDeclaration, modifiers?: r
     return node.modifiers !== modifiers ? createMissingDeclaration(modifiers) : node;
 }
 
-export function updateFunctionDeclaration(node: FunctionDeclaration, modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, body?: FunctionBody): FunctionDeclaration {
-    return node.modifiers !== modifiers || node.asteriskToken !== asteriskToken || node.name !== name || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.body !== body ? createFunctionDeclaration(modifiers, asteriskToken, name, typeParameters, parameters, type, body) : node;
+export function updateFunctionDeclaration(node: FunctionDeclaration, modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode, body?: FunctionBody): FunctionDeclaration {
+    return node.modifiers !== modifiers || node.asteriskToken !== asteriskToken || node.name !== name || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType || node.body !== body ? createFunctionDeclaration(modifiers, asteriskToken, name, typeParameters, parameters, type, throwsType, body) : node;
 }
 
 export function updateClassDeclaration(node: ClassDeclaration, modifiers: readonly ModifierLike[] | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, heritageClauses: readonly HeritageClause[] | undefined, members: readonly ClassElement[]): ClassDeclaration {
@@ -3276,36 +3303,36 @@ export function updateExportSpecifier(node: ExportSpecifier, propertyName: Modul
     return node.propertyName !== propertyName || node.name !== name ? createExportSpecifier(node.isTypeOnly, propertyName, name) : node;
 }
 
-export function updateCallSignatureDeclaration(node: CallSignatureDeclaration, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode): CallSignatureDeclaration {
-    return node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type ? createCallSignatureDeclaration(typeParameters, parameters, type) : node;
+export function updateCallSignatureDeclaration(node: CallSignatureDeclaration, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode): CallSignatureDeclaration {
+    return node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType ? createCallSignatureDeclaration(typeParameters, parameters, type, throwsType) : node;
 }
 
-export function updateConstructSignatureDeclaration(node: ConstructSignatureDeclaration, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode): ConstructSignatureDeclaration {
-    return node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type ? createConstructSignatureDeclaration(typeParameters, parameters, type) : node;
+export function updateConstructSignatureDeclaration(node: ConstructSignatureDeclaration, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode): ConstructSignatureDeclaration {
+    return node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType ? createConstructSignatureDeclaration(typeParameters, parameters, type, throwsType) : node;
 }
 
-export function updateConstructorDeclaration(node: ConstructorDeclaration, modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, body?: FunctionBody): ConstructorDeclaration {
-    return node.modifiers !== modifiers || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.body !== body ? createConstructorDeclaration(modifiers, typeParameters, parameters, type, body) : node;
+export function updateConstructorDeclaration(node: ConstructorDeclaration, modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode, body?: FunctionBody): ConstructorDeclaration {
+    return node.modifiers !== modifiers || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType || node.body !== body ? createConstructorDeclaration(modifiers, typeParameters, parameters, type, throwsType, body) : node;
 }
 
-export function updateGetAccessorDeclaration(node: GetAccessorDeclaration, modifiers: readonly ModifierLike[] | undefined, name: PropertyName, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, body?: FunctionBody): GetAccessorDeclaration {
-    return node.modifiers !== modifiers || node.name !== name || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.body !== body ? createGetAccessorDeclaration(modifiers, name, typeParameters, parameters, type, body) : node;
+export function updateGetAccessorDeclaration(node: GetAccessorDeclaration, modifiers: readonly ModifierLike[] | undefined, name: PropertyName, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode, body?: FunctionBody): GetAccessorDeclaration {
+    return node.modifiers !== modifiers || node.name !== name || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType || node.body !== body ? createGetAccessorDeclaration(modifiers, name, typeParameters, parameters, type, throwsType, body) : node;
 }
 
-export function updateSetAccessorDeclaration(node: SetAccessorDeclaration, modifiers: readonly ModifierLike[] | undefined, name: PropertyName, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, body?: FunctionBody): SetAccessorDeclaration {
-    return node.modifiers !== modifiers || node.name !== name || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.body !== body ? createSetAccessorDeclaration(modifiers, name, typeParameters, parameters, type, body) : node;
+export function updateSetAccessorDeclaration(node: SetAccessorDeclaration, modifiers: readonly ModifierLike[] | undefined, name: PropertyName, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode, body?: FunctionBody): SetAccessorDeclaration {
+    return node.modifiers !== modifiers || node.name !== name || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType || node.body !== body ? createSetAccessorDeclaration(modifiers, name, typeParameters, parameters, type, throwsType, body) : node;
 }
 
 export function updateIndexSignatureDeclaration(node: IndexSignatureDeclaration, modifiers: readonly ModifierLike[] | undefined, parameters: readonly ParameterDeclaration[], type: TypeNode): IndexSignatureDeclaration {
     return node.modifiers !== modifiers || node.parameters !== parameters || node.type !== type ? createIndexSignatureDeclaration(modifiers, parameters, type) : node;
 }
 
-export function updateMethodSignatureDeclaration(node: MethodSignatureDeclaration, modifiers: readonly ModifierLike[] | undefined, name: PropertyName, postfixToken: QuestionToken | ExclamationToken | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode): MethodSignatureDeclaration {
-    return node.modifiers !== modifiers || node.name !== name || node.postfixToken !== postfixToken || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type ? createMethodSignatureDeclaration(modifiers, name, postfixToken, typeParameters, parameters, type) : node;
+export function updateMethodSignatureDeclaration(node: MethodSignatureDeclaration, modifiers: readonly ModifierLike[] | undefined, name: PropertyName, postfixToken: QuestionToken | ExclamationToken | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode): MethodSignatureDeclaration {
+    return node.modifiers !== modifiers || node.name !== name || node.postfixToken !== postfixToken || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType ? createMethodSignatureDeclaration(modifiers, name, postfixToken, typeParameters, parameters, type, throwsType) : node;
 }
 
-export function updateMethodDeclaration(node: MethodDeclaration, modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: PropertyName, postfixToken: QuestionToken | ExclamationToken | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, body?: FunctionBody): MethodDeclaration {
-    return node.modifiers !== modifiers || node.asteriskToken !== asteriskToken || node.name !== name || node.postfixToken !== postfixToken || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.body !== body ? createMethodDeclaration(modifiers, asteriskToken, name, postfixToken, typeParameters, parameters, type, body) : node;
+export function updateMethodDeclaration(node: MethodDeclaration, modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: PropertyName, postfixToken: QuestionToken | ExclamationToken | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode, body?: FunctionBody): MethodDeclaration {
+    return node.modifiers !== modifiers || node.asteriskToken !== asteriskToken || node.name !== name || node.postfixToken !== postfixToken || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType || node.body !== body ? createMethodDeclaration(modifiers, asteriskToken, name, postfixToken, typeParameters, parameters, type, throwsType, body) : node;
 }
 
 export function updatePropertySignatureDeclaration(node: PropertySignatureDeclaration, modifiers: readonly ModifierLike[] | undefined, name: PropertyName, postfixToken: QuestionToken | ExclamationToken | undefined, type: TypeNode, initializer: Expression): PropertySignatureDeclaration {
@@ -3336,12 +3363,12 @@ export function updateYieldExpression(node: YieldExpression, asteriskToken?: Ast
     return node.asteriskToken !== asteriskToken || node.expression !== expression ? createYieldExpression(asteriskToken, expression) : node;
 }
 
-export function updateArrowFunction(node: ArrowFunction, modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, equalsGreaterThanToken: EqualsGreaterThanToken, body: ConciseBody): ArrowFunction {
-    return node.modifiers !== modifiers || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.equalsGreaterThanToken !== equalsGreaterThanToken || node.body !== body ? createArrowFunction(modifiers, typeParameters, parameters, type, equalsGreaterThanToken, body) : node;
+export function updateArrowFunction(node: ArrowFunction, modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, throwsType: TypeNode | undefined, equalsGreaterThanToken: EqualsGreaterThanToken, body: ConciseBody): ArrowFunction {
+    return node.modifiers !== modifiers || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType || node.equalsGreaterThanToken !== equalsGreaterThanToken || node.body !== body ? createArrowFunction(modifiers, typeParameters, parameters, type, throwsType, equalsGreaterThanToken, body) : node;
 }
 
-export function updateFunctionExpression(node: FunctionExpression, modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, body: FunctionBody): FunctionExpression {
-    return node.modifiers !== modifiers || node.asteriskToken !== asteriskToken || node.name !== name || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.body !== body ? createFunctionExpression(modifiers, asteriskToken, name, typeParameters, parameters, type, body) : node;
+export function updateFunctionExpression(node: FunctionExpression, modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, throwsType: TypeNode | undefined, body: FunctionBody): FunctionExpression {
+    return node.modifiers !== modifiers || node.asteriskToken !== asteriskToken || node.name !== name || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType || node.body !== body ? createFunctionExpression(modifiers, asteriskToken, name, typeParameters, parameters, type, throwsType, body) : node;
 }
 
 export function updateAsExpression(node: AsExpression, expression: Expression, type: TypeNode): AsExpression {
@@ -3524,12 +3551,12 @@ export function updateParenthesizedTypeNode(node: ParenthesizedTypeNode, type: T
     return node.type !== type ? createParenthesizedTypeNode(type) : node;
 }
 
-export function updateFunctionTypeNode(node: FunctionTypeNode, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode): FunctionTypeNode {
-    return node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type ? createFunctionTypeNode(typeParameters, parameters, type) : node;
+export function updateFunctionTypeNode(node: FunctionTypeNode, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode): FunctionTypeNode {
+    return node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType ? createFunctionTypeNode(typeParameters, parameters, type, throwsType) : node;
 }
 
-export function updateConstructorTypeNode(node: ConstructorTypeNode, modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode): ConstructorTypeNode {
-    return node.modifiers !== modifiers || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type ? createConstructorTypeNode(modifiers, typeParameters, parameters, type) : node;
+export function updateConstructorTypeNode(node: ConstructorTypeNode, modifiers: readonly ModifierLike[] | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type?: TypeNode, throwsType?: TypeNode): ConstructorTypeNode {
+    return node.modifiers !== modifiers || node.typeParameters !== typeParameters || node.parameters !== parameters || node.type !== type || node.throwsType !== throwsType ? createConstructorTypeNode(modifiers, typeParameters, parameters, type, throwsType) : node;
 }
 
 export function updateTemplateLiteralTypeNode(node: TemplateLiteralTypeNode, head: TemplateHead, templateSpans: readonly TemplateLiteralTypeSpan[]): TemplateLiteralTypeNode {

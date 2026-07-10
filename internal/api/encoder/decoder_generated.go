@@ -461,15 +461,17 @@ func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices
 		typeParameters := d.nodeListAt(it.nextIf(mask, 0))
 		parameters := d.nodeListAt(it.nextIf(mask, 1))
 		typeNode := d.nodeAt(it.nextIf(mask, 2))
-		return d.factory.NewConstructSignatureDeclaration(typeParameters, parameters, typeNode), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 3))
+		return d.factory.NewConstructSignatureDeclaration(typeParameters, parameters, typeNode, throwsType), nil
 	case ast.KindConstructor:
 		it := newChildIter(childIndices)
 		modifiers := d.modifierListAt(it.nextIf(mask, 0))
 		typeParameters := d.nodeListAt(it.nextIf(mask, 1))
 		parameters := d.nodeListAt(it.nextIf(mask, 2))
 		typeNode := d.nodeAt(it.nextIf(mask, 3))
-		body := d.nodeAt(it.nextIf(mask, 4))
-		return d.factory.NewConstructorDeclaration(modifiers, typeParameters, parameters, typeNode, nil, body), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 4))
+		body := d.nodeAt(it.nextIf(mask, 5))
+		return d.factory.NewConstructorDeclaration(modifiers, typeParameters, parameters, typeNode, throwsType, nil, body), nil
 	case ast.KindGetAccessor:
 		it := newChildIter(childIndices)
 		modifiers := d.modifierListAt(it.nextIf(mask, 0))
@@ -477,8 +479,9 @@ func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices
 		typeParameters := d.nodeListAt(it.nextIf(mask, 2))
 		parameters := d.nodeListAt(it.nextIf(mask, 3))
 		typeNode := d.nodeAt(it.nextIf(mask, 4))
-		body := d.nodeAt(it.nextIf(mask, 5))
-		return d.factory.NewGetAccessorDeclaration(modifiers, name, typeParameters, parameters, typeNode, nil, body), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 5))
+		body := d.nodeAt(it.nextIf(mask, 6))
+		return d.factory.NewGetAccessorDeclaration(modifiers, name, typeParameters, parameters, typeNode, throwsType, nil, body), nil
 	case ast.KindSetAccessor:
 		it := newChildIter(childIndices)
 		modifiers := d.modifierListAt(it.nextIf(mask, 0))
@@ -486,8 +489,9 @@ func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices
 		typeParameters := d.nodeListAt(it.nextIf(mask, 2))
 		parameters := d.nodeListAt(it.nextIf(mask, 3))
 		typeNode := d.nodeAt(it.nextIf(mask, 4))
-		body := d.nodeAt(it.nextIf(mask, 5))
-		return d.factory.NewSetAccessorDeclaration(modifiers, name, typeParameters, parameters, typeNode, nil, body), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 5))
+		body := d.nodeAt(it.nextIf(mask, 6))
+		return d.factory.NewSetAccessorDeclaration(modifiers, name, typeParameters, parameters, typeNode, throwsType, nil, body), nil
 	case ast.KindIndexSignature:
 		it := newChildIter(childIndices)
 		modifiers := d.modifierListAt(it.nextIf(mask, 0))
@@ -847,7 +851,8 @@ func (d *astDecoder) createChildrenNode(kind ast.Kind, data uint32, childIndices
 		typeParameters := d.nodeListAt(it.nextIf(mask, 1))
 		parameters := d.nodeListAt(it.nextIf(mask, 2))
 		typeNode := d.nodeAt(it.nextIf(mask, 3))
-		return d.factory.NewConstructorTypeNode(modifiers, typeParameters, parameters, typeNode), nil
+		throwsType := d.nodeAt(it.nextIf(mask, 4))
+		return d.factory.NewConstructorTypeNode(modifiers, typeParameters, parameters, typeNode, throwsType), nil
 	case ast.KindTemplateLiteralType:
 		it := newChildIter(childIndices)
 		head := d.nodeAt(it.nextIf(mask, 0))

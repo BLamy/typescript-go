@@ -646,8 +646,9 @@ const visitEachChildTable: Record<number, VisitEachChildFunction> = {
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
         const _body = visitNode(node.body, visitor, isFunctionBody);
-        return updateFunctionDeclaration(node, _modifiers, _asteriskToken, _name, _typeParameters, _parameters, _type, _body);
+        return updateFunctionDeclaration(node, _modifiers, _asteriskToken, _name, _typeParameters, _parameters, _type, _throwsType, _body);
     },
     [SyntaxKind.ClassDeclaration]: (node: ClassDeclaration, visitor: Visitor): ClassDeclaration => {
         const _modifiers = visitNodes(node.modifiers, visitor);
@@ -746,21 +747,24 @@ const visitEachChildTable: Record<number, VisitEachChildFunction> = {
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
-        return updateCallSignatureDeclaration(node, _typeParameters, _parameters, _type);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
+        return updateCallSignatureDeclaration(node, _typeParameters, _parameters, _type, _throwsType);
     },
     [SyntaxKind.ConstructSignature]: (node: ConstructSignatureDeclaration, visitor: Visitor): ConstructSignatureDeclaration => {
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
-        return updateConstructSignatureDeclaration(node, _typeParameters, _parameters, _type);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
+        return updateConstructSignatureDeclaration(node, _typeParameters, _parameters, _type, _throwsType);
     },
     [SyntaxKind.Constructor]: (node: ConstructorDeclaration, visitor: Visitor): ConstructorDeclaration => {
         const _modifiers = visitNodes(node.modifiers, visitor);
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
         const _body = visitNode(node.body, visitor, isFunctionBody);
-        return updateConstructorDeclaration(node, _modifiers, _typeParameters, _parameters, _type, _body);
+        return updateConstructorDeclaration(node, _modifiers, _typeParameters, _parameters, _type, _throwsType, _body);
     },
     [SyntaxKind.GetAccessor]: (node: GetAccessorDeclaration, visitor: Visitor): GetAccessorDeclaration => {
         const _modifiers = visitNodes(node.modifiers, visitor);
@@ -768,8 +772,9 @@ const visitEachChildTable: Record<number, VisitEachChildFunction> = {
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
         const _body = visitNode(node.body, visitor, isFunctionBody);
-        return updateGetAccessorDeclaration(node, _modifiers, _name, _typeParameters, _parameters, _type, _body);
+        return updateGetAccessorDeclaration(node, _modifiers, _name, _typeParameters, _parameters, _type, _throwsType, _body);
     },
     [SyntaxKind.SetAccessor]: (node: SetAccessorDeclaration, visitor: Visitor): SetAccessorDeclaration => {
         const _modifiers = visitNodes(node.modifiers, visitor);
@@ -777,8 +782,9 @@ const visitEachChildTable: Record<number, VisitEachChildFunction> = {
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
         const _body = visitNode(node.body, visitor, isFunctionBody);
-        return updateSetAccessorDeclaration(node, _modifiers, _name, _typeParameters, _parameters, _type, _body);
+        return updateSetAccessorDeclaration(node, _modifiers, _name, _typeParameters, _parameters, _type, _throwsType, _body);
     },
     [SyntaxKind.IndexSignature]: (node: IndexSignatureDeclaration, visitor: Visitor): IndexSignatureDeclaration => {
         const _modifiers = visitNodes(node.modifiers, visitor);
@@ -793,7 +799,8 @@ const visitEachChildTable: Record<number, VisitEachChildFunction> = {
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
-        return updateMethodSignatureDeclaration(node, _modifiers, _name, _postfixToken, _typeParameters, _parameters, _type);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
+        return updateMethodSignatureDeclaration(node, _modifiers, _name, _postfixToken, _typeParameters, _parameters, _type, _throwsType);
     },
     [SyntaxKind.MethodDeclaration]: (node: MethodDeclaration, visitor: Visitor): MethodDeclaration => {
         const _modifiers = visitNodes(node.modifiers, visitor);
@@ -803,8 +810,9 @@ const visitEachChildTable: Record<number, VisitEachChildFunction> = {
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
         const _body = visitNode(node.body, visitor, isFunctionBody);
-        return updateMethodDeclaration(node, _modifiers, _asteriskToken, _name, _postfixToken, _typeParameters, _parameters, _type, _body);
+        return updateMethodDeclaration(node, _modifiers, _asteriskToken, _name, _postfixToken, _typeParameters, _parameters, _type, _throwsType, _body);
     },
     [SyntaxKind.PropertySignature]: (node: PropertySignatureDeclaration, visitor: Visitor): PropertySignatureDeclaration => {
         const _modifiers = visitNodes(node.modifiers, visitor);
@@ -853,9 +861,10 @@ const visitEachChildTable: Record<number, VisitEachChildFunction> = {
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
         const _equalsGreaterThanToken = visitNode(node.equalsGreaterThanToken, visitor, isEqualsGreaterThanToken);
         const _body = visitNode(node.body, visitor, isConciseBody);
-        return updateArrowFunction(node, _modifiers, _typeParameters, _parameters, _type, _equalsGreaterThanToken, _body);
+        return updateArrowFunction(node, _modifiers, _typeParameters, _parameters, _type, _throwsType, _equalsGreaterThanToken, _body);
     },
     [SyntaxKind.FunctionExpression]: (node: FunctionExpression, visitor: Visitor): FunctionExpression => {
         const _modifiers = visitNodes(node.modifiers, visitor);
@@ -864,8 +873,9 @@ const visitEachChildTable: Record<number, VisitEachChildFunction> = {
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
         const _body = visitNode(node.body, visitor, isFunctionBody);
-        return updateFunctionExpression(node, _modifiers, _asteriskToken, _name, _typeParameters, _parameters, _type, _body);
+        return updateFunctionExpression(node, _modifiers, _asteriskToken, _name, _typeParameters, _parameters, _type, _throwsType, _body);
     },
     [SyntaxKind.AsExpression]: (node: AsExpression, visitor: Visitor): AsExpression => {
         const _expression = visitNode(node.expression, visitor, isExpression);
@@ -1099,14 +1109,16 @@ const visitEachChildTable: Record<number, VisitEachChildFunction> = {
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
-        return updateFunctionTypeNode(node, _typeParameters, _parameters, _type);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
+        return updateFunctionTypeNode(node, _typeParameters, _parameters, _type, _throwsType);
     },
     [SyntaxKind.ConstructorType]: (node: ConstructorTypeNode, visitor: Visitor): ConstructorTypeNode => {
         const _modifiers = visitNodes(node.modifiers, visitor);
         const _typeParameters = visitNodes(node.typeParameters, visitor);
         const _parameters = visitNodes(node.parameters, visitor);
         const _type = visitNode(node.type, visitor, isTypeNode);
-        return updateConstructorTypeNode(node, _modifiers, _typeParameters, _parameters, _type);
+        const _throwsType = visitNode(node.throwsType, visitor, isTypeNode);
+        return updateConstructorTypeNode(node, _modifiers, _typeParameters, _parameters, _type, _throwsType);
     },
     [SyntaxKind.TemplateLiteralType]: (node: TemplateLiteralTypeNode, visitor: Visitor): TemplateLiteralTypeNode => {
         const _head = visitNode(node.head, visitor, isTemplateHead);

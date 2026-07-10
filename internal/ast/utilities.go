@@ -3317,6 +3317,7 @@ func ReplaceModifiers(factory *NodeFactory, node *Node, modifierArray *ModifierL
 			node.TypeParameterList(),
 			node.ParameterList(),
 			node.Type(),
+			node.AsConstructorTypeNode().ThrowsType,
 		)
 	case KindPropertySignature:
 		return factory.UpdatePropertySignatureDeclaration(
@@ -3368,6 +3369,7 @@ func ReplaceModifiers(factory *NodeFactory, node *Node, modifierArray *ModifierL
 			node.TypeParameterList(),
 			node.ParameterList(),
 			node.Type(),
+			node.AsConstructorDeclaration().ThrowsType,
 			node.AsConstructorDeclaration().FullSignature,
 			node.Body(),
 		)
@@ -3379,6 +3381,7 @@ func ReplaceModifiers(factory *NodeFactory, node *Node, modifierArray *ModifierL
 			node.TypeParameterList(),
 			node.ParameterList(),
 			node.Type(),
+			node.AsGetAccessorDeclaration().ThrowsType,
 			node.AsGetAccessorDeclaration().FullSignature,
 			node.Body(),
 		)
@@ -3390,6 +3393,7 @@ func ReplaceModifiers(factory *NodeFactory, node *Node, modifierArray *ModifierL
 			node.TypeParameterList(),
 			node.ParameterList(),
 			node.Type(),
+			node.AsSetAccessorDeclaration().ThrowsType,
 			node.AsSetAccessorDeclaration().FullSignature,
 			node.Body(),
 		)

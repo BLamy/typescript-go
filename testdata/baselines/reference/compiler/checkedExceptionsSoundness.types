@@ -101,6 +101,87 @@ register({ callback: () => { throw "nested"; } });
 >() => { throw "nested"; } : () => never throws "nested"
 >"nested" : "nested"
 
+// Retained accessors, constructors, and factories are executable capabilities
+// too. A catch around the registration call cannot observe their later throws.
+class LateGetter {
+>LateGetter : LateGetter
+
+    get value(): number { throw "late getter"; }
+>value : number
+>"late getter" : "late getter"
+}
+declare function retainValue(value: LateGetter): void throws never;
+>retainValue : (value: LateGetter) => void throws never
+>value : LateGetter
+
+retainValue(new LateGetter());
+>retainValue(new LateGetter()) : void
+>retainValue : (value: LateGetter) => void throws never
+>new LateGetter() : LateGetter
+>LateGetter : typeof LateGetter
+
+class LateConstructor {
+>LateConstructor : LateConstructor
+
+    constructor() { throw "late constructor"; }
+>"late constructor" : "late constructor"
+}
+declare function retainConstructor(ctor: typeof LateConstructor): void throws never;
+>retainConstructor : (ctor: typeof LateConstructor) => void throws never
+>ctor : typeof LateConstructor
+>LateConstructor : typeof LateConstructor
+
+retainConstructor(LateConstructor);
+>retainConstructor(LateConstructor) : void
+>retainConstructor : (ctor: typeof LateConstructor) => void throws never
+>LateConstructor : typeof LateConstructor
+
+function lateFactory() {
+>lateFactory : () => () => never
+
+    return () => { throw "late returned callback"; };
+>() => { throw "late returned callback"; } : () => never throws "late returned callback"
+>"late returned callback" : "late returned callback"
+}
+declare function retainFactory(factory: typeof lateFactory): void throws never;
+>retainFactory : (factory: typeof lateFactory) => void throws never
+>factory : () => () => never
+>lateFactory : () => () => never
+
+retainFactory(lateFactory);
+>retainFactory(lateFactory) : void
+>retainFactory : (factory: typeof lateFactory) => void throws never
+>lateFactory : () => () => never
+
+// Explicit member contracts are checked even if the member is never invoked.
+class MemberContracts {
+>MemberContracts : MemberContracts
+
+    constructor() throws never { throw "constructor contract"; }
+>"constructor contract" : "constructor contract"
+
+    method(): void throws never { throw "method contract"; }
+>method : () => void throws never
+>"method contract" : "method contract"
+
+    get value(): number throws never { throw "getter contract"; }
+>value : number
+>"getter contract" : "getter contract"
+
+    set value(next: number) throws never { throw "setter contract"; }
+>value : number
+>next : number
+>"setter contract" : "setter contract"
+}
+
+class LyingConstructorOverload {
+>LyingConstructorOverload : LyingConstructorOverload
+
+    constructor() throws never;
+    constructor() { throw "constructor implementation"; }
+>"constructor implementation" : "constructor implementation"
+}
+
 // Structural property access may invoke a getter or Proxy trap.
 const accessor = {
 >accessor : { readonly value: number; }
@@ -234,6 +315,19 @@ declare const legacyCallback: LegacyCallback;
 const incorrectlyNarrowed: SafeCallback = legacyCallback;
 >incorrectlyNarrowed : SafeCallback
 >legacyCallback : LegacyCallback
+
+// `any` cannot manufacture a checked-effect proof through ordinary
+// assignment; doing so would bypass the assertion guard and erase effects.
+declare const dynamicCapability: any;
+>dynamicCapability : any
+
+const anyToSafeCallback: SafeCallback = dynamicCapability;
+>anyToSafeCallback : SafeCallback
+>dynamicCapability : any
+
+const anyToSafeData: DataBox = dynamicCapability;
+>anyToSafeData : DataBox
+>dynamicCapability : any
 
 // Unknown effects at top level must be handled.
 legacy();

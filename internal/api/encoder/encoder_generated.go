@@ -178,16 +178,16 @@ func getChildrenPropertyMask(node *ast.Node) uint16 {
 		return (boolToUint16(n.TypeParameters != nil) << 0) | (boolToUint16(n.Parameters != nil) << 1) | (boolToUint16(n.Type != nil) << 2) | (boolToUint16(n.ThrowsType != nil) << 3)
 	case ast.KindConstructSignature:
 		n := node.AsConstructSignatureDeclaration()
-		return (boolToUint16(n.TypeParameters != nil) << 0) | (boolToUint16(n.Parameters != nil) << 1) | (boolToUint16(n.Type != nil) << 2)
+		return (boolToUint16(n.TypeParameters != nil) << 0) | (boolToUint16(n.Parameters != nil) << 1) | (boolToUint16(n.Type != nil) << 2) | (boolToUint16(n.ThrowsType != nil) << 3)
 	case ast.KindConstructor:
 		n := node.AsConstructorDeclaration()
-		return (boolToUint16(hasModifiers(n.Modifiers())) << 0) | (boolToUint16(n.TypeParameters != nil) << 1) | (boolToUint16(n.Parameters != nil) << 2) | (boolToUint16(n.Type != nil) << 3) | (boolToUint16(n.Body != nil) << 4)
+		return (boolToUint16(hasModifiers(n.Modifiers())) << 0) | (boolToUint16(n.TypeParameters != nil) << 1) | (boolToUint16(n.Parameters != nil) << 2) | (boolToUint16(n.Type != nil) << 3) | (boolToUint16(n.ThrowsType != nil) << 4) | (boolToUint16(n.Body != nil) << 5)
 	case ast.KindGetAccessor:
 		n := node.AsGetAccessorDeclaration()
-		return (boolToUint16(hasModifiers(n.Modifiers())) << 0) | (boolToUint16(n.Name() != nil) << 1) | (boolToUint16(n.TypeParameters != nil) << 2) | (boolToUint16(n.Parameters != nil) << 3) | (boolToUint16(n.Type != nil) << 4) | (boolToUint16(n.Body != nil) << 5)
+		return (boolToUint16(hasModifiers(n.Modifiers())) << 0) | (boolToUint16(n.Name() != nil) << 1) | (boolToUint16(n.TypeParameters != nil) << 2) | (boolToUint16(n.Parameters != nil) << 3) | (boolToUint16(n.Type != nil) << 4) | (boolToUint16(n.ThrowsType != nil) << 5) | (boolToUint16(n.Body != nil) << 6)
 	case ast.KindSetAccessor:
 		n := node.AsSetAccessorDeclaration()
-		return (boolToUint16(hasModifiers(n.Modifiers())) << 0) | (boolToUint16(n.Name() != nil) << 1) | (boolToUint16(n.TypeParameters != nil) << 2) | (boolToUint16(n.Parameters != nil) << 3) | (boolToUint16(n.Type != nil) << 4) | (boolToUint16(n.Body != nil) << 5)
+		return (boolToUint16(hasModifiers(n.Modifiers())) << 0) | (boolToUint16(n.Name() != nil) << 1) | (boolToUint16(n.TypeParameters != nil) << 2) | (boolToUint16(n.Parameters != nil) << 3) | (boolToUint16(n.Type != nil) << 4) | (boolToUint16(n.ThrowsType != nil) << 5) | (boolToUint16(n.Body != nil) << 6)
 	case ast.KindIndexSignature:
 		n := node.AsIndexSignatureDeclaration()
 		return (boolToUint16(hasModifiers(n.Modifiers())) << 0) | (boolToUint16(n.Parameters != nil) << 1) | (boolToUint16(n.Type != nil) << 2)
@@ -364,7 +364,7 @@ func getChildrenPropertyMask(node *ast.Node) uint16 {
 		return (boolToUint16(n.TypeParameters != nil) << 0) | (boolToUint16(n.Parameters != nil) << 1) | (boolToUint16(n.Type != nil) << 2) | (boolToUint16(n.ThrowsType != nil) << 3)
 	case ast.KindConstructorType:
 		n := node.AsConstructorTypeNode()
-		return (boolToUint16(hasModifiers(n.Modifiers())) << 0) | (boolToUint16(n.TypeParameters != nil) << 1) | (boolToUint16(n.Parameters != nil) << 2) | (boolToUint16(n.Type != nil) << 3)
+		return (boolToUint16(hasModifiers(n.Modifiers())) << 0) | (boolToUint16(n.TypeParameters != nil) << 1) | (boolToUint16(n.Parameters != nil) << 2) | (boolToUint16(n.Type != nil) << 3) | (boolToUint16(n.ThrowsType != nil) << 4)
 	case ast.KindTemplateLiteralType:
 		n := node.AsTemplateLiteralTypeNode()
 		return (boolToUint16(n.Head != nil) << 0) | (boolToUint16(n.TemplateSpans != nil) << 1)

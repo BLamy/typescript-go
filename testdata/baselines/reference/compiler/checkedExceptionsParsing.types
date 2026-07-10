@@ -30,12 +30,28 @@ const arrow = (): void throws E1 => {};
 class C {
 >C : C
 
+    constructor() throws E1 {}
     method(): void throws E1 {}
 >method : () => void throws E1
+
+    get value(): number throws E1 { return 1; }
+>value : number
+>1 : 1
+
+    set value(next: number) throws E2 {}
+>value : number
+>next : number
 }
 interface I {
     method(): void throws E1 | E2;
 >method : () => void throws E1 | E2
+
+    get value(): number throws E1;
+>value : number
+
+    set value(next: number) throws E2;
+>value : number
+>next : number
 }
 type FnType = (x: string) => number throws E1;
 >FnType : FnType
@@ -52,6 +68,12 @@ type CallableLiteral = {
 >x : string
 
 };
+interface Constructable {
+    new (): C throws E1;
+}
+type ConstructorType = new () => C throws E1;
+>ConstructorType : ConstructorType
+
 const obj = {
 >obj : { method(): void throws E1; }
 >{    method(): void throws E1 {},} : { method(): void throws E1; }

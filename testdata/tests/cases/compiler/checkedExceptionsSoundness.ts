@@ -47,6 +47,39 @@ declare function register(options: {
 }): void throws never;
 register({ callback: () => { throw "nested"; } });
 
+// Retained accessors, constructors, and factories are executable capabilities
+// too. A catch around the registration call cannot observe their later throws.
+class LateGetter {
+    get value(): number { throw "late getter"; }
+}
+declare function retainValue(value: LateGetter): void throws never;
+retainValue(new LateGetter());
+
+class LateConstructor {
+    constructor() { throw "late constructor"; }
+}
+declare function retainConstructor(ctor: typeof LateConstructor): void throws never;
+retainConstructor(LateConstructor);
+
+function lateFactory() {
+    return () => { throw "late returned callback"; };
+}
+declare function retainFactory(factory: typeof lateFactory): void throws never;
+retainFactory(lateFactory);
+
+// Explicit member contracts are checked even if the member is never invoked.
+class MemberContracts {
+    constructor() throws never { throw "constructor contract"; }
+    method(): void throws never { throw "method contract"; }
+    get value(): number throws never { throw "getter contract"; }
+    set value(next: number) throws never { throw "setter contract"; }
+}
+
+class LyingConstructorOverload {
+    constructor() throws never;
+    constructor() { throw "constructor implementation"; }
+}
+
 // Structural property access may invoke a getter or Proxy trap.
 const accessor = {
     get value(): number {
@@ -98,6 +131,12 @@ type LegacyCallback = () => void;
 type SafeCallback = () => void throws never;
 declare const legacyCallback: LegacyCallback;
 const incorrectlyNarrowed: SafeCallback = legacyCallback;
+
+// `any` cannot manufacture a checked-effect proof through ordinary
+// assignment; doing so would bypass the assertion guard and erase effects.
+declare const dynamicCapability: any;
+const anyToSafeCallback: SafeCallback = dynamicCapability;
+const anyToSafeData: DataBox = dynamicCapability;
 
 // Unknown effects at top level must be handled.
 legacy();

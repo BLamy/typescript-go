@@ -1961,6 +1961,7 @@ func (p *Printer) emitConstructorType(node *ast.ConstructorTypeNode) {
 	p.emitParameters(node.AsNode(), node.Parameters)
 	p.writeSpace()
 	p.emitReturnType(node.Type)
+	p.emitThrowsClause(node.ThrowsType)
 	p.popNameGenerationScope(node.AsNode())
 	p.decreaseIndentIf(indented)
 	p.exitNode(node.AsNode(), state)

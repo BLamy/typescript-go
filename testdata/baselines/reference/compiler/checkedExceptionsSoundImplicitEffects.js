@@ -41,6 +41,29 @@ function constructLegacy(): object throws never {
     return new LegacyConstructor();
 }
 
+// Construct signatures can opt into precise contracts without rewriting the
+// rest of a legacy declaration surface.
+declare const SafeConstructor: new () => object throws never;
+declare const KnownConstructor: new () => object throws "construct";
+function constructSafe(): object throws never {
+    return new SafeConstructor();
+}
+function constructKnownInNever(): object throws never {
+    return new KnownConstructor();
+}
+
+// Accessor declarations carry distinct read and write effects.
+declare const declaredAccessor: {
+    get value(): number throws "read accessor";
+    set value(next: number) throws "write accessor";
+};
+function readDeclaredAccessor(): number throws never {
+    return declaredAccessor.value;
+}
+function writeDeclaredAccessor(): void throws never {
+    declaredAccessor.value = 1;
+}
+
 // An untracked constituent poisons a union call instead of disappearing.
 type KnownFunction = () => void throws "known";
 type LegacyFunction = () => void;
@@ -63,6 +86,13 @@ function defineClass(): void throws never {
     class Local {
         static value = legacy();
     }
+}
+
+// A dynamic base may fail IsConstructor while the class definition is being
+// evaluated; merely reading the identifier is not the whole class effect.
+declare const dynamicBase: any;
+function defineDynamicSubclass(): void throws never {
+    class Local extends dynamicBase {}
 }
 
 // Catching an unknown standard-library boundary is sound, but the binding must
@@ -193,6 +223,18 @@ function elementLookup() {
 function constructLegacy() {
     return new LegacyConstructor();
 }
+function constructSafe() {
+    return new SafeConstructor();
+}
+function constructKnownInNever() {
+    return new KnownConstructor();
+}
+function readDeclaredAccessor() {
+    return declaredAccessor.value;
+}
+function writeDeclaredAccessor() {
+    declaredAccessor.value = 1;
+}
 function callUnion() {
     unionFunction();
 }
@@ -202,6 +244,10 @@ function callLegacyOverload() {
 function defineClass() {
     class Local {
         static value = legacy();
+    }
+}
+function defineDynamicSubclass() {
+    class Local extends dynamicBase {
     }
 }
 // Catching an unknown standard-library boundary is sound, but the binding must

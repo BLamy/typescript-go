@@ -151,7 +151,7 @@ func (tx *TypeEraserTransformer) visit(node *ast.Node) *ast.Node {
 			// TypeScript overloads are elided
 			return nil
 		}
-		return tx.Factory().UpdateConstructorDeclaration(n, nil, nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, tx.Visitor().VisitNode(n.Body))
+		return tx.Factory().UpdateConstructorDeclaration(n, nil, nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, nil, tx.Visitor().VisitNode(n.Body))
 
 	case ast.KindMethodDeclaration:
 		n := node.AsMethodDeclaration()
@@ -171,7 +171,7 @@ func (tx *TypeEraserTransformer) visit(node *ast.Node) *ast.Node {
 		if body == nil {
 			body = tx.Factory().NewBlock(tx.Factory().NewNodeList(nil), false)
 		}
-		return tx.Factory().UpdateGetAccessorDeclaration(n, tx.Visitor().VisitModifiers(n.Modifiers()), tx.Visitor().VisitNode(n.Name()), nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, body)
+		return tx.Factory().UpdateGetAccessorDeclaration(n, tx.Visitor().VisitModifiers(n.Modifiers()), tx.Visitor().VisitNode(n.Name()), nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, nil, body)
 
 	case ast.KindSetAccessor:
 		n := node.AsSetAccessorDeclaration()
@@ -183,7 +183,7 @@ func (tx *TypeEraserTransformer) visit(node *ast.Node) *ast.Node {
 		if body == nil {
 			body = tx.Factory().NewBlock(tx.Factory().NewNodeList(nil), false)
 		}
-		return tx.Factory().UpdateSetAccessorDeclaration(n, tx.Visitor().VisitModifiers(n.Modifiers()), tx.Visitor().VisitNode(n.Name()), nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, body)
+		return tx.Factory().UpdateSetAccessorDeclaration(n, tx.Visitor().VisitModifiers(n.Modifiers()), tx.Visitor().VisitNode(n.Name()), nil, tx.Visitor().VisitNodes(n.Parameters), nil, nil, nil, body)
 
 	case ast.KindVariableDeclaration:
 		n := node.AsVariableDeclaration()

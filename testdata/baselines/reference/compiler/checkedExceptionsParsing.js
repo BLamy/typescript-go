@@ -9,10 +9,15 @@ function decl(): void throws E1 {}
 const funcExpr = function (): void throws E1 {};
 const arrow = (): void throws E1 => {};
 class C {
+    constructor() throws E1 {}
     method(): void throws E1 {}
+    get value(): number throws E1 { return 1; }
+    set value(next: number) throws E2 {}
 }
 interface I {
     method(): void throws E1 | E2;
+    get value(): number throws E1;
+    set value(next: number) throws E2;
 }
 type FnType = (x: string) => number throws E1;
 interface Callable {
@@ -21,6 +26,10 @@ interface Callable {
 type CallableLiteral = {
     (x: string): number throws E1 | E2;
 };
+interface Constructable {
+    new (): C throws E1;
+}
+type ConstructorType = new () => C throws E1;
 const obj = {
     method(): void throws E1 {},
 };
@@ -69,7 +78,10 @@ function decl() { }
 const funcExpr = function () { };
 const arrow = () => { };
 class C {
+    constructor() { }
     method() { }
+    get value() { return 1; }
+    set value(next) { }
 }
 const obj = {
     method() { },
@@ -105,10 +117,15 @@ declare function decl(): void throws E1;
 declare const funcExpr: () => void throws E1;
 declare const arrow: () => void throws E1;
 declare class C {
+    constructor() throws E1;
     method(): void throws E1;
+    get value(): number throws E1;
+    set value(next: number) throws E2;
 }
 interface I {
     method(): void throws E1 | E2;
+    get value(): number throws E1;
+    set value(next: number) throws E2;
 }
 type FnType = (x: string) => number throws E1;
 interface Callable {
@@ -117,6 +134,10 @@ interface Callable {
 type CallableLiteral = {
     (x: string): number throws E1 | E2;
 };
+interface Constructable {
+    new (): C throws E1;
+}
+type ConstructorType = new () => C throws E1;
 declare const obj: {
     method(): void throws E1;
 };

@@ -260,6 +260,9 @@ func (c *Checker) isSimpleTypeRelatedTo(source *Type, target *Type, relation *Re
 	}
 	if relation == c.assignableRelation || relation == c.comparableRelation {
 		if s&TypeFlagsAny != 0 {
+			if c.checkedExceptionsFailClosed() && c.typeRequiresCheckedEffectProof(target, make(map[*Type]bool)) {
+				return false
+			}
 			return true
 		}
 		// Type number is assignable to any computed numeric enum type or any numeric enum literal type, and

@@ -725,6 +725,7 @@ func getExistingNodeTreeVisitor(b *NodeBuilderImpl, bound *recoveryBoundary) *as
 					node.AsConstructSignatureDeclaration().TypeParameters,
 					node.AsConstructSignatureDeclaration().Parameters,
 					newType,
+					node.AsConstructSignatureDeclaration().ThrowsType,
 				)
 			case ast.KindIndexSignature:
 				return factory.UpdateIndexSignatureDeclaration(
@@ -748,6 +749,7 @@ func getExistingNodeTreeVisitor(b *NodeBuilderImpl, bound *recoveryBoundary) *as
 					node.AsConstructorTypeNode().TypeParameters,
 					node.AsConstructorTypeNode().Parameters,
 					newType,
+					node.AsConstructorTypeNode().ThrowsType,
 				)
 			}
 		}

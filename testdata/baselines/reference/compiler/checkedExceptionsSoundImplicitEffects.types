@@ -71,14 +71,68 @@ function elementLookup(): void throws never {
 
 // Construct signatures without throws metadata are unknown boundaries.
 declare const LegacyConstructor: new () => object;
->LegacyConstructor : new () => object
+>LegacyConstructor : new () => object throws unknown
 
 function constructLegacy(): object throws never {
 >constructLegacy : () => object throws never
 
     return new LegacyConstructor();
 >new LegacyConstructor() : object
->LegacyConstructor : new () => object
+>LegacyConstructor : new () => object throws unknown
+}
+
+// Construct signatures can opt into precise contracts without rewriting the
+// rest of a legacy declaration surface.
+declare const SafeConstructor: new () => object throws never;
+>SafeConstructor : new () => object throws never
+
+declare const KnownConstructor: new () => object throws "construct";
+>KnownConstructor : new () => object throws "construct"
+
+function constructSafe(): object throws never {
+>constructSafe : () => object throws never
+
+    return new SafeConstructor();
+>new SafeConstructor() : object
+>SafeConstructor : new () => object throws never
+}
+function constructKnownInNever(): object throws never {
+>constructKnownInNever : () => object throws never
+
+    return new KnownConstructor();
+>new KnownConstructor() : object
+>KnownConstructor : new () => object throws "construct"
+}
+
+// Accessor declarations carry distinct read and write effects.
+declare const declaredAccessor: {
+>declaredAccessor : { value: number; }
+
+    get value(): number throws "read accessor";
+>value : number
+
+    set value(next: number) throws "write accessor";
+>value : number
+>next : number
+
+};
+function readDeclaredAccessor(): number throws never {
+>readDeclaredAccessor : () => number throws never
+
+    return declaredAccessor.value;
+>declaredAccessor.value : number
+>declaredAccessor : { value: number; }
+>value : number
+}
+function writeDeclaredAccessor(): void throws never {
+>writeDeclaredAccessor : () => void throws never
+
+    declaredAccessor.value = 1;
+>declaredAccessor.value = 1 : 1
+>declaredAccessor.value : number
+>declaredAccessor : { value: number; }
+>value : number
+>1 : 1
 }
 
 // An untracked constituent poisons a union call instead of disappearing.
@@ -133,6 +187,19 @@ function defineClass(): void throws never {
 >legacy() : void
 >legacy : () => void throws unknown
     }
+}
+
+// A dynamic base may fail IsConstructor while the class definition is being
+// evaluated; merely reading the identifier is not the whole class effect.
+declare const dynamicBase: any;
+>dynamicBase : any
+
+function defineDynamicSubclass(): void throws never {
+>defineDynamicSubclass : () => void throws never
+
+    class Local extends dynamicBase {}
+>Local : Local
+>dynamicBase : any
 }
 
 // Catching an unknown standard-library boundary is sound, but the binding must

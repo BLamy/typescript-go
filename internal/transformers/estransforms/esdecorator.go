@@ -743,7 +743,7 @@ func (tx *esDecoratorTransformer) transformClassLike(node *ast.Node) *ast.Expres
 			}
 			constructorStatements = append(constructorStatements, initializerStatements...)
 			constructorBody := f.NewBlock(f.NewNodeList(constructorStatements), true)
-			syntheticConstructor = f.NewConstructorDeclaration(nil, nil, f.NewNodeList(nil), nil, nil, constructorBody)
+			syntheticConstructor = f.NewConstructorDeclaration(nil, nil, f.NewNodeList(nil), nil, nil, nil, constructorBody)
 		}
 	}
 
@@ -1216,7 +1216,7 @@ func (tx *esDecoratorTransformer) visitConstructorDeclaration(node *ast.Node) *a
 		body = tx.Visitor().VisitNode(ctor.Body.AsNode())
 	}
 	tx.exitClassElement()
-	return tx.Factory().UpdateConstructorDeclaration(ctor, modifiers, nil, parameters, nil, nil, body)
+	return tx.Factory().UpdateConstructorDeclaration(ctor, modifiers, nil, parameters, nil, nil, nil, body)
 }
 
 func (tx *esDecoratorTransformer) finishClassElement(updated *ast.Node, original *ast.Node) *ast.Node {
@@ -1491,7 +1491,7 @@ func (tx *esDecoratorTransformer) visitGetAccessorDeclaration(node *ast.Node) *a
 	tx.exitClassElement()
 	accessor := node.AsGetAccessorDeclaration()
 	return tx.finishClassElement(
-		tx.Factory().UpdateGetAccessorDeclaration(accessor, result.modifiers, result.name, nil, parameters, nil, nil, body),
+		tx.Factory().UpdateGetAccessorDeclaration(accessor, result.modifiers, result.name, nil, parameters, nil, nil, nil, body),
 		node,
 	)
 }
@@ -1508,7 +1508,7 @@ func (tx *esDecoratorTransformer) visitSetAccessorDeclaration(node *ast.Node) *a
 	tx.exitClassElement()
 	accessor := node.AsSetAccessorDeclaration()
 	return tx.finishClassElement(
-		tx.Factory().UpdateSetAccessorDeclaration(accessor, result.modifiers, result.name, nil, parameters, nil, nil, body),
+		tx.Factory().UpdateSetAccessorDeclaration(accessor, result.modifiers, result.name, nil, parameters, nil, nil, nil, body),
 		node,
 	)
 }
@@ -2592,6 +2592,7 @@ func (tx *esDecoratorTransformer) createMethodDescriptorForwarder(modifiers *ast
 		nil, // typeParameters
 		f.NewNodeList([]*ast.Node{}),
 		nil, // type
+		nil, // throwsType
 		nil, // fullSignature
 		f.NewBlock(f.NewNodeList([]*ast.Node{
 			f.NewReturnStatement(
@@ -2611,6 +2612,7 @@ func (tx *esDecoratorTransformer) createGetAccessorDescriptorForwarder(modifiers
 		nil, // typeParameters
 		f.NewNodeList([]*ast.Node{}),
 		nil, // type
+		nil, // throwsType
 		nil, // fullSignature
 		f.NewBlock(f.NewNodeList([]*ast.Node{
 			f.NewReturnStatement(
@@ -2636,6 +2638,7 @@ func (tx *esDecoratorTransformer) createSetAccessorDescriptorForwarder(modifiers
 			f.NewParameterDeclaration(nil, nil, f.NewIdentifier("value"), nil, nil, nil),
 		}),
 		nil, // type
+		nil, // throwsType
 		nil, // fullSignature
 		f.NewBlock(f.NewNodeList([]*ast.Node{
 			f.NewReturnStatement(

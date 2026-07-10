@@ -344,9 +344,11 @@ func (c *Checker) getPropertySymbolAccessThrowsType(property *ast.Symbol, reads 
 			}
 			effects = append(effects, effect)
 		case ast.KindPropertyDeclaration, ast.KindPropertyAssignment, ast.KindShorthandPropertyAssignment,
-			ast.KindMethodDeclaration:
+			ast.KindMethodDeclaration, ast.KindClassDeclaration, ast.KindClassExpression:
 			// These declarations install concrete data properties. Initializer and
 			// class-evaluation effects are accounted for at their execution sites.
+			// A class declaration also supplies the constructor's concrete
+			// `prototype` data property.
 		case ast.KindPropertySignature, ast.KindMethodSignature, ast.KindIndexSignature:
 			return c.unknownType
 		default:
@@ -461,26 +463,28 @@ func (c *Checker) getThrowsTypeOfAwait(node *ast.Node) *Type {
 	return c.unknownType
 }
 
-// getEscapingCallbackThrowsType returns the effect of callable capabilities in
-// arguments, including callbacks nested in option objects and collections.
+// getEscapingCapabilityThrowsType returns the effect of executable
+// capabilities in arguments, including callbacks, constructors, accessors,
+// and capabilities returned by them. Capabilities may be nested in option
+// objects and collections.
 // Without a call-site contract that proves synchronous invocation, a callee may
-// retain and invoke one after the caller's try/catch and throws boundary no
-// longer exists. Fail-closed analysis therefore requires such a callback to
-// handle its own effect until `rethrows`/callback timing contracts are
-// represented in signatures.
-func (c *Checker) getEscapingCallbackThrowsType(node *ast.Node) *Type {
-	var callbackEffects []*Type
+// retain and execute one after the caller's try/catch and throws boundary no
+// longer exists. Fail-closed analysis therefore requires each exposed
+// capability to handle its own effect until invocation-timing and ownership
+// contracts are represented in signatures.
+func (c *Checker) getEscapingCapabilityThrowsType(node *ast.Node) *Type {
+	var capabilityEffects []*Type
 	seen := make(map[*Type]bool)
 	for _, argument := range node.Arguments() {
-		c.collectEscapingCallbackEffects(c.getTypeOfExpression(argument), seen, &callbackEffects)
+		c.collectEscapingCapabilityEffects(c.getTypeOfExpression(argument), seen, &capabilityEffects)
 	}
-	if len(callbackEffects) == 0 {
+	if len(capabilityEffects) == 0 {
 		return nil
 	}
-	return c.getUnionType(callbackEffects)
+	return c.getUnionType(capabilityEffects)
 }
 
-func (c *Checker) collectEscapingCallbackEffects(t *Type, seen map[*Type]bool, effects *[]*Type) {
+func (c *Checker) collectEscapingCapabilityEffects(t *Type, seen map[*Type]bool, effects *[]*Type) {
 	if t == nil || seen[t] {
 		return
 	}
@@ -495,7 +499,7 @@ func (c *Checker) collectEscapingCallbackEffects(t *Type, seen map[*Type]bool, e
 	}
 	if t.flags&TypeFlagsUnionOrIntersection != 0 {
 		for _, constituent := range t.Types() {
-			c.collectEscapingCallbackEffects(constituent, seen, effects)
+			c.collectEscapingCapabilityEffects(constituent, seen, effects)
 		}
 		return
 	}
@@ -504,16 +508,45 @@ func (c *Checker) collectEscapingCallbackEffects(t *Type, seen map[*Type]bool, e
 		if effect := c.getThrowsTypeOfSignature(signature); effect != nil && effect.flags&TypeFlagsNever == 0 {
 			*effects = append(*effects, c.normalizeThrowsType(effect))
 		}
+		c.collectEscapingCapabilityEffects(c.getReturnTypeOfSignature(signature), seen, effects)
+	}
+	constructSignatures := c.getSignaturesOfType(t, SignatureKindConstruct)
+	for _, signature := range constructSignatures {
+		if effect := c.getConstructCapabilityThrowsType(signature); effect != nil && effect.flags&TypeFlagsNever == 0 {
+			*effects = append(*effects, c.normalizeThrowsType(effect))
+		}
+		c.collectEscapingCapabilityEffects(c.getReturnTypeOfSignature(signature), seen, effects)
 	}
 	if t.flags&TypeFlagsObject == 0 {
 		return
 	}
 	for _, property := range c.getPropertiesOfType(t) {
-		c.collectEscapingCallbackEffects(c.getTypeOfSymbol(property), seen, effects)
+		// A class constructor's synthetic `prototype` slot is a concrete data
+		// property. Recurse into the instance shape, but do not mistake the
+		// synthetic declaration metadata for an unknown accessor.
+		if property.Name != "prototype" || len(constructSignatures) == 0 {
+			if effect := c.getPropertyReadThrowsType(property); effect != nil && effect.flags&TypeFlagsNever == 0 {
+				*effects = append(*effects, c.normalizeThrowsType(effect))
+			}
+			if effect := c.getPropertyWriteThrowsType(property); effect != nil && effect.flags&TypeFlagsNever == 0 {
+				*effects = append(*effects, c.normalizeThrowsType(effect))
+			}
+		}
+		c.collectEscapingCapabilityEffects(c.getTypeOfSymbol(property), seen, effects)
 	}
 	for _, indexInfo := range c.getIndexInfosOfType(t) {
-		c.collectEscapingCallbackEffects(indexInfo.valueType, seen, effects)
+		c.collectEscapingCapabilityEffects(indexInfo.valueType, seen, effects)
 	}
+}
+
+func (c *Checker) getConstructCapabilityThrowsType(signature *Signature) *Type {
+	if signature != nil && signature.declaration != nil {
+		declaration := signature.declaration
+		if ast.IsClassLike(declaration) && !ast.GetSourceFileOfNode(declaration).IsDeclarationFile {
+			return c.getClassConstructionThrowsType(declaration, nil, make(map[*ast.Node]bool))
+		}
+	}
+	return c.getThrowsTypeOfSignature(signature)
 }
 
 func (c *Checker) getCombinedCallThrowsType(t *Type, unknownWhenNotCallable bool) *Type {
@@ -534,6 +567,62 @@ func (c *Checker) getCombinedCallThrowsType(t *Type, unknownWhenNotCallable bool
 		return c.neverType
 	}
 	return c.getUnionType(effects)
+}
+
+// typeRequiresCheckedEffectProof reports whether assigning an `any` value to
+// t would manufacture a checked-effect guarantee. Ordinary TypeScript still
+// permits `any` at data-only boundaries, but it cannot silently become a
+// callable, constructable, accessor, or concrete-property value whose effects
+// the checker will later treat as known.
+func (c *Checker) typeRequiresCheckedEffectProof(t *Type, seen map[*Type]bool) bool {
+	if t == nil || seen[t] || t.flags&TypeFlagsAnyOrUnknown != 0 {
+		return false
+	}
+	seen[t] = true
+	if t.flags&TypeFlagsUnionOrIntersection != 0 {
+		for _, constituent := range t.Types() {
+			if c.typeRequiresCheckedEffectProof(constituent, seen) {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, kind := range []SignatureKind{SignatureKindCall, SignatureKindConstruct} {
+		for _, signature := range c.getSignaturesOfType(t, kind) {
+			effect := c.getThrowsTypeOfSignature(signature)
+			if effect == nil || effect.flags&TypeFlagsAnyOrUnknown == 0 {
+				return true
+			}
+			if c.typeRequiresCheckedEffectProof(c.getReturnTypeOfSignature(signature), seen) {
+				return true
+			}
+		}
+	}
+	if t.flags&TypeFlagsObject == 0 {
+		return false
+	}
+	for _, property := range c.getPropertiesOfType(t) {
+		readEffect := c.getPropertyReadThrowsType(property)
+		if readEffect == nil || readEffect.flags&TypeFlagsAnyOrUnknown == 0 {
+			return true
+		}
+		if !c.isReadonlySymbol(property) {
+			writeEffect := c.getPropertyWriteThrowsType(property)
+			if writeEffect == nil || writeEffect.flags&TypeFlagsAnyOrUnknown == 0 {
+				return true
+			}
+		}
+		if c.typeRequiresCheckedEffectProof(c.getTypeOfSymbol(property), seen) {
+			return true
+		}
+	}
+	for _, indexInfo := range c.getIndexInfosOfType(t) {
+		if c.typeRequiresCheckedEffectProof(indexInfo.valueType, seen) {
+			return true
+		}
+	}
+	return false
 }
 
 // checkFailClosedAssertionEffects prevents a type assertion from erasing the
@@ -729,7 +818,15 @@ func (c *Checker) getClassEvaluationThrowsType(node *ast.Node) *Type {
 		effects = append(effects, c.unknownType)
 	}
 	if base := ast.GetExtendsHeritageClauseElement(node); base != nil {
-		effects = append(effects, c.collectRaisedTypes(base.Expression())...)
+		baseExpression := base.Expression()
+		effects = append(effects, c.collectRaisedTypes(baseExpression)...)
+		baseType := c.getTypeOfExpression(baseExpression)
+		if baseType == nil || baseType.flags&TypeFlagsAnyOrUnknown != 0 {
+			// Evaluating `extends value` performs IsConstructor and throws when a
+			// dynamic value is not constructable. A statically `any` base is not a
+			// proof that class evaluation can complete normally.
+			effects = append(effects, c.unknownType)
+		}
 	}
 	for _, member := range node.Members() {
 		if ast.HasDecorators(member) || member.Name() != nil && member.Name().Kind == ast.KindComputedPropertyName {
@@ -784,7 +881,7 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 			return false
 		case ast.KindCallExpression, ast.KindNewExpression:
 			if c.checkedExceptionsFailClosed() {
-				add(c.getEscapingCallbackThrowsType(node))
+				add(c.getEscapingCapabilityThrowsType(node))
 			}
 			add(c.getThrowsTypeOfCall(node))
 		case ast.KindAwaitExpression:
@@ -896,7 +993,7 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 		case ast.KindFunctionDeclaration, ast.KindFunctionExpression, ast.KindArrowFunction,
 			ast.KindMethodDeclaration, ast.KindConstructor, ast.KindGetAccessor, ast.KindSetAccessor,
 			ast.KindClassStaticBlockDeclaration:
-			if c.checkedExceptionsFailClosed() && (node.Kind == ast.KindFunctionDeclaration || node.Kind == ast.KindMethodDeclaration) {
+			if c.checkedExceptionsFailClosed() && (node.Kind == ast.KindFunctionDeclaration || node.Kind == ast.KindMethodDeclaration || node.Kind == ast.KindConstructor) {
 				c.checkFailClosedOverloadEffects(node)
 			}
 			savedFn, savedTryDepth := enclosingFn, tryDepth
@@ -908,6 +1005,15 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 			if c.checkedExceptionsFailClosed() && tryDepth == 0 {
 				c.checkRaisedType(node, c.getClassEvaluationThrowsType(node), enclosingFn, false /*isCall*/)
 			}
+			// Class evaluation belongs to the surrounding boundary, but member
+			// bodies still need independent validation against their own explicit
+			// throws clauses even when no call or construction site exists. Treat
+			// the class as the propagation boundary for field initializers; their
+			// effects are incorporated into construction separately.
+			savedFn, savedTryDepth := enclosingFn, tryDepth
+			enclosingFn, tryDepth = node, 0
+			node.ForEachChild(visit)
+			enclosingFn, tryDepth = savedFn, savedTryDepth
 			return false
 		case ast.KindTryStatement:
 			t := node.AsTryStatement()
@@ -925,8 +1031,8 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 			return false
 		case ast.KindCallExpression, ast.KindNewExpression:
 			if c.checkedExceptionsFailClosed() {
-				if callbackEffect := c.getEscapingCallbackThrowsType(node); callbackEffect != nil {
-					c.errorCheckedExceptions(node, diagnostics.Callback_may_throw_0_after_the_call_returns_A_synchronous_try_catch_or_enclosing_throws_clause_cannot_handle_it_Catch_inside_the_callback_or_use_a_non_escaping_callback_contract, c.TypeToString(callbackEffect))
+				if capabilityEffect := c.getEscapingCapabilityThrowsType(node); capabilityEffect != nil {
+					c.errorCheckedExceptions(node, diagnostics.Argument_exposes_executable_code_that_may_throw_0_after_the_call_returns_A_synchronous_try_catch_or_enclosing_throws_clause_cannot_handle_it_Handle_the_effect_inside_the_capability_or_use_a_non_escaping_contract, c.TypeToString(capabilityEffect))
 				}
 			}
 			if c.checkedExceptionsFailClosed() && c.callReturnsPromise(node) && !isAwaitedCall(node) && !isDirectlyReturnedCall(node) {

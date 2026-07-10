@@ -310,6 +310,7 @@ func (tx *asyncTransformer) visitConstructorDeclaration(node *ast.Node) *ast.Nod
 		nil, /*typeParameters*/
 		tx.EmitContext().VisitParameters(decl.Parameters, tx.Visitor()),
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		tx.transformMethodBody(node),
 	)
@@ -365,6 +366,7 @@ func (tx *asyncTransformer) visitGetAccessorDeclaration(node *ast.Node) *ast.Nod
 		nil, /*typeParameters*/
 		tx.EmitContext().VisitParameters(decl.Parameters, tx.Visitor()),
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		tx.transformMethodBody(node),
 	)
@@ -383,6 +385,7 @@ func (tx *asyncTransformer) visitSetAccessorDeclaration(node *ast.Node) *ast.Nod
 		nil, /*typeParameters*/
 		tx.EmitContext().VisitParameters(decl.Parameters, tx.Visitor()),
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		tx.transformMethodBody(node),
 	)

@@ -1926,8 +1926,9 @@ func (p *Parser) tryParseConstructorDeclaration(pos int, jsdoc jsdocScannerInfo,
 		typeParameters := p.parseTypeParameters()
 		parameters := p.parseParameters(ParseFlagsNone)
 		returnType := p.parseReturnType(ast.KindColonToken, false /*isType*/)
+		throwsType := p.parseThrowsClause()
 		body := p.parseFunctionBlockOrSemicolon(ParseFlagsNone, diagnostics.X_or_expected)
-		result := p.finishNode(p.factory.NewConstructorDeclaration(modifiers, typeParameters, parameters, returnType, nil /*fullSignature*/, body), pos)
+		result := p.finishNode(p.factory.NewConstructorDeclaration(modifiers, typeParameters, parameters, returnType, throwsType, nil /*fullSignature*/, body), pos)
 		p.withJSDoc(result, jsdoc)
 		p.checkJSSyntax(result)
 		return result
@@ -3213,16 +3214,13 @@ func (p *Parser) parseSignatureMember(kind ast.Kind) *ast.Node {
 	typeParameters := p.parseTypeParameters()
 	parameters := p.parseParameters(ParseFlagsType)
 	typeNode := p.parseReturnType(ast.KindColonToken /*isType*/, true)
-	var throwsType *ast.TypeNode
-	if kind == ast.KindCallSignature {
-		throwsType = p.parseThrowsClause()
-	}
+	throwsType := p.parseThrowsClause()
 	p.parseTypeMemberSemicolon()
 	var result *ast.Node
 	if kind == ast.KindCallSignature {
 		result = p.factory.NewCallSignatureDeclaration(typeParameters, parameters, typeNode, throwsType)
 	} else {
-		result = p.factory.NewConstructSignatureDeclaration(typeParameters, parameters, typeNode)
+		result = p.factory.NewConstructSignatureDeclaration(typeParameters, parameters, typeNode, throwsType)
 	}
 	p.finishNode(result, pos)
 	p.withJSDoc(result, jsdoc)
@@ -3454,13 +3452,14 @@ func (p *Parser) parseAccessorDeclaration(pos int, jsdoc jsdocScannerInfo, modif
 	typeParameters := p.parseTypeParameters()
 	parameters := p.parseParameters(ParseFlagsNone)
 	returnType := p.parseReturnType(ast.KindColonToken, false /*isType*/)
+	throwsType := p.parseThrowsClause()
 	body := p.parseFunctionBlockOrSemicolon(flags, nil /*diagnosticMessage*/)
 	var result *ast.Node
 	// Keep track of `typeParameters` (for both) and `type` (for setters) if they were parsed those indicate grammar errors
 	if kind == ast.KindGetAccessor {
-		result = p.factory.NewGetAccessorDeclaration(modifiers, name, typeParameters, parameters, returnType, nil /*fullSignature*/, body)
+		result = p.factory.NewGetAccessorDeclaration(modifiers, name, typeParameters, parameters, returnType, throwsType, nil /*fullSignature*/, body)
 	} else {
-		result = p.factory.NewSetAccessorDeclaration(modifiers, name, typeParameters, parameters, returnType, nil /*fullSignature*/, body)
+		result = p.factory.NewSetAccessorDeclaration(modifiers, name, typeParameters, parameters, returnType, throwsType, nil /*fullSignature*/, body)
 	}
 	p.withJSDoc(p.finishNode(result, pos), jsdoc)
 	if flags&ParseFlagsType == 0 {
@@ -3809,11 +3808,11 @@ func (p *Parser) parseFunctionOrConstructorType() *ast.TypeNode {
 	typeParameters := p.parseTypeParameters()
 	parameters := p.parseParameters(ParseFlagsType)
 	returnType := p.parseReturnType(ast.KindEqualsGreaterThanToken, false /*isType*/)
+	throwsType := p.parseThrowsClause()
 	var result *ast.TypeNode
 	if isConstructorType {
-		result = p.factory.NewConstructorTypeNode(modifiers, typeParameters, parameters, returnType)
+		result = p.factory.NewConstructorTypeNode(modifiers, typeParameters, parameters, returnType, throwsType)
 	} else {
-		throwsType := p.parseThrowsClause()
 		result = p.factory.NewFunctionTypeNode(typeParameters, parameters, returnType, throwsType)
 	}
 	p.finishNode(result, pos)

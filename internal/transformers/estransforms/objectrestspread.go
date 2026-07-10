@@ -142,6 +142,7 @@ func (ch *objectRestSpreadTransformer) visitContructorDeclaration(node *ast.Cons
 		ch.Visitor().VisitNodes(node.Parameters),
 		nil,
 		nil,
+		nil,
 		ch.transformFunctionBody(node.AsNode()),
 	)
 }
@@ -157,6 +158,7 @@ func (ch *objectRestSpreadTransformer) visitGetAccessorDeclaration(node *ast.Get
 		ch.Visitor().VisitNodes(node.Parameters),
 		nil,
 		nil,
+		nil,
 		ch.transformFunctionBody(node.AsNode()),
 	)
 }
@@ -170,6 +172,7 @@ func (ch *objectRestSpreadTransformer) visitSetAccessorDeclaration(node *ast.Set
 		ch.Visitor().VisitNode(node.Name()),
 		nil,
 		ch.Visitor().VisitNodes(node.Parameters),
+		nil,
 		nil,
 		nil,
 		ch.transformFunctionBody(node.AsNode()),

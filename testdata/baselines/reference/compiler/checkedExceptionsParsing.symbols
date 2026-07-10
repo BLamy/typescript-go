@@ -29,51 +29,84 @@ const arrow = (): void throws E1 => {};
 class C {
 >C : Symbol(C, Decl(checkedExceptionsParsing.ts, 6, 39))
 
-    method(): void throws E1 {}
->method : Symbol(C.method, Decl(checkedExceptionsParsing.ts, 7, 9))
+    constructor() throws E1 {}
 >E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
+
+    method(): void throws E1 {}
+>method : Symbol(C.method, Decl(checkedExceptionsParsing.ts, 8, 30))
+>E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
+
+    get value(): number throws E1 { return 1; }
+>value : Symbol(C.value, Decl(checkedExceptionsParsing.ts, 9, 31), Decl(checkedExceptionsParsing.ts, 10, 47))
+>E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
+
+    set value(next: number) throws E2 {}
+>value : Symbol(C.value, Decl(checkedExceptionsParsing.ts, 9, 31), Decl(checkedExceptionsParsing.ts, 10, 47))
+>next : Symbol(next, Decl(checkedExceptionsParsing.ts, 11, 14))
+>E2 : Symbol(E2, Decl(checkedExceptionsParsing.ts, 0, 56))
 }
 interface I {
->I : Symbol(I, Decl(checkedExceptionsParsing.ts, 9, 1))
+>I : Symbol(I, Decl(checkedExceptionsParsing.ts, 12, 1))
 
     method(): void throws E1 | E2;
->method : Symbol(I.method, Decl(checkedExceptionsParsing.ts, 10, 13))
+>method : Symbol(I.method, Decl(checkedExceptionsParsing.ts, 13, 13))
 >E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
+>E2 : Symbol(E2, Decl(checkedExceptionsParsing.ts, 0, 56))
+
+    get value(): number throws E1;
+>value : Symbol(I.value, Decl(checkedExceptionsParsing.ts, 14, 34), Decl(checkedExceptionsParsing.ts, 15, 34))
+>E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
+
+    set value(next: number) throws E2;
+>value : Symbol(I.value, Decl(checkedExceptionsParsing.ts, 14, 34), Decl(checkedExceptionsParsing.ts, 15, 34))
+>next : Symbol(next, Decl(checkedExceptionsParsing.ts, 16, 14))
 >E2 : Symbol(E2, Decl(checkedExceptionsParsing.ts, 0, 56))
 }
 type FnType = (x: string) => number throws E1;
->FnType : Symbol(FnType, Decl(checkedExceptionsParsing.ts, 12, 1))
->x : Symbol(x, Decl(checkedExceptionsParsing.ts, 13, 15))
+>FnType : Symbol(FnType, Decl(checkedExceptionsParsing.ts, 17, 1))
+>x : Symbol(x, Decl(checkedExceptionsParsing.ts, 18, 15))
 >E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
 
 interface Callable {
->Callable : Symbol(Callable, Decl(checkedExceptionsParsing.ts, 13, 46))
+>Callable : Symbol(Callable, Decl(checkedExceptionsParsing.ts, 18, 46))
 
     (x: string): number throws E1;
->x : Symbol(x, Decl(checkedExceptionsParsing.ts, 15, 5))
+>x : Symbol(x, Decl(checkedExceptionsParsing.ts, 20, 5))
 >E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
 }
 type CallableLiteral = {
->CallableLiteral : Symbol(CallableLiteral, Decl(checkedExceptionsParsing.ts, 16, 1))
+>CallableLiteral : Symbol(CallableLiteral, Decl(checkedExceptionsParsing.ts, 21, 1))
 
     (x: string): number throws E1 | E2;
->x : Symbol(x, Decl(checkedExceptionsParsing.ts, 18, 5))
+>x : Symbol(x, Decl(checkedExceptionsParsing.ts, 23, 5))
 >E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
 >E2 : Symbol(E2, Decl(checkedExceptionsParsing.ts, 0, 56))
 
 };
+interface Constructable {
+>Constructable : Symbol(Constructable, Decl(checkedExceptionsParsing.ts, 24, 2))
+
+    new (): C throws E1;
+>C : Symbol(C, Decl(checkedExceptionsParsing.ts, 6, 39))
+>E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
+}
+type ConstructorType = new () => C throws E1;
+>ConstructorType : Symbol(ConstructorType, Decl(checkedExceptionsParsing.ts, 27, 1))
+>C : Symbol(C, Decl(checkedExceptionsParsing.ts, 6, 39))
+>E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
+
 const obj = {
->obj : Symbol(obj, Decl(checkedExceptionsParsing.ts, 20, 5))
+>obj : Symbol(obj, Decl(checkedExceptionsParsing.ts, 29, 5))
 
     method(): void throws E1 {},
->method : Symbol(method, Decl(checkedExceptionsParsing.ts, 20, 13))
+>method : Symbol(method, Decl(checkedExceptionsParsing.ts, 29, 13))
 >E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
 
 };
 
 // A clause without a return type annotation.
 function noReturnType() throws E1 {
->noReturnType : Symbol(noReturnType, Decl(checkedExceptionsParsing.ts, 22, 2))
+>noReturnType : Symbol(noReturnType, Decl(checkedExceptionsParsing.ts, 31, 2))
 >E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
 
     throw new E1();
@@ -82,68 +115,68 @@ function noReturnType() throws E1 {
 
 // The clause type may be any type expression, greedily parsed.
 function unionClause(): void throws E1 | E2 {}
->unionClause : Symbol(unionClause, Decl(checkedExceptionsParsing.ts, 27, 1))
+>unionClause : Symbol(unionClause, Decl(checkedExceptionsParsing.ts, 36, 1))
 >E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
 >E2 : Symbol(E2, Decl(checkedExceptionsParsing.ts, 0, 56))
 
 type Alias = E1 | E2;
->Alias : Symbol(Alias, Decl(checkedExceptionsParsing.ts, 30, 46))
+>Alias : Symbol(Alias, Decl(checkedExceptionsParsing.ts, 39, 46))
 >E1 : Symbol(E1, Decl(checkedExceptionsParsing.ts, 0, 0))
 >E2 : Symbol(E2, Decl(checkedExceptionsParsing.ts, 0, 56))
 
 function aliasClause(): void throws Alias {}
->aliasClause : Symbol(aliasClause, Decl(checkedExceptionsParsing.ts, 31, 21))
->Alias : Symbol(Alias, Decl(checkedExceptionsParsing.ts, 30, 46))
+>aliasClause : Symbol(aliasClause, Decl(checkedExceptionsParsing.ts, 40, 21))
+>Alias : Symbol(Alias, Decl(checkedExceptionsParsing.ts, 39, 46))
 
 function genericClause<T extends Error>(x: T): void throws T {
->genericClause : Symbol(genericClause, Decl(checkedExceptionsParsing.ts, 32, 44))
->T : Symbol(T, Decl(checkedExceptionsParsing.ts, 33, 23))
+>genericClause : Symbol(genericClause, Decl(checkedExceptionsParsing.ts, 41, 44))
+>T : Symbol(T, Decl(checkedExceptionsParsing.ts, 42, 23))
 >Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
->x : Symbol(x, Decl(checkedExceptionsParsing.ts, 33, 40))
->T : Symbol(T, Decl(checkedExceptionsParsing.ts, 33, 23))
->T : Symbol(T, Decl(checkedExceptionsParsing.ts, 33, 23))
+>x : Symbol(x, Decl(checkedExceptionsParsing.ts, 42, 40))
+>T : Symbol(T, Decl(checkedExceptionsParsing.ts, 42, 23))
+>T : Symbol(T, Decl(checkedExceptionsParsing.ts, 42, 23))
 
     throw x;
->x : Symbol(x, Decl(checkedExceptionsParsing.ts, 33, 40))
+>x : Symbol(x, Decl(checkedExceptionsParsing.ts, 42, 40))
 }
 
 // `throws` is contextual: members named `throws` on a following line still work.
 interface Legacy {
->Legacy : Symbol(Legacy, Decl(checkedExceptionsParsing.ts, 35, 1))
+>Legacy : Symbol(Legacy, Decl(checkedExceptionsParsing.ts, 44, 1))
 
     m(): void
->m : Symbol(Legacy.m, Decl(checkedExceptionsParsing.ts, 38, 18))
+>m : Symbol(Legacy.m, Decl(checkedExceptionsParsing.ts, 47, 18))
 
     throws: boolean
->throws : Symbol(Legacy.throws, Decl(checkedExceptionsParsing.ts, 39, 13))
+>throws : Symbol(Legacy.throws, Decl(checkedExceptionsParsing.ts, 48, 13))
 }
 declare const legacy: Legacy;
->legacy : Symbol(legacy, Decl(checkedExceptionsParsing.ts, 42, 13))
->Legacy : Symbol(Legacy, Decl(checkedExceptionsParsing.ts, 35, 1))
+>legacy : Symbol(legacy, Decl(checkedExceptionsParsing.ts, 51, 13))
+>Legacy : Symbol(Legacy, Decl(checkedExceptionsParsing.ts, 44, 1))
 
 const b: boolean = legacy.throws;
->b : Symbol(b, Decl(checkedExceptionsParsing.ts, 43, 5))
->legacy.throws : Symbol(Legacy.throws, Decl(checkedExceptionsParsing.ts, 39, 13))
->legacy : Symbol(legacy, Decl(checkedExceptionsParsing.ts, 42, 13))
->throws : Symbol(Legacy.throws, Decl(checkedExceptionsParsing.ts, 39, 13))
+>b : Symbol(b, Decl(checkedExceptionsParsing.ts, 52, 5))
+>legacy.throws : Symbol(Legacy.throws, Decl(checkedExceptionsParsing.ts, 48, 13))
+>legacy : Symbol(legacy, Decl(checkedExceptionsParsing.ts, 51, 13))
+>throws : Symbol(Legacy.throws, Decl(checkedExceptionsParsing.ts, 48, 13))
 
 class LegacyClass {
->LegacyClass : Symbol(LegacyClass, Decl(checkedExceptionsParsing.ts, 43, 33))
+>LegacyClass : Symbol(LegacyClass, Decl(checkedExceptionsParsing.ts, 52, 33))
 
     m(): void {}
->m : Symbol(LegacyClass.m, Decl(checkedExceptionsParsing.ts, 45, 19))
+>m : Symbol(LegacyClass.m, Decl(checkedExceptionsParsing.ts, 54, 19))
 
     throws = 1;
->throws : Symbol(LegacyClass.throws, Decl(checkedExceptionsParsing.ts, 46, 16))
+>throws : Symbol(LegacyClass.throws, Decl(checkedExceptionsParsing.ts, 55, 16))
 }
 
 const throwsAsName = { throws: true };
->throwsAsName : Symbol(throwsAsName, Decl(checkedExceptionsParsing.ts, 50, 5))
->throws : Symbol(throws, Decl(checkedExceptionsParsing.ts, 50, 22))
+>throwsAsName : Symbol(throwsAsName, Decl(checkedExceptionsParsing.ts, 59, 5))
+>throws : Symbol(throws, Decl(checkedExceptionsParsing.ts, 59, 22))
 
 function throws(): void {}
->throws : Symbol(throws, Decl(checkedExceptionsParsing.ts, 50, 38))
+>throws : Symbol(throws, Decl(checkedExceptionsParsing.ts, 59, 38))
 
 throws();
->throws : Symbol(throws, Decl(checkedExceptionsParsing.ts, 50, 38))
+>throws : Symbol(throws, Decl(checkedExceptionsParsing.ts, 59, 38))
 

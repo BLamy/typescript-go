@@ -751,7 +751,7 @@ func (tx *RuntimeSyntaxTransformer) visitConstructorDeclaration(node *ast.Constr
 	modifiers := tx.Visitor().VisitModifiers(node.Modifiers())
 	parameters := tx.EmitContext().VisitParameters(node.ParameterList(), tx.Visitor())
 	body := tx.visitConstructorBody(node.Body.AsBlock(), node.AsNode())
-	return tx.Factory().UpdateConstructorDeclaration(node, modifiers, nil /*typeParameters*/, parameters, nil /*returnType*/, nil /*fullSignature*/, body)
+	return tx.Factory().UpdateConstructorDeclaration(node, modifiers, nil /*typeParameters*/, parameters, nil /*returnType*/, nil /*throwsType*/, nil /*fullSignature*/, body)
 }
 
 func (tx *RuntimeSyntaxTransformer) visitConstructorBody(body *ast.Block, constructor *ast.Node) *ast.Node {

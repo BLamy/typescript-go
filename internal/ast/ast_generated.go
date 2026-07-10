@@ -3013,31 +3013,35 @@ type ConstructSignatureDeclaration struct {
 	TypeSyntaxBase
 }
 
-func (f *NodeFactory) NewConstructSignatureDeclaration(typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode) *Node {
+func (f *NodeFactory) NewConstructSignatureDeclaration(typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode) *Node {
 	data := f.constructSignatureDeclarationArena.New()
 	data.TypeParameters = typeParameters
 	data.Parameters = parameters
 	data.Type = typeNode
+	data.ThrowsType = throwsType
 	return f.newNode(KindConstructSignature, data)
 }
 
-func (f *NodeFactory) UpdateConstructSignatureDeclaration(node *ConstructSignatureDeclaration, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode) *Node {
-	if typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type {
-		return updateNode(f.NewConstructSignatureDeclaration(typeParameters, parameters, typeNode), node.AsNode(), f.hooks)
+func (f *NodeFactory) UpdateConstructSignatureDeclaration(node *ConstructSignatureDeclaration, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode) *Node {
+	if typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type || throwsType != node.ThrowsType {
+		return updateNode(f.NewConstructSignatureDeclaration(typeParameters, parameters, typeNode, throwsType), node.AsNode(), f.hooks)
 	}
 	return node.AsNode()
 }
 
 func (node *ConstructSignatureDeclaration) ForEachChild(v Visitor) bool {
-	return visitNodeList(v, node.TypeParameters) || visitNodeList(v, node.Parameters) || visit(v, node.Type)
+	return visitNodeList(v, node.TypeParameters) ||
+		visitNodeList(v, node.Parameters) ||
+		visit(v, node.Type) ||
+		visit(v, node.ThrowsType)
 }
 
 func (node *ConstructSignatureDeclaration) VisitEachChild(v *NodeVisitor) *Node {
-	return v.Factory.UpdateConstructSignatureDeclaration(node, v.visitNodes(node.TypeParameters), v.visitNodes(node.Parameters), v.visitNode(node.Type))
+	return v.Factory.UpdateConstructSignatureDeclaration(node, v.visitNodes(node.TypeParameters), v.visitNodes(node.Parameters), v.visitNode(node.Type), v.visitNode(node.ThrowsType))
 }
 
 func (node *ConstructSignatureDeclaration) Clone(f NodeFactoryCoercible) *Node {
-	return cloneNode(f.AsNodeFactory().NewConstructSignatureDeclaration(node.TypeParameters, node.Parameters, node.Type), node.AsNode(), f.AsNodeFactory().hooks)
+	return cloneNode(f.AsNodeFactory().NewConstructSignatureDeclaration(node.TypeParameters, node.Parameters, node.Type, node.ThrowsType), node.AsNode(), f.AsNodeFactory().hooks)
 }
 
 func IsConstructSignatureDeclaration(node *Node) bool {
@@ -3058,20 +3062,21 @@ type ConstructorDeclaration struct {
 	ReturnFlowNode *FlowNode
 }
 
-func (f *NodeFactory) NewConstructorDeclaration(modifiers *ModifierList, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
+func (f *NodeFactory) NewConstructorDeclaration(modifiers *ModifierList, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
 	data := &ConstructorDeclaration{}
 	data.modifiers = modifiers
 	data.TypeParameters = typeParameters
 	data.Parameters = parameters
 	data.Type = typeNode
+	data.ThrowsType = throwsType
 	data.FullSignature = fullSignature
 	data.Body = body
 	return f.newNode(KindConstructor, data)
 }
 
-func (f *NodeFactory) UpdateConstructorDeclaration(node *ConstructorDeclaration, modifiers *ModifierList, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
-	if modifiers != node.modifiers || typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type || fullSignature != node.FullSignature || body != node.Body {
-		return updateNode(f.NewConstructorDeclaration(modifiers, typeParameters, parameters, typeNode, fullSignature, body), node.AsNode(), f.hooks)
+func (f *NodeFactory) UpdateConstructorDeclaration(node *ConstructorDeclaration, modifiers *ModifierList, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
+	if modifiers != node.modifiers || typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type || throwsType != node.ThrowsType || fullSignature != node.FullSignature || body != node.Body {
+		return updateNode(f.NewConstructorDeclaration(modifiers, typeParameters, parameters, typeNode, throwsType, fullSignature, body), node.AsNode(), f.hooks)
 	}
 	return node.AsNode()
 }
@@ -3081,16 +3086,17 @@ func (node *ConstructorDeclaration) ForEachChild(v Visitor) bool {
 		visitNodeList(v, node.TypeParameters) ||
 		visitNodeList(v, node.Parameters) ||
 		visit(v, node.Type) ||
+		visit(v, node.ThrowsType) ||
 		visit(v, node.FullSignature) ||
 		visit(v, node.Body)
 }
 
 func (node *ConstructorDeclaration) VisitEachChild(v *NodeVisitor) *Node {
-	return v.Factory.UpdateConstructorDeclaration(node, v.visitModifiers(node.modifiers), v.visitNodes(node.TypeParameters), v.visitParameters(node.Parameters), v.visitNode(node.Type), v.visitNode(node.FullSignature), v.visitFunctionBody(node.Body))
+	return v.Factory.UpdateConstructorDeclaration(node, v.visitModifiers(node.modifiers), v.visitNodes(node.TypeParameters), v.visitParameters(node.Parameters), v.visitNode(node.Type), v.visitNode(node.ThrowsType), v.visitNode(node.FullSignature), v.visitFunctionBody(node.Body))
 }
 
 func (node *ConstructorDeclaration) Clone(f NodeFactoryCoercible) *Node {
-	return cloneNode(f.AsNodeFactory().NewConstructorDeclaration(node.Modifiers(), node.TypeParameters, node.Parameters, node.Type, node.FullSignature, node.Body), node.AsNode(), f.AsNodeFactory().hooks)
+	return cloneNode(f.AsNodeFactory().NewConstructorDeclaration(node.Modifiers(), node.TypeParameters, node.Parameters, node.Type, node.ThrowsType, node.FullSignature, node.Body), node.AsNode(), f.AsNodeFactory().hooks)
 }
 
 func IsConstructorDeclaration(node *Node) bool {
@@ -3105,21 +3111,22 @@ type GetAccessorDeclaration struct {
 	AccessorDeclarationBase
 }
 
-func (f *NodeFactory) NewGetAccessorDeclaration(modifiers *ModifierList, name *PropertyName, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
+func (f *NodeFactory) NewGetAccessorDeclaration(modifiers *ModifierList, name *PropertyName, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
 	data := &GetAccessorDeclaration{}
 	data.modifiers = modifiers
 	data.name = name
 	data.TypeParameters = typeParameters
 	data.Parameters = parameters
 	data.Type = typeNode
+	data.ThrowsType = throwsType
 	data.FullSignature = fullSignature
 	data.Body = body
 	return f.newNode(KindGetAccessor, data)
 }
 
-func (f *NodeFactory) UpdateGetAccessorDeclaration(node *GetAccessorDeclaration, modifiers *ModifierList, name *PropertyName, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
-	if modifiers != node.modifiers || name != node.name || typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type || fullSignature != node.FullSignature || body != node.Body {
-		return updateNode(f.NewGetAccessorDeclaration(modifiers, name, typeParameters, parameters, typeNode, fullSignature, body), node.AsNode(), f.hooks)
+func (f *NodeFactory) UpdateGetAccessorDeclaration(node *GetAccessorDeclaration, modifiers *ModifierList, name *PropertyName, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
+	if modifiers != node.modifiers || name != node.name || typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type || throwsType != node.ThrowsType || fullSignature != node.FullSignature || body != node.Body {
+		return updateNode(f.NewGetAccessorDeclaration(modifiers, name, typeParameters, parameters, typeNode, throwsType, fullSignature, body), node.AsNode(), f.hooks)
 	}
 	return node.AsNode()
 }
@@ -3130,16 +3137,17 @@ func (node *GetAccessorDeclaration) ForEachChild(v Visitor) bool {
 		visitNodeList(v, node.TypeParameters) ||
 		visitNodeList(v, node.Parameters) ||
 		visit(v, node.Type) ||
+		visit(v, node.ThrowsType) ||
 		visit(v, node.FullSignature) ||
 		visit(v, node.Body)
 }
 
 func (node *GetAccessorDeclaration) VisitEachChild(v *NodeVisitor) *Node {
-	return v.Factory.UpdateGetAccessorDeclaration(node, v.visitModifiers(node.modifiers), v.visitNode(node.name), v.visitNodes(node.TypeParameters), v.visitParameters(node.Parameters), v.visitNode(node.Type), v.visitNode(node.FullSignature), v.visitFunctionBody(node.Body))
+	return v.Factory.UpdateGetAccessorDeclaration(node, v.visitModifiers(node.modifiers), v.visitNode(node.name), v.visitNodes(node.TypeParameters), v.visitParameters(node.Parameters), v.visitNode(node.Type), v.visitNode(node.ThrowsType), v.visitNode(node.FullSignature), v.visitFunctionBody(node.Body))
 }
 
 func (node *GetAccessorDeclaration) Clone(f NodeFactoryCoercible) *Node {
-	return cloneNode(f.AsNodeFactory().NewGetAccessorDeclaration(node.Modifiers(), node.name, node.TypeParameters, node.Parameters, node.Type, node.FullSignature, node.Body), node.AsNode(), f.AsNodeFactory().hooks)
+	return cloneNode(f.AsNodeFactory().NewGetAccessorDeclaration(node.Modifiers(), node.name, node.TypeParameters, node.Parameters, node.Type, node.ThrowsType, node.FullSignature, node.Body), node.AsNode(), f.AsNodeFactory().hooks)
 }
 
 func (node *GetAccessorDeclaration) Name() *DeclarationName {
@@ -3158,21 +3166,22 @@ type SetAccessorDeclaration struct {
 	AccessorDeclarationBase
 }
 
-func (f *NodeFactory) NewSetAccessorDeclaration(modifiers *ModifierList, name *PropertyName, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
+func (f *NodeFactory) NewSetAccessorDeclaration(modifiers *ModifierList, name *PropertyName, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
 	data := &SetAccessorDeclaration{}
 	data.modifiers = modifiers
 	data.name = name
 	data.TypeParameters = typeParameters
 	data.Parameters = parameters
 	data.Type = typeNode
+	data.ThrowsType = throwsType
 	data.FullSignature = fullSignature
 	data.Body = body
 	return f.newNode(KindSetAccessor, data)
 }
 
-func (f *NodeFactory) UpdateSetAccessorDeclaration(node *SetAccessorDeclaration, modifiers *ModifierList, name *PropertyName, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
-	if modifiers != node.modifiers || name != node.name || typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type || fullSignature != node.FullSignature || body != node.Body {
-		return updateNode(f.NewSetAccessorDeclaration(modifiers, name, typeParameters, parameters, typeNode, fullSignature, body), node.AsNode(), f.hooks)
+func (f *NodeFactory) UpdateSetAccessorDeclaration(node *SetAccessorDeclaration, modifiers *ModifierList, name *PropertyName, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode, fullSignature *TypeNode, body *FunctionBody) *Node {
+	if modifiers != node.modifiers || name != node.name || typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type || throwsType != node.ThrowsType || fullSignature != node.FullSignature || body != node.Body {
+		return updateNode(f.NewSetAccessorDeclaration(modifiers, name, typeParameters, parameters, typeNode, throwsType, fullSignature, body), node.AsNode(), f.hooks)
 	}
 	return node.AsNode()
 }
@@ -3183,16 +3192,17 @@ func (node *SetAccessorDeclaration) ForEachChild(v Visitor) bool {
 		visitNodeList(v, node.TypeParameters) ||
 		visitNodeList(v, node.Parameters) ||
 		visit(v, node.Type) ||
+		visit(v, node.ThrowsType) ||
 		visit(v, node.FullSignature) ||
 		visit(v, node.Body)
 }
 
 func (node *SetAccessorDeclaration) VisitEachChild(v *NodeVisitor) *Node {
-	return v.Factory.UpdateSetAccessorDeclaration(node, v.visitModifiers(node.modifiers), v.visitNode(node.name), v.visitNodes(node.TypeParameters), v.visitParameters(node.Parameters), v.visitNode(node.Type), v.visitNode(node.FullSignature), v.visitFunctionBody(node.Body))
+	return v.Factory.UpdateSetAccessorDeclaration(node, v.visitModifiers(node.modifiers), v.visitNode(node.name), v.visitNodes(node.TypeParameters), v.visitParameters(node.Parameters), v.visitNode(node.Type), v.visitNode(node.ThrowsType), v.visitNode(node.FullSignature), v.visitFunctionBody(node.Body))
 }
 
 func (node *SetAccessorDeclaration) Clone(f NodeFactoryCoercible) *Node {
-	return cloneNode(f.AsNodeFactory().NewSetAccessorDeclaration(node.Modifiers(), node.name, node.TypeParameters, node.Parameters, node.Type, node.FullSignature, node.Body), node.AsNode(), f.AsNodeFactory().hooks)
+	return cloneNode(f.AsNodeFactory().NewSetAccessorDeclaration(node.Modifiers(), node.name, node.TypeParameters, node.Parameters, node.Type, node.ThrowsType, node.FullSignature, node.Body), node.AsNode(), f.AsNodeFactory().hooks)
 }
 
 func (node *SetAccessorDeclaration) Name() *DeclarationName {
@@ -6077,18 +6087,19 @@ type ConstructorTypeNode struct {
 	FunctionOrConstructorTypeNodeBase
 }
 
-func (f *NodeFactory) NewConstructorTypeNode(modifiers *ModifierList, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode) *Node {
+func (f *NodeFactory) NewConstructorTypeNode(modifiers *ModifierList, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode) *Node {
 	data := &ConstructorTypeNode{}
 	data.modifiers = modifiers
 	data.TypeParameters = typeParameters
 	data.Parameters = parameters
 	data.Type = typeNode
+	data.ThrowsType = throwsType
 	return f.newNode(KindConstructorType, data)
 }
 
-func (f *NodeFactory) UpdateConstructorTypeNode(node *ConstructorTypeNode, modifiers *ModifierList, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode) *Node {
-	if modifiers != node.modifiers || typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type {
-		return updateNode(f.NewConstructorTypeNode(modifiers, typeParameters, parameters, typeNode), node.AsNode(), f.hooks)
+func (f *NodeFactory) UpdateConstructorTypeNode(node *ConstructorTypeNode, modifiers *ModifierList, typeParameters *TypeParameterList, parameters *ParameterList, typeNode *TypeNode, throwsType *TypeNode) *Node {
+	if modifiers != node.modifiers || typeParameters != node.TypeParameters || parameters != node.Parameters || typeNode != node.Type || throwsType != node.ThrowsType {
+		return updateNode(f.NewConstructorTypeNode(modifiers, typeParameters, parameters, typeNode, throwsType), node.AsNode(), f.hooks)
 	}
 	return node.AsNode()
 }
@@ -6097,15 +6108,16 @@ func (node *ConstructorTypeNode) ForEachChild(v Visitor) bool {
 	return visitModifiers(v, node.modifiers) ||
 		visitNodeList(v, node.TypeParameters) ||
 		visitNodeList(v, node.Parameters) ||
-		visit(v, node.Type)
+		visit(v, node.Type) ||
+		visit(v, node.ThrowsType)
 }
 
 func (node *ConstructorTypeNode) VisitEachChild(v *NodeVisitor) *Node {
-	return v.Factory.UpdateConstructorTypeNode(node, v.visitModifiers(node.modifiers), v.visitNodes(node.TypeParameters), v.visitNodes(node.Parameters), v.visitNode(node.Type))
+	return v.Factory.UpdateConstructorTypeNode(node, v.visitModifiers(node.modifiers), v.visitNodes(node.TypeParameters), v.visitNodes(node.Parameters), v.visitNode(node.Type), v.visitNode(node.ThrowsType))
 }
 
 func (node *ConstructorTypeNode) Clone(f NodeFactoryCoercible) *Node {
-	return cloneNode(f.AsNodeFactory().NewConstructorTypeNode(node.Modifiers(), node.TypeParameters, node.Parameters, node.Type), node.AsNode(), f.AsNodeFactory().hooks)
+	return cloneNode(f.AsNodeFactory().NewConstructorTypeNode(node.Modifiers(), node.TypeParameters, node.Parameters, node.Type, node.ThrowsType), node.AsNode(), f.AsNodeFactory().hooks)
 }
 
 func IsConstructorTypeNode(node *Node) bool {

@@ -164,6 +164,7 @@ func (tx *MetadataTransformer) visitSetAccessor(node *ast.SetAccessorDeclaration
 		tx.Visitor().VisitNodes(node.TypeParameters),
 		tx.Visitor().VisitNodes(node.Parameters),
 		tx.Visitor().VisitNode(node.Type),
+		tx.Visitor().VisitNode(node.ThrowsType),
 		tx.Visitor().VisitNode(node.FullSignature),
 		tx.Visitor().VisitNode(node.Body),
 	)
@@ -182,6 +183,7 @@ func (tx *MetadataTransformer) visitGetAccessor(node *ast.GetAccessorDeclaration
 		tx.Visitor().VisitNodes(node.TypeParameters),
 		tx.Visitor().VisitNodes(node.Parameters),
 		tx.Visitor().VisitNode(node.Type),
+		tx.Visitor().VisitNode(node.ThrowsType),
 		tx.Visitor().VisitNode(node.FullSignature),
 		tx.Visitor().VisitNode(node.Body),
 	)

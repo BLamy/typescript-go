@@ -774,6 +774,7 @@ func (tx *DeclarationTransformer) transformConstructorTypeNode(input *ast.Constr
 		tx.Visitor().VisitNodes(input.TypeParameters),
 		tx.updateParamList(input.AsNode(), input.Parameters),
 		tx.Visitor().Visit(input.Type),
+		tx.Visitor().Visit(input.ThrowsType),
 	)
 }
 
@@ -991,6 +992,7 @@ func (tx *DeclarationTransformer) transformSetAccessorDeclaration(input *ast.Set
 		nil, // accessors shouldn't have type params
 		tx.updateAccessorParamList(input.AsNode(), tx.host.GetEffectiveDeclarationFlags(tx.EmitContext().ParseNode(input.AsNode()), ast.ModifierFlagsPrivate) != 0),
 		nil,
+		tx.Visitor().Visit(input.ThrowsType),
 		nil,
 		nil,
 	)
@@ -1007,6 +1009,7 @@ func (tx *DeclarationTransformer) transformGetAccesorDeclaration(input *ast.GetA
 		nil, // accessors shouldn't have type params
 		tx.updateAccessorParamList(input.AsNode(), tx.host.GetEffectiveDeclarationFlags(tx.EmitContext().ParseNode(input.AsNode()), ast.ModifierFlagsPrivate) != 0),
 		tx.ensureType(input.AsNode(), false),
+		tx.Visitor().Visit(input.ThrowsType),
 		nil,
 		nil,
 	)
@@ -1057,6 +1060,7 @@ func (tx *DeclarationTransformer) transformConstructorDeclaration(input *ast.Con
 		nil, // no type params
 		tx.updateParamList(input.AsNode(), input.Parameters),
 		nil, // no return type
+		tx.Visitor().Visit(input.ThrowsType),
 		nil,
 		nil,
 	)
@@ -1068,6 +1072,7 @@ func (tx *DeclarationTransformer) transformConstructSignatureDeclaration(input *
 		tx.ensureTypeParams(input.AsNode(), input.TypeParameters),
 		tx.updateParamList(input.AsNode(), input.Parameters),
 		tx.ensureType(input.AsNode(), false),
+		tx.Visitor().Visit(input.ThrowsType),
 	)
 }
 

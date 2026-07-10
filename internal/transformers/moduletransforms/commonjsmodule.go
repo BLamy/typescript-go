@@ -1669,6 +1669,7 @@ func (tx *CommonJSModuleTransformer) visitDestructuringAssignmentTargetNoStack(n
 				nil, /*typeParameters*/
 				tx.Factory().NewNodeList([]*ast.Node{param}),
 				nil, /*returnType*/
+				nil, /*throwsType*/
 				nil, /*fullSignature*/
 				tx.Factory().NewBlock(statementList, false /*multiLine*/),
 			)

@@ -159,7 +159,7 @@
         "category": "Error",
         "code": 100026
     },
-    "Callback may throw '{0}' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.": {
+    "Argument exposes executable code that may throw '{0}' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; handle the effect inside the capability or use a non-escaping contract.": {
         "category": "Error",
         "code": 100027
     },

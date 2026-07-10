@@ -2401,6 +2401,7 @@ func (tx *classFieldsTransformer) transformConstructor(constructor *ast.Construc
 			nil, /*typeParameters*/
 			parameters,
 			nil, /*returnType*/
+			nil, /*throwsType*/
 			nil, /*fullSignature*/
 			body,
 		)
@@ -2415,6 +2416,7 @@ func (tx *classFieldsTransformer) transformConstructor(constructor *ast.Construc
 		nil, /*typeParameters*/
 		parameters,
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		body,
 	)
@@ -3507,6 +3509,7 @@ func (tx *classFieldsTransformer) createAccessorPropertyGetRedirector(node *ast.
 		nil, /*typeParameters*/
 		tx.Factory().NewNodeList([]*ast.Node{}),
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		body,
 	)
@@ -3539,6 +3542,7 @@ func (tx *classFieldsTransformer) createAccessorPropertySetRedirector(node *ast.
 		nil, /*typeParameters*/
 		tx.Factory().NewNodeList([]*ast.Node{valueParam}),
 		nil, /*returnType*/
+		nil, /*throwsType*/
 		nil, /*fullSignature*/
 		body,
 	)

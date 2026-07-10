@@ -1863,7 +1863,7 @@ func (b *NodeBuilderImpl) signatureToSignatureDeclarationHelper(signature *Signa
 	case kind == ast.KindCallSignature:
 		node = b.f.NewCallSignatureDeclaration(typeParamList, paramList, returnTypeNode, throwsTypeNode)
 	case kind == ast.KindConstructSignature:
-		node = b.f.NewConstructSignatureDeclaration(typeParamList, paramList, returnTypeNode)
+		node = b.f.NewConstructSignatureDeclaration(typeParamList, paramList, returnTypeNode, throwsTypeNode)
 	case kind == ast.KindMethodSignature:
 		var questionToken *ast.Node
 		if options != nil {
@@ -1873,11 +1873,11 @@ func (b *NodeBuilderImpl) signatureToSignatureDeclarationHelper(signature *Signa
 	case kind == ast.KindMethodDeclaration:
 		node = b.f.NewMethodDeclaration(modifierList, nil /*asteriskToken*/, name, nil /*questionToken*/, typeParamList, paramList, returnTypeNode, throwsTypeNode, nil /*fullSignature*/, nil /*body*/)
 	case kind == ast.KindConstructor:
-		node = b.f.NewConstructorDeclaration(modifierList, nil /*typeParamList*/, paramList, nil /*returnTypeNode*/, nil /*fullSignature*/, nil /*body*/)
+		node = b.f.NewConstructorDeclaration(modifierList, nil /*typeParamList*/, paramList, nil /*returnTypeNode*/, throwsTypeNode, nil /*fullSignature*/, nil /*body*/)
 	case kind == ast.KindGetAccessor:
-		node = b.f.NewGetAccessorDeclaration(modifierList, name, nil /*typeParamList*/, paramList, returnTypeNode, nil /*fullSignature*/, nil /*body*/)
+		node = b.f.NewGetAccessorDeclaration(modifierList, name, nil /*typeParamList*/, paramList, returnTypeNode, throwsTypeNode, nil /*fullSignature*/, nil /*body*/)
 	case kind == ast.KindSetAccessor:
-		node = b.f.NewSetAccessorDeclaration(modifierList, name, nil /*typeParamList*/, paramList, nil /*returnTypeNode*/, nil /*fullSignature*/, nil /*body*/)
+		node = b.f.NewSetAccessorDeclaration(modifierList, name, nil /*typeParamList*/, paramList, nil /*returnTypeNode*/, throwsTypeNode, nil /*fullSignature*/, nil /*body*/)
 	case kind == ast.KindIndexSignature:
 		node = b.f.NewIndexSignatureDeclaration(modifierList, paramList, returnTypeNode)
 	// !!! JSDoc Support
@@ -1892,7 +1892,7 @@ func (b *NodeBuilderImpl) signatureToSignatureDeclarationHelper(signature *Signa
 		if returnTypeNode == nil {
 			returnTypeNode = b.f.NewTypeReferenceNode(b.f.NewIdentifier(""), nil)
 		}
-		node = b.f.NewConstructorTypeNode(modifierList, typeParamList, paramList, returnTypeNode)
+		node = b.f.NewConstructorTypeNode(modifierList, typeParamList, paramList, returnTypeNode, throwsTypeNode)
 	case kind == ast.KindFunctionDeclaration:
 		// TODO: assert name is Identifier
 		node = b.f.NewFunctionDeclaration(modifierList, nil /*asteriskToken*/, name, typeParamList, paramList, returnTypeNode, throwsTypeNode, nil /*fullSignature*/, nil /*body*/)

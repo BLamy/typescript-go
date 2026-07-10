@@ -290,6 +290,7 @@ func (b *NodeBuilderImpl) pseudoTypeToNode(t *pseudochecker.PseudoType) *ast.Nod
 					nil,
 					nil,
 					nil,
+					nil,
 				)
 			case pseudochecker.PseudoObjectElementKindGetAccessor:
 				d := e.AsPseudoGetAccessor()
@@ -299,6 +300,7 @@ func (b *NodeBuilderImpl) pseudoTypeToNode(t *pseudochecker.PseudoType) *ast.Nod
 					nil,
 					nil,
 					b.pseudoTypeToNode(d.Type),
+					nil,
 					nil,
 					nil,
 				)

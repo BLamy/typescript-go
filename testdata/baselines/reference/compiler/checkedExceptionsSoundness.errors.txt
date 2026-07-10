@@ -2,24 +2,34 @@ checkedExceptionsSoundness.ts(8,5): error TS100021: Call may throw 'unknown', wh
 checkedExceptionsSoundness.ts(13,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 checkedExceptionsSoundness.ts(16,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 checkedExceptionsSoundness.ts(37,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsSoundness.ts(37,5): error TS100027: Callback may throw '"callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
-checkedExceptionsSoundness.ts(45,1): error TS100027: Callback may throw '"nested"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
-checkedExceptionsSoundness.ts(54,12): error TS100022: Thrown value of type '"getter"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsSoundness.ts(67,5): error TS100022: Thrown value of type '"setter"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsSoundness.ts(74,7): error TS2322: Type '{ readonly value: number; }' is not assignable to type 'DataBox'.
+checkedExceptionsSoundness.ts(37,5): error TS100027: Argument exposes executable code that may throw '"callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; handle the effect inside the capability or use a non-escaping contract.
+checkedExceptionsSoundness.ts(45,1): error TS100027: Argument exposes executable code that may throw '"nested"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; handle the effect inside the capability or use a non-escaping contract.
+checkedExceptionsSoundness.ts(53,1): error TS100027: Argument exposes executable code that may throw '"late getter"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; handle the effect inside the capability or use a non-escaping contract.
+checkedExceptionsSoundness.ts(59,1): error TS100027: Argument exposes executable code that may throw '"late constructor"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; handle the effect inside the capability or use a non-escaping contract.
+checkedExceptionsSoundness.ts(65,1): error TS100027: Argument exposes executable code that may throw '"late returned callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; handle the effect inside the capability or use a non-escaping contract.
+checkedExceptionsSoundness.ts(69,34): error TS100022: Thrown value of type '"constructor contract"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(70,35): error TS100022: Thrown value of type '"method contract"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(71,40): error TS100022: Thrown value of type '"getter contract"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(72,44): error TS100022: Thrown value of type '"setter contract"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(76,5): error TS100023: The source signature may throw '"constructor implementation"', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(87,12): error TS100022: Thrown value of type '"getter"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(100,5): error TS100022: Thrown value of type '"setter"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(107,7): error TS2322: Type '{ readonly value: number; }' is not assignable to type 'DataBox'.
   Property 'value's read effect may throw '"erased getter"', but the target only permits 'never'.
-checkedExceptionsSoundness.ts(79,7): error TS2322: Type '{ value: number; }' is not assignable to type 'DataBox'.
+checkedExceptionsSoundness.ts(112,7): error TS2322: Type '{ value: number; }' is not assignable to type 'DataBox'.
   Property 'value's write effect may throw '"erased setter"', but the target only permits 'never'.
-checkedExceptionsSoundness.ts(80,31): error TS100028: Property 'value's read effect may throw '"erased getter"', but the target only permits 'never'.
-checkedExceptionsSoundness.ts(89,15): error TS2322: Type 'unknown' is not assignable to type '"tracked"'.
-checkedExceptionsSoundness.ts(97,7): error TS2322: Type 'LegacyCallback' is not assignable to type 'SafeCallback'.
+checkedExceptionsSoundness.ts(113,31): error TS100028: Property 'value's read effect may throw '"erased getter"', but the target only permits 'never'.
+checkedExceptionsSoundness.ts(122,15): error TS2322: Type 'unknown' is not assignable to type '"tracked"'.
+checkedExceptionsSoundness.ts(130,7): error TS2322: Type 'LegacyCallback' is not assignable to type 'SafeCallback'.
   The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
-checkedExceptionsSoundness.ts(100,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
-checkedExceptionsSoundness.ts(107,31): error TS100023: The source signature may throw '"assertion"', but the target's 'throws' clause only permits 'never'.
-checkedExceptionsSoundness.ts(113,10): error TS100023: The source signature may throw '"implementation"', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(135,7): error TS2322: Type 'any' is not assignable to type 'SafeCallback'.
+checkedExceptionsSoundness.ts(136,7): error TS2322: Type 'any' is not assignable to type 'DataBox'.
+checkedExceptionsSoundness.ts(139,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsSoundness.ts(146,31): error TS100023: The source signature may throw '"assertion"', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(152,10): error TS100023: The source signature may throw '"implementation"', but the target's 'throws' clause only permits 'never'.
 
 
-==== checkedExceptionsSoundness.ts (16 errors) ====
+==== checkedExceptionsSoundness.ts (26 errors) ====
     declare function legacy(): void;
     declare function tracked(): void throws "tracked";
     declare function explicitlyUnknown(): void throws unknown;
@@ -66,7 +76,7 @@ checkedExceptionsSoundness.ts(113,10): error TS100023: The source signature may 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!!! error TS100027: Callback may throw '"callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
+!!! error TS100027: Argument exposes executable code that may throw '"callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; handle the effect inside the capability or use a non-escaping contract.
     }
     
     // A callback cannot hide inside an option object and escape the caller's
@@ -76,7 +86,56 @@ checkedExceptionsSoundness.ts(113,10): error TS100023: The source signature may 
     }): void throws never;
     register({ callback: () => { throw "nested"; } });
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!!! error TS100027: Callback may throw '"nested"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
+!!! error TS100027: Argument exposes executable code that may throw '"nested"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; handle the effect inside the capability or use a non-escaping contract.
+    
+    // Retained accessors, constructors, and factories are executable capabilities
+    // too. A catch around the registration call cannot observe their later throws.
+    class LateGetter {
+        get value(): number { throw "late getter"; }
+    }
+    declare function retainValue(value: LateGetter): void throws never;
+    retainValue(new LateGetter());
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100027: Argument exposes executable code that may throw '"late getter"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; handle the effect inside the capability or use a non-escaping contract.
+    
+    class LateConstructor {
+        constructor() { throw "late constructor"; }
+    }
+    declare function retainConstructor(ctor: typeof LateConstructor): void throws never;
+    retainConstructor(LateConstructor);
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100027: Argument exposes executable code that may throw '"late constructor"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; handle the effect inside the capability or use a non-escaping contract.
+    
+    function lateFactory() {
+        return () => { throw "late returned callback"; };
+    }
+    declare function retainFactory(factory: typeof lateFactory): void throws never;
+    retainFactory(lateFactory);
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100027: Argument exposes executable code that may throw '"late returned callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; handle the effect inside the capability or use a non-escaping contract.
+    
+    // Explicit member contracts are checked even if the member is never invoked.
+    class MemberContracts {
+        constructor() throws never { throw "constructor contract"; }
+                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100022: Thrown value of type '"constructor contract"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+        method(): void throws never { throw "method contract"; }
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100022: Thrown value of type '"method contract"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+        get value(): number throws never { throw "getter contract"; }
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100022: Thrown value of type '"getter contract"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+        set value(next: number) throws never { throw "setter contract"; }
+                                               ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100022: Thrown value of type '"setter contract"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    }
+    
+    class LyingConstructorOverload {
+        constructor() throws never;
+        ~~~~~~~~~~~
+!!! error TS100023: The source signature may throw '"constructor implementation"', but the target's 'throws' clause only permits 'never'.
+        constructor() { throw "constructor implementation"; }
+    }
     
     // Structural property access may invoke a getter or Proxy trap.
     const accessor = {
@@ -146,6 +205,16 @@ checkedExceptionsSoundness.ts(113,10): error TS100023: The source signature may 
           ~~~~~~~~~~~~~~~~~~~
 !!! error TS2322: Type 'LegacyCallback' is not assignable to type 'SafeCallback'.
 !!! error TS2322:   The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
+    
+    // `any` cannot manufacture a checked-effect proof through ordinary
+    // assignment; doing so would bypass the assertion guard and erase effects.
+    declare const dynamicCapability: any;
+    const anyToSafeCallback: SafeCallback = dynamicCapability;
+          ~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'SafeCallback'.
+    const anyToSafeData: DataBox = dynamicCapability;
+          ~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'DataBox'.
     
     // Unknown effects at top level must be handled.
     legacy();
