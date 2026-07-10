@@ -1,0 +1,81 @@
+//// [tests/cases/compiler/checkedExceptionsUsability.ts] ////
+
+=== checkedExceptionsUsability.ts ===
+class IOError extends Error {
+>IOError : Symbol(IOError, Decl(checkedExceptionsUsability.ts, 0, 0))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+
+    readonly tag = "io" as const;
+>tag : Symbol(IOError.tag, Decl(checkedExceptionsUsability.ts, 0, 29))
+>const : Symbol(const)
+}
+
+class ParseError extends Error {
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsUsability.ts, 2, 1))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+
+    readonly tag = "parse" as const;
+>tag : Symbol(ParseError.tag, Decl(checkedExceptionsUsability.ts, 4, 32))
+>const : Symbol(const)
+}
+
+function readFile(path: string): string throws IOError {
+>readFile : Symbol(readFile, Decl(checkedExceptionsUsability.ts, 6, 1))
+>path : Symbol(path, Decl(checkedExceptionsUsability.ts, 8, 18))
+>IOError : Symbol(IOError, Decl(checkedExceptionsUsability.ts, 0, 0))
+
+    if (!path) throw new IOError("missing: " + path);
+>path : Symbol(path, Decl(checkedExceptionsUsability.ts, 8, 18))
+>IOError : Symbol(IOError, Decl(checkedExceptionsUsability.ts, 0, 0))
+>path : Symbol(path, Decl(checkedExceptionsUsability.ts, 8, 18))
+
+    return "contents of " + path;
+>path : Symbol(path, Decl(checkedExceptionsUsability.ts, 8, 18))
+}
+
+function parseConfig(text: string): number throws ParseError {
+>parseConfig : Symbol(parseConfig, Decl(checkedExceptionsUsability.ts, 11, 1))
+>text : Symbol(text, Decl(checkedExceptionsUsability.ts, 13, 21))
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsUsability.ts, 2, 1))
+
+    if (text.length === 0) throw new ParseError("empty config");
+>text.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>text : Symbol(text, Decl(checkedExceptionsUsability.ts, 13, 21))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>ParseError : Symbol(ParseError, Decl(checkedExceptionsUsability.ts, 2, 1))
+
+    return text.length;
+>text.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>text : Symbol(text, Decl(checkedExceptionsUsability.ts, 13, 21))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+}
+
+function loadConfig(path: string) {
+>loadConfig : Symbol(loadConfig, Decl(checkedExceptionsUsability.ts, 16, 1))
+>path : Symbol(path, Decl(checkedExceptionsUsability.ts, 18, 20))
+
+    return parseConfig(readFile(path));
+>parseConfig : Symbol(parseConfig, Decl(checkedExceptionsUsability.ts, 11, 1))
+>readFile : Symbol(readFile, Decl(checkedExceptionsUsability.ts, 6, 1))
+>path : Symbol(path, Decl(checkedExceptionsUsability.ts, 18, 20))
+}
+
+function main(): number throws never {
+>main : Symbol(main, Decl(checkedExceptionsUsability.ts, 20, 1))
+
+    try {
+        return loadConfig("app.json");
+>loadConfig : Symbol(loadConfig, Decl(checkedExceptionsUsability.ts, 16, 1))
+
+    } catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsUsability.ts, 25, 13))
+
+        if (e.tag === "io") return -1;
+>e.tag : Symbol(tag, Decl(checkedExceptionsUsability.ts, 0, 29), Decl(checkedExceptionsUsability.ts, 4, 32))
+>e : Symbol(e, Decl(checkedExceptionsUsability.ts, 25, 13))
+>tag : Symbol(tag, Decl(checkedExceptionsUsability.ts, 0, 29), Decl(checkedExceptionsUsability.ts, 4, 32))
+
+        return -2;
+    }
+}
+

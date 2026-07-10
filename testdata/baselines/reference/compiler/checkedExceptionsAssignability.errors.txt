@@ -1,5 +1,3 @@
-checkedExceptionsAssignability.ts(1,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
-checkedExceptionsAssignability.ts(2,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
 checkedExceptionsAssignability.ts(17,7): error TS2322: Type 'IOFn' is not assignable to type 'SafeFn'.
   The source signature may throw 'IOError', but the target's 'throws' clause only permits 'never'.
 checkedExceptionsAssignability.ts(26,7): error TS2322: Type '() => void throws IOError' is not assignable to type 'SafeFn'.
@@ -8,13 +6,9 @@ checkedExceptionsAssignability.ts(31,7): error TS2322: Type '() => void throws u
   The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
 
 
-==== checkedExceptionsAssignability.ts (5 errors) ====
+==== checkedExceptionsAssignability.ts (3 errors) ====
     class IOError extends Error { readonly tag = "io" as const; }
-          ~~~~~~~
-!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
     class ParseError extends Error { readonly tag = "parse" as const; }
-          ~~~~~~~~~~
-!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
     
     declare function risky(): void throws IOError;
     

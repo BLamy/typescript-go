@@ -706,7 +706,7 @@ is implemented, and where it deliberately narrows the full design:
   nodes; `throws` is a contextual keyword recognized only on the same line as
   the preceding token, so existing members named `throws` keep parsing.
 - The boolean `checkedExceptions` option, wired through
-  tsconfig, the CLI, and build info; diagnostics TS100021–TS100027 are emitted
+  tsconfig, the CLI, and build info; diagnostics TS100021–TS100028 are emitted
   as build-blocking errors when it is enabled.
 - Handle-or-declare enforcement (§4.3), including top-level code, with
   raises in `catch`/`finally` blocks correctly not discharged by their own
@@ -725,10 +725,16 @@ is implemented, and where it deliberately narrows the full design:
   clause instantiates with the signature.
 - Enabled checked-exceptions analysis treats ambient/legacy declarations without clauses as `unknown`,
   normalizes `throws any` to `unknown`, includes unknown effects in enforcement
-  and catch typing, prevents callable assertions from erasing effects, checks
-  overload implementations, and conservatively treats unresolved structural
-  property access, construction, class/module evaluation, coercion, iteration,
-  destructuring, disposal, JSX, and decorators as unknown effects.
+  and catch typing, prevents callable and property assertions from erasing
+  effects, checks overload implementations, and conservatively treats
+  unresolved structural property access, construction, class/module
+  evaluation, coercion, iteration, destructuring, disposal, JSX, and decorators
+  as unknown effects.
+- Ordinary local code is analyzed rather than blanket-poisoned: inert class
+  declarations, local default constructors, concrete data fields, string
+  `length`, and primitive arithmetic are proven safe. Getter and setter bodies
+  have distinct inferred effects, and those effects participate in structural
+  assignability so an accessor cannot masquerade as a non-throwing data field.
 - Async checks distinguish immediate `await`, direct promise propagation,
   floating rejections, and callbacks that may escape the caller's control-flow
   boundary.
@@ -752,9 +758,10 @@ is implemented, and where it deliberately narrows the full design:
   editor even when off" would change types under a no-diagnostics setting.
 - The assignability rule runs whenever checked exceptions are enabled and a
   failed relation is a hard type error.
-- Constructors, accessors, static blocks, class field initializers, tagged
-  templates, and JSX contribute `unknown` until the checker can recover a
-  precise effect.
+- Ambient construct signatures, structural property signatures, static blocks,
+  computed/decorated class elements, tagged templates, and JSX contribute
+  `unknown` until their declarations carry a precise effect contract. Visible
+  local constructors, accessors, and field initializers are inferred.
 - Static imports are currently rejected as `unknown` module-initialization
   effects. A practical multi-module project needs declaration emit and
   package metadata for module initialization effects before this can become

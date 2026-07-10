@@ -61,7 +61,7 @@ function callsNumber(): void throws E1 {
 >1 : 1
 }
 function catchesOverload() {
->catchesOverload : () => "e1" | undefined throws unknown
+>catchesOverload : () => "e1" | undefined
 
     try {
         pick("x");

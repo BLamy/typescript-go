@@ -162,5 +162,9 @@
     "Callback may throw '{0}' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.": {
         "category": "Error",
         "code": 100027
+    },
+    "Property '{0}'s {1} effect may throw '{2}', but the target only permits '{3}'.": {
+        "category": "Error",
+        "code": 100028
     }
 }

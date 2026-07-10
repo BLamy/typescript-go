@@ -123,6 +123,81 @@ function accessorInNever(): number throws never {
 >value : number
 }
 
+// Getter and setter effects are distinct: reading only executes the getter,
+// while assigning executes the setter.
+const splitAccessor = {
+>splitAccessor : { value: number; }
+>{    get value(): number { return 1; },    set value(next: number) { throw "setter"; },} : { value: number; }
+
+    get value(): number { return 1; },
+>value : number
+>1 : 1
+
+    set value(next: number) { throw "setter"; },
+>value : number
+>next : number
+>"setter" : "setter"
+
+};
+function readsSafeGetter(): number throws never {
+>readsSafeGetter : () => number throws never
+
+    return splitAccessor.value;
+>splitAccessor.value : number
+>splitAccessor : { value: number; }
+>value : number
+}
+function writesThrowingSetter(): void throws never {
+>writesThrowingSetter : () => void throws never
+
+    splitAccessor.value = 2;
+>splitAccessor.value = 2 : 2
+>splitAccessor.value : number
+>splitAccessor : { value: number; }
+>value : number
+>2 : 2
+}
+
+// Structural assignment cannot erase a getter or setter effect by flowing an
+// accessor into a concrete data-property contract.
+class DataBox { value = 1; }
+>DataBox : DataBox
+>value : number
+>1 : 1
+
+const getterSource = { get value(): number { throw "erased getter"; } };
+>getterSource : { readonly value: number; }
+>{ get value(): number { throw "erased getter"; } } : { readonly value: number; }
+>value : number
+>"erased getter" : "erased getter"
+
+const getterErasure: DataBox = getterSource;
+>getterErasure : DataBox
+>getterSource : { readonly value: number; }
+
+const setterSource = {
+>setterSource : { value: number; }
+>{    get value(): number { return 1; },    set value(next: number) { throw "erased setter"; },} : { value: number; }
+
+    get value(): number { return 1; },
+>value : number
+>1 : 1
+
+    set value(next: number) { throw "erased setter"; },
+>value : number
+>next : number
+>"erased setter" : "erased setter"
+
+};
+const setterErasure: DataBox = setterSource;
+>setterErasure : DataBox
+>setterSource : { value: number; }
+
+const assertedGetterErasure = getterSource as DataBox;
+>assertedGetterErasure : DataBox
+>getterSource as DataBox : DataBox
+>getterSource : { readonly value: number; }
+
 // One unknown source poisons catch precision instead of allowing an optimistic
 // tracked-only type.
 function mixedCatch(): void throws never {

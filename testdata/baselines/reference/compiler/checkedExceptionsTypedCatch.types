@@ -64,7 +64,7 @@ function combined() {
 }
 
 function throwsOnly() {
->throwsOnly : () => "parse" throws unknown
+>throwsOnly : () => "parse"
 
     try {
         throw new ParseError("boom");
@@ -73,14 +73,14 @@ function throwsOnly() {
 >"boom" : "boom"
 
     } catch (e) {
->e : unknown
+>e : ParseError
 
         // e: ParseError, from the throw statement's type
         const tag: "parse" = e.tag;
 >tag : "parse"
->e.tag : any
->e : unknown
->tag : any
+>e.tag : "parse"
+>e : ParseError
+>tag : "parse"
 
         return tag;
 >tag : "parse"
@@ -144,7 +144,7 @@ function explicitAnnotationWins() {
 }
 
 function innerTryDischarges() {
->innerTryDischarges : () => "parse" | undefined throws unknown
+>innerTryDischarges : () => "parse" | undefined
 
     try {
         try {
@@ -160,14 +160,14 @@ function innerTryDischarges() {
 >"converted" : "converted"
         }
     } catch (e) {
->e : unknown
+>e : ParseError
 
         // e: ParseError — the inner catch discharged IOError but raises ParseError
         const tag: "parse" = e.tag;
 >tag : "parse"
->e.tag : any
->e : unknown
->tag : any
+>e.tag : "parse"
+>e : ParseError
+>tag : "parse"
 
         return tag;
 >tag : "parse"

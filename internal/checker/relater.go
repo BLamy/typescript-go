@@ -1672,6 +1672,12 @@ func (c *Checker) compareSignatureThrowsRelated(source *Signature, target *Signa
 	} else {
 		targetThrows = c.getThrowsTypeOfSignature(target)
 	}
+	if targetThrows == nil && !inferenceInFlight && target.declaration != nil && canInferThrows(target.declaration) {
+		// A visible body whose completed inference found no raises is a proof of
+		// `throws never`, not missing metadata. Keeping nil as "untracked" here
+		// would let a throwing callback overwrite a proven-safe mutable binding.
+		targetThrows = c.neverType
+	}
 	if targetThrows == nil || targetThrows.flags&TypeFlagsAnyOrUnknown != 0 {
 		return TernaryTrue
 	}
@@ -4351,6 +4357,11 @@ func (r *Relater) propertyRelatedTo(source *Type, target *Type, sourceProp *ast.
 	if r.relation == r.c.strictSubtypeRelation && r.c.isReadonlySymbol(sourceProp) && !r.c.isReadonlySymbol(targetProp) {
 		return TernaryFalse
 	}
+	if r.c.compilerOptions.CheckedExceptions.IsTrue() {
+		if related := r.propertyAccessEffectsRelatedTo(sourceProp, targetProp, reportErrors, intersectionState); related == TernaryFalse {
+			return TernaryFalse
+		}
+	}
 	// If the target comes from a partial union prop, allow `undefined` in the target type
 	related := r.isPropertySymbolTypeRelated(sourceProp, targetProp, getTypeOfSourceProperty, reportErrors, intersectionState)
 	if related == TernaryFalse {
@@ -4374,6 +4385,32 @@ func (r *Relater) propertyRelatedTo(source *Type, target *Type, sourceProp *ast.
 		return TernaryFalse
 	}
 	return related
+}
+
+func (r *Relater) propertyAccessEffectsRelatedTo(sourceProp *ast.Symbol, targetProp *ast.Symbol, reportErrors bool, intersectionState IntersectionState) Ternary {
+	compare := func(kind string, sourceEffect *Type, targetEffect *Type) Ternary {
+		if sourceEffect == nil {
+			sourceEffect = r.c.neverType
+		}
+		if targetEffect == nil {
+			targetEffect = r.c.neverType
+		}
+		related := r.isRelatedToEx(sourceEffect, targetEffect, RecursionFlagsBoth, false /*reportErrors*/, nil /*headMessage*/, intersectionState)
+		if related == TernaryFalse && reportErrors {
+			r.reportError(diagnostics.Property_0_s_1_effect_may_throw_2_but_the_target_only_permits_3,
+				r.c.symbolToString(targetProp), kind, r.c.TypeToString(sourceEffect), r.c.TypeToString(targetEffect))
+		}
+		return related
+	}
+
+	result := compare("read", r.c.getPropertyReadThrowsType(sourceProp), r.c.getPropertyReadThrowsType(targetProp))
+	if result == TernaryFalse {
+		return TernaryFalse
+	}
+	if !r.c.isReadonlySymbol(targetProp) {
+		result &= compare("write", r.c.getPropertyWriteThrowsType(sourceProp), r.c.getPropertyWriteThrowsType(targetProp))
+	}
+	return result
 }
 
 func (r *Relater) isPropertySymbolTypeRelated(sourceProp *ast.Symbol, targetProp *ast.Symbol, getTypeOfSourceProperty func(sym *ast.Symbol) *Type, reportErrors bool, intersectionState IntersectionState) Ternary {

@@ -1,0 +1,101 @@
+//// [tests/cases/compiler/checkedExceptionsUsability.ts] ////
+
+=== checkedExceptionsUsability.ts ===
+class IOError extends Error {
+>IOError : IOError
+>Error : Error
+
+    readonly tag = "io" as const;
+>tag : "io"
+>"io" as const : "io"
+>"io" : "io"
+}
+
+class ParseError extends Error {
+>ParseError : ParseError
+>Error : Error
+
+    readonly tag = "parse" as const;
+>tag : "parse"
+>"parse" as const : "parse"
+>"parse" : "parse"
+}
+
+function readFile(path: string): string throws IOError {
+>readFile : (path: string) => string throws IOError
+>path : string
+
+    if (!path) throw new IOError("missing: " + path);
+>!path : boolean
+>path : string
+>new IOError("missing: " + path) : IOError
+>IOError : typeof IOError
+>"missing: " + path : string
+>"missing: " : "missing: "
+>path : string
+
+    return "contents of " + path;
+>"contents of " + path : string
+>"contents of " : "contents of "
+>path : string
+}
+
+function parseConfig(text: string): number throws ParseError {
+>parseConfig : (text: string) => number throws ParseError
+>text : string
+
+    if (text.length === 0) throw new ParseError("empty config");
+>text.length === 0 : boolean
+>text.length : number
+>text : string
+>length : number
+>0 : 0
+>new ParseError("empty config") : ParseError
+>ParseError : typeof ParseError
+>"empty config" : "empty config"
+
+    return text.length;
+>text.length : number
+>text : string
+>length : number
+}
+
+function loadConfig(path: string) {
+>loadConfig : (path: string) => number throws IOError | ParseError
+>path : string
+
+    return parseConfig(readFile(path));
+>parseConfig(readFile(path)) : number
+>parseConfig : (text: string) => number throws ParseError
+>readFile(path) : string
+>readFile : (path: string) => string throws IOError
+>path : string
+}
+
+function main(): number throws never {
+>main : () => number throws never
+
+    try {
+        return loadConfig("app.json");
+>loadConfig("app.json") : number
+>loadConfig : (path: string) => number throws IOError | ParseError
+>"app.json" : "app.json"
+
+    } catch (e) {
+>e : IOError | ParseError
+
+        if (e.tag === "io") return -1;
+>e.tag === "io" : boolean
+>e.tag : "io" | "parse"
+>e : IOError | ParseError
+>tag : "io" | "parse"
+>"io" : "io"
+>-1 : -1
+>1 : 1
+
+        return -2;
+>-2 : -2
+>2 : 2
+    }
+}
+

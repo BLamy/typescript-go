@@ -51,32 +51,35 @@ h = throwsE2; // error
 >h : Symbol(h, Decl(checkedExceptionsInferredTargets.ts, 14, 3))
 >throwsE2 : Symbol(throwsE2, Decl(checkedExceptionsInferredTargets.ts, 3, 13))
 
-// An initializer whose visible body throws nothing is proven safe.
+// An initializer whose visible body throws nothing is proven safe, so a
+// throwing function cannot overwrite the binding.
 let g = (x?: number) => {};
->g : Symbol(g, Decl(checkedExceptionsInferredTargets.ts, 18, 3))
->x : Symbol(x, Decl(checkedExceptionsInferredTargets.ts, 18, 9))
+>g : Symbol(g, Decl(checkedExceptionsInferredTargets.ts, 19, 3))
+>x : Symbol(x, Decl(checkedExceptionsInferredTargets.ts, 19, 9))
 
-g = throwsE2; // ok
->g : Symbol(g, Decl(checkedExceptionsInferredTargets.ts, 18, 3))
+g = throwsE2; // error
+>g : Symbol(g, Decl(checkedExceptionsInferredTargets.ts, 19, 3))
 >throwsE2 : Symbol(throwsE2, Decl(checkedExceptionsInferredTargets.ts, 3, 13))
 
 // Catch variables demanded while inference is in flight are not pinned to
 // unknown; the precise union is computed once inference completes.
 function outer(): void {
->outer : Symbol(outer, Decl(checkedExceptionsInferredTargets.ts, 19, 13))
+>outer : Symbol(outer, Decl(checkedExceptionsInferredTargets.ts, 20, 13))
 
     try {
         f();
 >f : Symbol(f, Decl(checkedExceptionsInferredTargets.ts, 8, 3))
 
     } catch (e) {
->e : Symbol(e, Decl(checkedExceptionsInferredTargets.ts, 26, 13))
+>e : Symbol(e, Decl(checkedExceptionsInferredTargets.ts, 27, 13))
 
         const t: "e1" = e.tag;
->t : Symbol(t, Decl(checkedExceptionsInferredTargets.ts, 27, 13))
->e : Symbol(e, Decl(checkedExceptionsInferredTargets.ts, 26, 13))
+>t : Symbol(t, Decl(checkedExceptionsInferredTargets.ts, 28, 13))
+>e.tag : Symbol(E1.tag, Decl(checkedExceptionsInferredTargets.ts, 0, 24))
+>e : Symbol(e, Decl(checkedExceptionsInferredTargets.ts, 27, 13))
+>tag : Symbol(E1.tag, Decl(checkedExceptionsInferredTargets.ts, 0, 24))
     }
 }
 outer();
->outer : Symbol(outer, Decl(checkedExceptionsInferredTargets.ts, 19, 13))
+>outer : Symbol(outer, Decl(checkedExceptionsInferredTargets.ts, 20, 13))
 

@@ -72,7 +72,8 @@ func throwsClauseNode(fn *ast.Node) *ast.TypeNode {
 // from its body when it lacks an explicit clause.
 func canInferThrows(decl *ast.Node) bool {
 	switch decl.Kind {
-	case ast.KindFunctionDeclaration, ast.KindFunctionExpression, ast.KindArrowFunction, ast.KindMethodDeclaration:
+	case ast.KindFunctionDeclaration, ast.KindFunctionExpression, ast.KindArrowFunction, ast.KindMethodDeclaration,
+		ast.KindConstructor, ast.KindGetAccessor, ast.KindSetAccessor:
 		return decl.Body() != nil
 	}
 	return false
@@ -243,16 +244,193 @@ func (c *Checker) getThrowsTypeOfCall(node *ast.Node) *Type {
 	signature := c.getResolvedSignature(node, nil /*candidatesOutArray*/, CheckModeNormal)
 	throwsType := c.getThrowsTypeOfSignature(signature)
 	if c.checkedExceptionsFailClosed() {
+		if node.Kind == ast.KindNewExpression {
+			if classEffect, ok := c.getLocalClassConstructionThrowsType(node); ok {
+				target := node.Expression()
+				if target != nil && (target.Kind == ast.KindPropertyAccessExpression || target.Kind == ast.KindElementAccessExpression) {
+					// Resolving `new namespace.C()` can execute a getter or Proxy
+					// trap before the locally visible constructor runs.
+					return c.unionThrowsTypes(classEffect, c.getPropertyAccessThrowsType(target))
+				}
+				return classEffect
+			}
+		}
 		target := node.Expression()
 		if target != nil && (target.Kind == ast.KindPropertyAccessExpression || target.Kind == ast.KindElementAccessExpression) {
-			// Resolving a method value can invoke a getter or Proxy trap before the
-			// resolved signature is called. Until property effects are represented,
-			// the complete call effect is unknown even when the method signature has
-			// a precise clause.
-			return c.unknownType
+			return c.unionThrowsTypes(throwsType, c.getPropertyAccessThrowsType(target))
 		}
 	}
 	return throwsType
+}
+
+func (c *Checker) unionThrowsTypes(types ...*Type) *Type {
+	var present []*Type
+	for _, t := range types {
+		if t != nil && t != c.errorType && t.flags&TypeFlagsNever == 0 {
+			present = append(present, c.normalizeThrowsType(t))
+		}
+	}
+	if len(present) == 0 {
+		return nil
+	}
+	return c.getUnionType(present)
+}
+
+// getPropertyAccessThrowsType models the lookup itself, separately from a
+// subsequent method call. Concrete data properties are inert; visible
+// accessors contribute the effect inferred from their bodies. Structural or
+// ambient property contracts cannot distinguish a data slot from a getter (or
+// a proxy trap), so they remain unknown until property effects are expressible
+// in declarations.
+func (c *Checker) getPropertyAccessThrowsType(node *ast.Node) *Type {
+	if node == nil || (node.Kind != ast.KindPropertyAccessExpression && node.Kind != ast.KindElementAccessExpression) {
+		return nil
+	}
+	baseType := c.getTypeOfExpression(node.Expression())
+	if baseType == nil || baseType.flags&TypeFlagsAnyOrUnknown != 0 {
+		return c.unknownType
+	}
+
+	var propertyName string
+	if node.Kind == ast.KindPropertyAccessExpression {
+		propertyName = node.Name().Text()
+	} else {
+		argument := node.AsElementAccessExpression().ArgumentExpression
+		if argument == nil || argument.Kind != ast.KindStringLiteral {
+			return c.unknownType
+		}
+		propertyName = argument.Text()
+	}
+
+	// String values have an own, non-accessor length slot. Reading it neither
+	// consults a mutable prototype nor performs user coercion.
+	if propertyName == "length" && baseType.flags&TypeFlagsStringLike != 0 {
+		return nil
+	}
+
+	property := c.getPropertyOfType(baseType, propertyName)
+	if property == nil || len(property.Declarations) == 0 {
+		return c.unknownType
+	}
+	assignmentKind := getAssignmentTargetKind(node)
+	reads := assignmentKind != AssignmentKindDefinite
+	writes := assignmentKind != AssignmentKindNone
+	return c.getPropertySymbolAccessThrowsType(property, reads, writes)
+}
+
+func (c *Checker) getPropertySymbolAccessThrowsType(property *ast.Symbol, reads bool, writes bool) *Type {
+	if property == nil || len(property.Declarations) == 0 {
+		return c.unknownType
+	}
+	var effects []*Type
+	for _, declaration := range property.Declarations {
+		switch declaration.Kind {
+		case ast.KindGetAccessor:
+			if !reads {
+				continue
+			}
+			effect := c.getThrowsTypeOfSignature(c.getSignatureFromDeclaration(declaration))
+			if effect == nil && declaration.Body() == nil {
+				effect = c.unknownType
+			}
+			effects = append(effects, effect)
+		case ast.KindSetAccessor:
+			if !writes {
+				continue
+			}
+			effect := c.getThrowsTypeOfSignature(c.getSignatureFromDeclaration(declaration))
+			if effect == nil && declaration.Body() == nil {
+				effect = c.unknownType
+			}
+			effects = append(effects, effect)
+		case ast.KindPropertyDeclaration, ast.KindPropertyAssignment, ast.KindShorthandPropertyAssignment,
+			ast.KindMethodDeclaration:
+			// These declarations install concrete data properties. Initializer and
+			// class-evaluation effects are accounted for at their execution sites.
+		case ast.KindPropertySignature, ast.KindMethodSignature, ast.KindIndexSignature:
+			return c.unknownType
+		default:
+			return c.unknownType
+		}
+	}
+	return c.unionThrowsTypes(effects...)
+}
+
+func (c *Checker) getPropertyReadThrowsType(property *ast.Symbol) *Type {
+	return c.getPropertySymbolAccessThrowsType(property, true, false)
+}
+
+func (c *Checker) getPropertyWriteThrowsType(property *ast.Symbol) *Type {
+	return c.getPropertySymbolAccessThrowsType(property, false, true)
+}
+
+func (c *Checker) getLocalClassConstructionThrowsType(node *ast.Node) (*Type, bool) {
+	targetType := c.getTypeOfExpression(node.Expression())
+	if targetType == nil || targetType.symbol == nil {
+		return nil, false
+	}
+	declaration := ast.GetClassLikeDeclarationOfSymbol(c.getMergedSymbol(targetType.symbol))
+	if declaration == nil || ast.GetSourceFileOfNode(declaration).IsDeclarationFile {
+		return nil, false
+	}
+	return c.getClassConstructionThrowsType(declaration, node.Arguments(), make(map[*ast.Node]bool)), true
+}
+
+func (c *Checker) getClassConstructionThrowsType(classDeclaration *ast.Node, arguments []*ast.Node, seen map[*ast.Node]bool) *Type {
+	if classDeclaration == nil || seen[classDeclaration] {
+		return c.unknownType
+	}
+	seen[classDeclaration] = true
+	defer delete(seen, classDeclaration)
+
+	var effects []*Type
+	for _, member := range classDeclaration.Members() {
+		if member.Kind == ast.KindPropertyDeclaration && !ast.HasStaticModifier(member) && member.Initializer() != nil {
+			effects = append(effects, c.collectRaisedTypes(member.Initializer())...)
+		}
+	}
+	if constructor := ast.FindConstructorDeclaration(classDeclaration); constructor != nil {
+		effects = append(effects, c.getThrowsTypeOfSignature(c.getSignatureFromDeclaration(constructor)))
+		return c.unionThrowsTypes(effects...)
+	}
+
+	base := ast.GetExtendsHeritageClauseElement(classDeclaration)
+	if base == nil {
+		return c.unionThrowsTypes(effects...)
+	}
+	baseExpression := base.Expression()
+	if c.isSafeGlobalErrorConstruction(baseExpression, arguments) {
+		return c.unionThrowsTypes(effects...)
+	}
+	baseType := c.getTypeOfExpression(baseExpression)
+	if baseType != nil && baseType.symbol != nil {
+		baseDeclaration := ast.GetClassLikeDeclarationOfSymbol(c.getMergedSymbol(baseType.symbol))
+		if baseDeclaration != nil && !ast.GetSourceFileOfNode(baseDeclaration).IsDeclarationFile {
+			effects = append(effects, c.getClassConstructionThrowsType(baseDeclaration, arguments, seen))
+			return c.unionThrowsTypes(effects...)
+		}
+	}
+	return c.unknownType
+}
+
+func (c *Checker) isSafeGlobalErrorConstruction(expression *ast.Node, arguments []*ast.Node) bool {
+	if expression == nil || expression.Kind != ast.KindIdentifier || expression.Text() != "Error" || len(arguments) > 1 {
+		return false
+	}
+	symbol := c.getResolvedSymbol(expression)
+	if symbol == nil || symbol == c.unknownSymbol || len(symbol.Declarations) == 0 {
+		return false
+	}
+	for _, declaration := range symbol.Declarations {
+		if !c.program.IsSourceFileDefaultLibrary(ast.GetSourceFileOfNode(declaration).Path()) {
+			return false
+		}
+	}
+	if len(arguments) == 0 {
+		return true
+	}
+	argumentType := c.getTypeOfExpression(arguments[0])
+	return argumentType != nil && argumentType.flags&(TypeFlagsStringLike|TypeFlagsUndefined) != 0
 }
 
 func isCallTargetPropertyAccess(node *ast.Node) bool {
@@ -365,13 +543,64 @@ func (c *Checker) getCombinedCallThrowsType(t *Type, unknownWhenNotCallable bool
 func (c *Checker) checkFailClosedAssertionEffects(node *ast.Node) {
 	targetType := c.getTypeFromTypeNode(node.Type())
 	targetEffect := c.getCombinedCallThrowsType(targetType, false)
-	if targetEffect == nil {
+	sourceType := c.getTypeOfExpression(node.Expression())
+	if targetEffect != nil {
+		sourceEffect := c.getCombinedCallThrowsType(sourceType, true)
+		if !c.isTypeAssignableTo(sourceEffect, targetEffect) {
+			c.errorCheckedExceptions(node, diagnostics.The_source_signature_may_throw_0_but_the_target_s_throws_clause_only_permits_1, c.TypeToString(sourceEffect), c.TypeToString(targetEffect))
+		}
+	}
+	c.checkAssertionPropertyEffectNarrowing(node, sourceType, targetType, make(map[[2]*Type]bool))
+}
+
+func (c *Checker) checkAssertionPropertyEffectNarrowing(node *ast.Node, source *Type, target *Type, seen map[[2]*Type]bool) {
+	if source == nil || target == nil || target.flags&TypeFlagsStructuredType == 0 {
 		return
 	}
-	sourceType := c.getTypeOfExpression(node.Expression())
-	sourceEffect := c.getCombinedCallThrowsType(sourceType, true)
-	if !c.isTypeAssignableTo(sourceEffect, targetEffect) {
-		c.errorCheckedExceptions(node, diagnostics.The_source_signature_may_throw_0_but_the_target_s_throws_clause_only_permits_1, c.TypeToString(sourceEffect), c.TypeToString(targetEffect))
+	pair := [2]*Type{source, target}
+	if seen[pair] {
+		return
+	}
+	seen[pair] = true
+
+	for _, targetProperty := range c.getPropertiesOfType(target) {
+		sourceProperty := c.getPropertyOfType(source, targetProperty.Name)
+		var sourceRead, sourceWrite *Type
+		if source.flags&TypeFlagsAnyOrUnknown != 0 || sourceProperty == nil {
+			sourceRead, sourceWrite = c.unknownType, c.unknownType
+		} else {
+			sourceRead = c.getPropertyReadThrowsType(sourceProperty)
+			sourceWrite = c.getPropertyWriteThrowsType(sourceProperty)
+		}
+		targetRead := c.getPropertyReadThrowsType(targetProperty)
+		if sourceRead == nil {
+			sourceRead = c.neverType
+		}
+		if targetRead == nil {
+			targetRead = c.neverType
+		}
+		if !c.isTypeAssignableTo(sourceRead, targetRead) {
+			c.errorCheckedExceptions(node, diagnostics.Property_0_s_1_effect_may_throw_2_but_the_target_only_permits_3,
+				targetProperty.Name, "read", c.TypeToString(sourceRead), c.TypeToString(targetRead))
+			continue
+		}
+		if !c.isReadonlySymbol(targetProperty) {
+			targetWrite := c.getPropertyWriteThrowsType(targetProperty)
+			if sourceWrite == nil {
+				sourceWrite = c.neverType
+			}
+			if targetWrite == nil {
+				targetWrite = c.neverType
+			}
+			if !c.isTypeAssignableTo(sourceWrite, targetWrite) {
+				c.errorCheckedExceptions(node, diagnostics.Property_0_s_1_effect_may_throw_2_but_the_target_only_permits_3,
+					targetProperty.Name, "write", c.TypeToString(sourceWrite), c.TypeToString(targetWrite))
+				continue
+			}
+		}
+		if sourceProperty != nil && targetRead.flags&TypeFlagsNever != 0 {
+			c.checkAssertionPropertyEffectNarrowing(node, c.getTypeOfSymbol(sourceProperty), c.getTypeOfSymbol(targetProperty), seen)
+		}
 	}
 }
 
@@ -408,7 +637,7 @@ func (c *Checker) checkFailClosedOverloadEffects(implementation *ast.Node) {
 // Checked-exceptions analysis fails closed on these operations until a precise effect is
 // available. The deliberately-safe binary operators below do not perform user
 // coercion or invoke custom matchers.
-func isFailClosedImplicitUnknownOperation(node *ast.Node) bool {
+func (c *Checker) isFailClosedImplicitUnknownOperation(node *ast.Node) bool {
 	switch node.Kind {
 	case ast.KindTaggedTemplateExpression,
 		ast.KindDeleteExpression,
@@ -438,7 +667,23 @@ func isFailClosedImplicitUnknownOperation(node *ast.Node) bool {
 		return node.Flags&ast.NodeFlagsUsing != 0
 	case ast.KindPrefixUnaryExpression:
 		// Logical negation performs ToBoolean, which cannot invoke user code.
-		return node.AsPrefixUnaryExpression().Operator != ast.KindExclamationToken
+		operator := node.AsPrefixUnaryExpression().Operator
+		if operator == ast.KindExclamationToken {
+			return false
+		}
+		operandType := c.getTypeOfExpression(node.AsPrefixUnaryExpression().Operand)
+		if operandType == nil {
+			return true
+		}
+		switch operator {
+		case ast.KindPlusToken:
+			// Unary plus rejects BigInt at runtime.
+			return operandType.flags&TypeFlagsNumberLike == 0
+		case ast.KindMinusToken, ast.KindTildeToken:
+			return operandType.flags&(TypeFlagsNumberLike|TypeFlagsBigIntLike) == 0
+		default:
+			return true
+		}
 	case ast.KindBinaryExpression:
 		binary := node.AsBinaryExpression()
 		switch binary.OperatorToken.Kind {
@@ -453,11 +698,53 @@ func isFailClosedImplicitUnknownOperation(node *ast.Node) bool {
 			// Object and array assignment patterns execute property/iterator
 			// protocols even though a simple lexical assignment does not.
 			return binary.Left.Kind == ast.KindObjectLiteralExpression || binary.Left.Kind == ast.KindArrayLiteralExpression
+		case ast.KindPlusToken:
+			left := c.getTypeOfExpression(binary.Left)
+			right := c.getTypeOfExpression(binary.Right)
+			if left == nil || right == nil {
+				return true
+			}
+			return !((left.flags&TypeFlagsStringLike != 0 && right.flags&TypeFlagsStringLike != 0) ||
+				(left.flags&TypeFlagsNumberLike != 0 && right.flags&TypeFlagsNumberLike != 0) ||
+				(left.flags&TypeFlagsBigIntLike != 0 && right.flags&TypeFlagsBigIntLike != 0))
+		case ast.KindMinusToken, ast.KindAsteriskToken:
+			left := c.getTypeOfExpression(binary.Left)
+			right := c.getTypeOfExpression(binary.Right)
+			return left == nil || right == nil ||
+				!((left.flags&TypeFlagsNumberLike != 0 && right.flags&TypeFlagsNumberLike != 0) ||
+					(left.flags&TypeFlagsBigIntLike != 0 && right.flags&TypeFlagsBigIntLike != 0))
 		default:
 			return true
 		}
 	}
 	return false
+}
+
+// getClassEvaluationThrowsType accounts only for work performed while the
+// class definition itself is evaluated. Method bodies and instance field
+// initializers run later and must not poison an otherwise inert declaration.
+func (c *Checker) getClassEvaluationThrowsType(node *ast.Node) *Type {
+	var effects []*Type
+	if ast.HasDecorators(node) {
+		effects = append(effects, c.unknownType)
+	}
+	if base := ast.GetExtendsHeritageClauseElement(node); base != nil {
+		effects = append(effects, c.collectRaisedTypes(base.Expression())...)
+	}
+	for _, member := range node.Members() {
+		if ast.HasDecorators(member) || member.Name() != nil && member.Name().Kind == ast.KindComputedPropertyName {
+			effects = append(effects, c.unknownType)
+		}
+		switch member.Kind {
+		case ast.KindClassStaticBlockDeclaration:
+			effects = append(effects, c.collectRaisedTypes(member.Body())...)
+		case ast.KindPropertyDeclaration:
+			if ast.HasStaticModifier(member) && member.Initializer() != nil {
+				effects = append(effects, c.collectRaisedTypes(member.Initializer())...)
+			}
+		}
+	}
+	return c.unionThrowsTypes(effects...)
 }
 
 // collectRaisedTypes gathers the types a statement subtree can raise past any
@@ -473,7 +760,7 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 		}
 	}
 	visit = func(node *ast.Node) bool {
-		if c.checkedExceptionsFailClosed() && isFailClosedImplicitUnknownOperation(node) {
+		if c.checkedExceptionsFailClosed() && c.isFailClosedImplicitUnknownOperation(node) {
 			add(c.unknownType)
 		}
 		switch node.Kind {
@@ -482,11 +769,7 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 			ast.KindClassStaticBlockDeclaration:
 			return false
 		case ast.KindClassDeclaration, ast.KindClassExpression:
-			if c.checkedExceptionsFailClosed() {
-				// Class evaluation may execute computed names, decorators and static
-				// initializers. Until each constituent is modeled precisely, fail closed.
-				add(c.unknownType)
-			}
+			add(c.getClassEvaluationThrowsType(node))
 			return false
 		case ast.KindTryStatement:
 			t := node.AsTryStatement()
@@ -510,10 +793,7 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 			}
 		case ast.KindPropertyAccessExpression, ast.KindElementAccessExpression:
 			if c.checkedExceptionsFailClosed() && !isCallTargetPropertyAccess(node) {
-				// A structural property read/write can invoke an accessor or Proxy trap.
-				// Property effects are not represented yet, so the only sound effect is
-				// unknown. Proven data properties can be refined in a later pass.
-				add(c.unknownType)
+				add(c.getPropertyAccessThrowsType(node))
 			}
 		case ast.KindThrowStatement:
 			expr := node.Expression()
@@ -609,7 +889,7 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 
 	var visit func(node *ast.Node) bool
 	visit = func(node *ast.Node) bool {
-		if c.checkedExceptionsFailClosed() && tryDepth == 0 && isFailClosedImplicitUnknownOperation(node) {
+		if c.checkedExceptionsFailClosed() && tryDepth == 0 && c.isFailClosedImplicitUnknownOperation(node) {
 			c.checkRaisedType(node, c.unknownType, enclosingFn, false /*isCall*/)
 		}
 		switch node.Kind {
@@ -626,7 +906,7 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 			return false
 		case ast.KindClassDeclaration, ast.KindClassExpression:
 			if c.checkedExceptionsFailClosed() && tryDepth == 0 {
-				c.checkRaisedType(node, c.unknownType, enclosingFn, false /*isCall*/)
+				c.checkRaisedType(node, c.getClassEvaluationThrowsType(node), enclosingFn, false /*isCall*/)
 			}
 			return false
 		case ast.KindTryStatement:
@@ -664,7 +944,7 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 			}
 		case ast.KindPropertyAccessExpression, ast.KindElementAccessExpression:
 			if c.checkedExceptionsFailClosed() && tryDepth == 0 && !isCallTargetPropertyAccess(node) {
-				c.checkRaisedType(node, c.unknownType, enclosingFn, false /*isCall*/)
+				c.checkRaisedType(node, c.getPropertyAccessThrowsType(node), enclosingFn, false /*isCall*/)
 			}
 		case ast.KindTypeAssertionExpression, ast.KindAsExpression:
 			if c.checkedExceptionsFailClosed() {

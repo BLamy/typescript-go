@@ -1,31 +1,20 @@
-checkedExceptionsDeclareAndPropagate.ts(1,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
-checkedExceptionsDeclareAndPropagate.ts(2,7): error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
-checkedExceptionsDeclareAndPropagate.ts(5,22): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 checkedExceptionsDeclareAndPropagate.ts(16,12): error TS100021: Call may throw 'IOError', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 checkedExceptionsDeclareAndPropagate.ts(21,12): error TS100021: Call may throw 'IOError', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 checkedExceptionsDeclareAndPropagate.ts(40,5): error TS100022: Thrown value of type 'ParseError' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsDeclareAndPropagate.ts(40,11): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsDeclareAndPropagate.ts(45,11): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 checkedExceptionsDeclareAndPropagate.ts(61,9): error TS100021: Call may throw 'IOError', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 checkedExceptionsDeclareAndPropagate.ts(63,9): error TS100021: Call may throw 'IOError', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 checkedExceptionsDeclareAndPropagate.ts(68,1): error TS100024: Call may throw 'IOError', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
 checkedExceptionsDeclareAndPropagate.ts(70,1): error TS100024: Call may throw 'IOError', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
-checkedExceptionsDeclareAndPropagate.ts(74,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
-checkedExceptionsDeclareAndPropagate.ts(75,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsDeclareAndPropagate.ts(74,1): error TS100024: Call may throw 'ParseError', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsDeclareAndPropagate.ts(75,1): error TS100024: Call may throw 'IOError', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
 
 
-==== checkedExceptionsDeclareAndPropagate.ts (14 errors) ====
+==== checkedExceptionsDeclareAndPropagate.ts (9 errors) ====
     class IOError extends Error { readonly tag = "io" as const; }
-          ~~~~~~~
-!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
     class ParseError extends Error { readonly tag = "parse" as const; }
-          ~~~~~~~~~~
-!!! error TS100025: Thrown value of type 'unknown' is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
     
     function readFile(path: string): string throws IOError {
         if (!path) throw new IOError("missing");
-                         ~~~~~~~~~~~~~~~~~~~~~~
-!!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
         return path;
     }
     
@@ -67,15 +56,11 @@ checkedExceptionsDeclareAndPropagate.ts(75,1): error TS100024: Call may throw 'u
         throw new ParseError("nope");
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !!! error TS100022: Thrown value of type 'ParseError' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-              ~~~~~~~~~~~~~~~~~~~~~~
-!!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
     }
     
     // OK: throw matches the clause.
     function throwsDeclared(): void throws IOError {
         throw new IOError("yep");
-              ~~~~~~~~~~~~~~~~~~
-!!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
     }
     
     // `throws any` opts callers out of enforcement.
@@ -114,8 +99,8 @@ checkedExceptionsDeclareAndPropagate.ts(75,1): error TS100024: Call may throw 'u
     const arrowInferred = () => { throw new ParseError("x"); };
     arrowInferred(); // error
     ~~~~~~~~~~~~~~~
-!!! error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+!!! error TS100024: Call may throw 'ParseError', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
     (function () { throw new IOError("iife"); })(); // error
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!!! error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+!!! error TS100024: Call may throw 'IOError', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
     

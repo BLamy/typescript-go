@@ -18,9 +18,10 @@ function named(x?: number) { if (x) throw new E1(); }
 let h = named;
 h = throwsE2; // error
 
-// An initializer whose visible body throws nothing is proven safe.
+// An initializer whose visible body throws nothing is proven safe, so a
+// throwing function cannot overwrite the binding.
 let g = (x?: number) => {};
-g = throwsE2; // ok
+g = throwsE2; // error
 
 // Catch variables demanded while inference is in flight are not pinned to
 // unknown; the precise union is computed once inference completes.
@@ -55,9 +56,10 @@ function named(x) { if (x)
     throw new E1(); }
 let h = named;
 h = throwsE2; // error
-// An initializer whose visible body throws nothing is proven safe.
+// An initializer whose visible body throws nothing is proven safe, so a
+// throwing function cannot overwrite the binding.
 let g = (x) => { };
-g = throwsE2; // ok
+g = throwsE2; // error
 // Catch variables demanded while inference is in flight are not pinned to
 // unknown; the precise union is computed once inference completes.
 function outer() {

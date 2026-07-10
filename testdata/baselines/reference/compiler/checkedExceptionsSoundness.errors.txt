@@ -4,16 +4,22 @@ checkedExceptionsSoundness.ts(16,5): error TS100021: Call may throw 'unknown', w
 checkedExceptionsSoundness.ts(37,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
 checkedExceptionsSoundness.ts(37,5): error TS100027: Callback may throw '"callback"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
 checkedExceptionsSoundness.ts(45,1): error TS100027: Callback may throw '"nested"' after the call returns. A synchronous try/catch or enclosing throws clause cannot handle it; catch inside the callback or use a non-escaping callback contract.
-checkedExceptionsSoundness.ts(54,12): error TS100022: Thrown value of type 'unknown' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
-checkedExceptionsSoundness.ts(64,15): error TS2322: Type 'unknown' is not assignable to type '"tracked"'.
-checkedExceptionsSoundness.ts(72,7): error TS2322: Type 'LegacyCallback' is not assignable to type 'SafeCallback'.
+checkedExceptionsSoundness.ts(54,12): error TS100022: Thrown value of type '"getter"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(67,5): error TS100022: Thrown value of type '"setter"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(74,7): error TS2322: Type '{ readonly value: number; }' is not assignable to type 'DataBox'.
+  Property 'value's read effect may throw '"erased getter"', but the target only permits 'never'.
+checkedExceptionsSoundness.ts(79,7): error TS2322: Type '{ value: number; }' is not assignable to type 'DataBox'.
+  Property 'value's write effect may throw '"erased setter"', but the target only permits 'never'.
+checkedExceptionsSoundness.ts(80,31): error TS100028: Property 'value's read effect may throw '"erased getter"', but the target only permits 'never'.
+checkedExceptionsSoundness.ts(89,15): error TS2322: Type 'unknown' is not assignable to type '"tracked"'.
+checkedExceptionsSoundness.ts(97,7): error TS2322: Type 'LegacyCallback' is not assignable to type 'SafeCallback'.
   The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
-checkedExceptionsSoundness.ts(75,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
-checkedExceptionsSoundness.ts(82,31): error TS100023: The source signature may throw '"assertion"', but the target's 'throws' clause only permits 'never'.
-checkedExceptionsSoundness.ts(88,10): error TS100023: The source signature may throw '"implementation"', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(100,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsSoundness.ts(107,31): error TS100023: The source signature may throw '"assertion"', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(113,10): error TS100023: The source signature may throw '"implementation"', but the target's 'throws' clause only permits 'never'.
 
 
-==== checkedExceptionsSoundness.ts (12 errors) ====
+==== checkedExceptionsSoundness.ts (16 errors) ====
     declare function legacy(): void;
     declare function tracked(): void throws "tracked";
     declare function explicitlyUnknown(): void throws unknown;
@@ -81,8 +87,43 @@ checkedExceptionsSoundness.ts(88,10): error TS100023: The source signature may t
     function accessorInNever(): number throws never {
         return accessor.value;
                ~~~~~~~~~~~~~~
-!!! error TS100022: Thrown value of type 'unknown' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+!!! error TS100022: Thrown value of type '"getter"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
     }
+    
+    // Getter and setter effects are distinct: reading only executes the getter,
+    // while assigning executes the setter.
+    const splitAccessor = {
+        get value(): number { return 1; },
+        set value(next: number) { throw "setter"; },
+    };
+    function readsSafeGetter(): number throws never {
+        return splitAccessor.value;
+    }
+    function writesThrowingSetter(): void throws never {
+        splitAccessor.value = 2;
+        ~~~~~~~~~~~~~~~~~~~
+!!! error TS100022: Thrown value of type '"setter"' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    }
+    
+    // Structural assignment cannot erase a getter or setter effect by flowing an
+    // accessor into a concrete data-property contract.
+    class DataBox { value = 1; }
+    const getterSource = { get value(): number { throw "erased getter"; } };
+    const getterErasure: DataBox = getterSource;
+          ~~~~~~~~~~~~~
+!!! error TS2322: Type '{ readonly value: number; }' is not assignable to type 'DataBox'.
+!!! error TS2322:   Property 'value's read effect may throw '"erased getter"', but the target only permits 'never'.
+    const setterSource = {
+        get value(): number { return 1; },
+        set value(next: number) { throw "erased setter"; },
+    };
+    const setterErasure: DataBox = setterSource;
+          ~~~~~~~~~~~~~
+!!! error TS2322: Type '{ value: number; }' is not assignable to type 'DataBox'.
+!!! error TS2322:   Property 'value's write effect may throw '"erased setter"', but the target only permits 'never'.
+    const assertedGetterErasure = getterSource as DataBox;
+                                  ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100028: Property 'value's read effect may throw '"erased getter"', but the target only permits 'never'.
     
     // One unknown source poisons catch precision instead of allowing an optimistic
     // tracked-only type.

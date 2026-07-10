@@ -57,6 +57,31 @@ function accessorInNever(): number throws never {
     return accessor.value;
 }
 
+// Getter and setter effects are distinct: reading only executes the getter,
+// while assigning executes the setter.
+const splitAccessor = {
+    get value(): number { return 1; },
+    set value(next: number) { throw "setter"; },
+};
+function readsSafeGetter(): number throws never {
+    return splitAccessor.value;
+}
+function writesThrowingSetter(): void throws never {
+    splitAccessor.value = 2;
+}
+
+// Structural assignment cannot erase a getter or setter effect by flowing an
+// accessor into a concrete data-property contract.
+class DataBox { value = 1; }
+const getterSource = { get value(): number { throw "erased getter"; } };
+const getterErasure: DataBox = getterSource;
+const setterSource = {
+    get value(): number { return 1; },
+    set value(next: number) { throw "erased setter"; },
+};
+const setterErasure: DataBox = setterSource;
+const assertedGetterErasure = getterSource as DataBox;
+
 // One unknown source poisons catch precision instead of allowing an optimistic
 // tracked-only type.
 function mixedCatch(): void throws never {
@@ -140,6 +165,31 @@ const accessor = {
 function accessorInNever() {
     return accessor.value;
 }
+// Getter and setter effects are distinct: reading only executes the getter,
+// while assigning executes the setter.
+const splitAccessor = {
+    get value() { return 1; },
+    set value(next) { throw "setter"; },
+};
+function readsSafeGetter() {
+    return splitAccessor.value;
+}
+function writesThrowingSetter() {
+    splitAccessor.value = 2;
+}
+// Structural assignment cannot erase a getter or setter effect by flowing an
+// accessor into a concrete data-property contract.
+class DataBox {
+    value = 1;
+}
+const getterSource = { get value() { throw "erased getter"; } };
+const getterErasure = getterSource;
+const setterSource = {
+    get value() { return 1; },
+    set value(next) { throw "erased setter"; },
+};
+const setterErasure = setterSource;
+const assertedGetterErasure = getterSource;
 // One unknown source poisons catch precision instead of allowing an optimistic
 // tracked-only type.
 function mixedCatch() {
