@@ -4,6 +4,7 @@ import (
 	"github.com/microsoft/typescript-go/internal/ast"
 	"github.com/microsoft/typescript-go/internal/core"
 	"github.com/microsoft/typescript-go/internal/diagnostics"
+	"github.com/microsoft/typescript-go/internal/tspath"
 )
 
 // Checked exceptions (`checkedExceptions` compiler option).
@@ -225,6 +226,7 @@ func (c *Checker) inferThrowsWorker(decl *ast.Node, state *throwsInferenceState)
 		raised = append(raised, c.collectRaisedTypes(parameter.Initializer())...)
 	}
 	raised = append(raised, c.collectRaisedTypes(decl.Body())...)
+	raised = append(raised, c.collectReturnedPromiseEffects(decl)...)
 	delete(state.inProgress, decl)
 	state.computed[decl] = true
 	var result *Type
@@ -261,6 +263,16 @@ func (c *Checker) getThrowsTypeOfCall(node *ast.Node) *Type {
 		}
 	}
 	return throwsType
+}
+
+func (c *Checker) isUnsupportedProxyFactoryCall(node *ast.Node) bool {
+	signature := c.getResolvedSignature(node, nil /*candidatesOutArray*/, CheckModeNormal)
+	if signature == nil || signature.declaration == nil {
+		return false
+	}
+	sourceFile := ast.GetSourceFileOfNode(signature.declaration)
+	return sourceFile != nil && c.program.IsSourceFileDefaultLibrary(sourceFile.Path()) &&
+		tspath.GetBaseFileName(sourceFile.FileName()) == "lib.es2015.proxy.d.ts"
 }
 
 func (c *Checker) unionThrowsTypes(types ...*Type) *Type {
@@ -323,9 +335,12 @@ func (c *Checker) getPropertySymbolAccessThrowsType(property *ast.Symbol, reads 
 		return c.unknownType
 	}
 	var effects []*Type
+	hasGetter := false
+	hasSetter := false
 	for _, declaration := range property.Declarations {
 		switch declaration.Kind {
 		case ast.KindGetAccessor:
+			hasGetter = true
 			if !reads {
 				continue
 			}
@@ -335,6 +350,7 @@ func (c *Checker) getPropertySymbolAccessThrowsType(property *ast.Symbol, reads 
 			}
 			effects = append(effects, effect)
 		case ast.KindSetAccessor:
+			hasSetter = true
 			if !writes {
 				continue
 			}
@@ -354,6 +370,13 @@ func (c *Checker) getPropertySymbolAccessThrowsType(property *ast.Symbol, reads 
 		default:
 			return c.unknownType
 		}
+	}
+	if writes && hasGetter && !hasSetter {
+		// In strict JavaScript, assigning to a getter-only accessor throws a
+		// TypeError. TypeScript normally permits readonly-to-mutable structural
+		// assignment, so absence of a setter must not become a false `never`
+		// effect through that alias.
+		return c.unknownType
 	}
 	return c.unionThrowsTypes(effects...)
 }
@@ -447,12 +470,127 @@ func isAwaitedCall(node *ast.Node) bool {
 }
 
 func isDirectlyReturnedCall(node *ast.Node) bool {
-	return node.Parent != nil && node.Parent.Kind == ast.KindReturnStatement && node.Parent.Expression() == node
+	if node.Parent == nil {
+		return false
+	}
+	return node.Parent.Kind == ast.KindReturnStatement && node.Parent.Expression() == node ||
+		node.Parent.Kind == ast.KindArrowFunction && node.Parent.Body() == node
 }
 
 func (c *Checker) callReturnsPromise(node *ast.Node) bool {
 	signature := c.getResolvedSignature(node, nil /*candidatesOutArray*/, CheckModeNormal)
-	return signature != nil && c.getAwaitedTypeOfPromise(c.getReturnTypeOfSignature(signature)) != nil
+	if signature == nil {
+		return false
+	}
+	// Promise timing is a property of the declared return shape. Legacy `any`,
+	// `unknown`, and broad object returns remain ordinary synchronous unknown
+	// boundaries; treating every such call as a floating promise makes common
+	// declaration APIs such as JSON.parse impossible to catch. Any is instead
+	// quarantined when it crosses a checked capability or return boundary.
+	return c.typeHasPromiseConstituent(c.getReturnTypeOfSignature(signature), make(map[*Type]bool))
+}
+
+func (c *Checker) typeHasPromiseConstituent(t *Type, seen map[*Type]bool) bool {
+	if t == nil || seen[t] {
+		return false
+	}
+	seen[t] = true
+	if t.flags&TypeFlagsUnionOrIntersection != 0 {
+		for _, constituent := range t.Types() {
+			if c.typeHasPromiseConstituent(constituent, seen) {
+				return true
+			}
+		}
+		return false
+	}
+	return c.getAwaitedTypeOfPromise(t) != nil
+}
+
+func (c *Checker) typeMayHideThenable(t *Type, seen map[*Type]bool) bool {
+	if t == nil || seen[t] {
+		return false
+	}
+	seen[t] = true
+	if t.flags&TypeFlagsUnionOrIntersection != 0 {
+		for _, constituent := range t.Types() {
+			if c.typeMayHideThenable(constituent, seen) {
+				return true
+			}
+		}
+		return false
+	}
+	return t.flags&(TypeFlagsAnyOrUnknown|TypeFlagsObject|TypeFlagsInstantiableNonPrimitive) != 0
+}
+
+func (c *Checker) functionAssimilatesThenables(decl *ast.Node) bool {
+	if decl == nil {
+		return false
+	}
+	if ast.GetFunctionFlags(decl)&ast.FunctionFlagsAsync != 0 {
+		return true
+	}
+	returnTypeNode := decl.Type()
+	return returnTypeNode != nil && c.typeHasPromiseConstituent(c.getTypeFromTypeNode(returnTypeNode), make(map[*Type]bool))
+}
+
+func (c *Checker) getReturnedPromiseThrowsType(expression *ast.Node, enclosingFn *ast.Node) *Type {
+	if expression == nil {
+		return nil
+	}
+	if expression.Kind == ast.KindCallExpression || expression.Kind == ast.KindNewExpression {
+		if c.callReturnsPromise(expression) {
+			return c.getThrowsTypeOfCall(expression)
+		}
+		if c.functionAssimilatesThenables(enclosingFn) && c.typeMayHideThenable(c.getTypeOfExpression(expression), make(map[*Type]bool)) {
+			// An async function (or a function declared to return a Promise) adopts a
+			// returned thenable. At this actual assimilation boundary, a legacy broad
+			// value has an unknown rejection effect even though the producer call is
+			// not itself classified as asynchronous.
+			return c.unknownType
+		}
+		return nil
+	}
+	expressionType := c.getTypeOfExpression(expression)
+	if c.typeHasPromiseConstituent(expressionType, make(map[*Type]bool)) ||
+		c.functionAssimilatesThenables(enclosingFn) && c.typeMayHideThenable(expressionType, make(map[*Type]bool)) {
+		// Promise values do not yet carry a rejection slot in their type. A
+		// non-call expression therefore has no precise producer signature from
+		// which to recover the rejection effect.
+		return c.unknownType
+	}
+	return nil
+}
+
+func (c *Checker) collectReturnedPromiseEffects(decl *ast.Node) []*Type {
+	if decl == nil || decl.Body() == nil {
+		return nil
+	}
+	var effects []*Type
+	add := func(expression *ast.Node) {
+		if effect := c.getReturnedPromiseThrowsType(expression, decl); effect != nil && effect.flags&TypeFlagsNever == 0 {
+			effects = append(effects, effect)
+		}
+	}
+	body := decl.Body()
+	if decl.Kind == ast.KindArrowFunction && body.Kind != ast.KindBlock {
+		add(body)
+		return effects
+	}
+	var visit func(*ast.Node) bool
+	visit = func(node *ast.Node) bool {
+		switch node.Kind {
+		case ast.KindFunctionDeclaration, ast.KindFunctionExpression, ast.KindArrowFunction,
+			ast.KindMethodDeclaration, ast.KindConstructor, ast.KindGetAccessor, ast.KindSetAccessor,
+			ast.KindClassDeclaration, ast.KindClassExpression:
+			return false
+		case ast.KindReturnStatement:
+			add(node.Expression())
+			return false
+		}
+		return node.ForEachChild(visit)
+	}
+	body.ForEachChild(visit)
+	return effects
 }
 
 func (c *Checker) getThrowsTypeOfAwait(node *ast.Node) *Type {
@@ -482,6 +620,15 @@ func (c *Checker) getEscapingCapabilityThrowsType(node *ast.Node) *Type {
 		return nil
 	}
 	return c.getUnionType(capabilityEffects)
+}
+
+func (c *Checker) isAnyAliasPropertyMutation(node *ast.Node) bool {
+	if node == nil || (node.Kind != ast.KindPropertyAccessExpression && node.Kind != ast.KindElementAccessExpression) {
+		return false
+	}
+	baseType := c.getTypeOfExpression(node.Expression())
+	return baseType != nil && baseType.flags&TypeFlagsAnyOrUnknown != 0 &&
+		(getAssignmentTargetKind(node) != AssignmentKindNone || node.Parent != nil && node.Parent.Kind == ast.KindDeleteExpression)
 }
 
 func (c *Checker) collectEscapingCapabilityEffects(t *Type, seen map[*Type]bool, effects *[]*Type) {
@@ -528,8 +675,13 @@ func (c *Checker) collectEscapingCapabilityEffects(t *Type, seen map[*Type]bool,
 			if effect := c.getPropertyReadThrowsType(property); effect != nil && effect.flags&TypeFlagsNever == 0 {
 				*effects = append(*effects, c.normalizeThrowsType(effect))
 			}
-			if effect := c.getPropertyWriteThrowsType(property); effect != nil && effect.flags&TypeFlagsNever == 0 {
-				*effects = append(*effects, c.normalizeThrowsType(effect))
+			// A retained consumer cannot write through a readonly property in the
+			// exposed type. Getter-only write rejection is still enforced when a
+			// structural assignment tries to erase that readonly boundary.
+			if !c.isReadonlySymbol(property) {
+				if effect := c.getPropertyWriteThrowsType(property); effect != nil && effect.flags&TypeFlagsNever == 0 {
+					*effects = append(*effects, c.normalizeThrowsType(effect))
+				}
 			}
 		}
 		c.collectEscapingCapabilityEffects(c.getTypeOfSymbol(property), seen, effects)
@@ -550,16 +702,30 @@ func (c *Checker) getConstructCapabilityThrowsType(signature *Signature) *Type {
 }
 
 func (c *Checker) getCombinedCallThrowsType(t *Type, unknownWhenNotCallable bool) *Type {
-	signatures := c.getSignaturesOfType(t, SignatureKindCall)
+	return c.getCombinedSignatureThrowsType(t, SignatureKindCall, unknownWhenNotCallable)
+}
+
+func (c *Checker) getCombinedConstructThrowsType(t *Type, unknownWhenNotConstructable bool) *Type {
+	return c.getCombinedSignatureThrowsType(t, SignatureKindConstruct, unknownWhenNotConstructable)
+}
+
+func (c *Checker) getCombinedSignatureThrowsType(t *Type, kind SignatureKind, unknownWhenMissing bool) *Type {
+	signatures := c.getSignaturesOfType(t, kind)
 	if len(signatures) == 0 {
-		if unknownWhenNotCallable {
+		if unknownWhenMissing {
 			return c.unknownType
 		}
 		return nil
 	}
 	var effects []*Type
 	for _, signature := range signatures {
-		if effect := c.getThrowsTypeOfSignature(signature); effect != nil {
+		var effect *Type
+		if kind == SignatureKindConstruct {
+			effect = c.getConstructCapabilityThrowsType(signature)
+		} else {
+			effect = c.getThrowsTypeOfSignature(signature)
+		}
+		if effect != nil {
 			effects = append(effects, c.normalizeThrowsType(effect))
 		}
 	}
@@ -579,6 +745,13 @@ func (c *Checker) typeRequiresCheckedEffectProof(t *Type, seen map[*Type]bool) b
 		return false
 	}
 	seen[t] = true
+	if t.flags&TypeFlagsInstantiableNonPrimitive != 0 {
+		// An unresolved type parameter can later instantiate to a callable,
+		// constructor, accessor-bearing object, or concrete data-property type.
+		// Allowing `any` to flow into it would defer effect laundering until the
+		// instantiation site.
+		return true
+	}
 	if t.flags&TypeFlagsUnionOrIntersection != 0 {
 		for _, constituent := range t.Types() {
 			if c.typeRequiresCheckedEffectProof(constituent, seen) {
@@ -631,19 +804,12 @@ func (c *Checker) typeRequiresCheckedEffectProof(t *Type, seen map[*Type]bool) b
 // invoking unknown code is non-throwing.
 func (c *Checker) checkFailClosedAssertionEffects(node *ast.Node) {
 	targetType := c.getTypeFromTypeNode(node.Type())
-	targetEffect := c.getCombinedCallThrowsType(targetType, false)
 	sourceType := c.getTypeOfExpression(node.Expression())
-	if targetEffect != nil {
-		sourceEffect := c.getCombinedCallThrowsType(sourceType, true)
-		if !c.isTypeAssignableTo(sourceEffect, targetEffect) {
-			c.errorCheckedExceptions(node, diagnostics.The_source_signature_may_throw_0_but_the_target_s_throws_clause_only_permits_1, c.TypeToString(sourceEffect), c.TypeToString(targetEffect))
-		}
-	}
 	c.checkAssertionPropertyEffectNarrowing(node, sourceType, targetType, make(map[[2]*Type]bool))
 }
 
 func (c *Checker) checkAssertionPropertyEffectNarrowing(node *ast.Node, source *Type, target *Type, seen map[[2]*Type]bool) {
-	if source == nil || target == nil || target.flags&TypeFlagsStructuredType == 0 {
+	if source == nil || target == nil || target.flags&TypeFlagsStructuredOrInstantiable == 0 {
 		return
 	}
 	pair := [2]*Type{source, target}
@@ -651,6 +817,20 @@ func (c *Checker) checkAssertionPropertyEffectNarrowing(node *ast.Node, source *
 		return
 	}
 	seen[pair] = true
+	if target.flags&TypeFlagsInstantiableNonPrimitive != 0 && source.flags&TypeFlagsAnyOrUnknown != 0 {
+		c.errorCheckedExceptions(node, diagnostics.An_assertion_from_0_to_the_unresolved_type_1_can_manufacture_checked_effect_guarantees_after_instantiation, c.TypeToString(source), c.TypeToString(target))
+		return
+	}
+	for _, effects := range [][2]*Type{
+		{c.getCombinedCallThrowsType(source, true), c.getCombinedCallThrowsType(target, false)},
+		{c.getCombinedConstructThrowsType(source, true), c.getCombinedConstructThrowsType(target, false)},
+	} {
+		sourceEffect, targetEffect := effects[0], effects[1]
+		if targetEffect != nil && !c.isTypeAssignableTo(sourceEffect, targetEffect) {
+			c.errorCheckedExceptions(node, diagnostics.The_source_signature_may_throw_0_but_the_target_s_throws_clause_only_permits_1, c.TypeToString(sourceEffect), c.TypeToString(targetEffect))
+			return
+		}
+	}
 
 	for _, targetProperty := range c.getPropertiesOfType(target) {
 		sourceProperty := c.getPropertyOfType(source, targetProperty.Name)
@@ -687,9 +867,11 @@ func (c *Checker) checkAssertionPropertyEffectNarrowing(node *ast.Node, source *
 				continue
 			}
 		}
-		if sourceProperty != nil && targetRead.flags&TypeFlagsNever != 0 {
-			c.checkAssertionPropertyEffectNarrowing(node, c.getTypeOfSymbol(sourceProperty), c.getTypeOfSymbol(targetProperty), seen)
+		sourcePropertyType := c.unknownType
+		if sourceProperty != nil {
+			sourcePropertyType = c.getTypeOfSymbol(sourceProperty)
 		}
+		c.checkAssertionPropertyEffectNarrowing(node, sourcePropertyType, c.getTypeOfSymbol(targetProperty), seen)
 	}
 }
 
@@ -849,11 +1031,22 @@ func (c *Checker) getClassEvaluationThrowsType(node *ast.Node) *Type {
 // (calling them does); a try block whose statement has a catch clause is fully
 // discharged, though its catch and finally blocks still raise outward.
 func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
+	return c.collectRaisedTypesWorker(node, false /*catchableOnly*/)
+}
+
+// collectCatchableRaisedTypes is narrower than function-effect inference: a
+// synchronous catch can observe immediate abrupt completion and awaited
+// rejection, but not a rejection from a floating or directly returned promise.
+func (c *Checker) collectCatchableRaisedTypes(node *ast.Node) []*Type {
+	return c.collectRaisedTypesWorker(node, true /*catchableOnly*/)
+}
+
+func (c *Checker) collectRaisedTypesWorker(node *ast.Node, catchableOnly bool) []*Type {
 	var raised []*Type
 	var visit func(node *ast.Node) bool
 	add := func(t *Type) {
 		if t != nil && t != c.errorType && t.flags&TypeFlagsNever == 0 {
-			raised = append(raised, t)
+			raised = append(raised, c.normalizeThrowsType(t))
 		}
 	}
 	visit = func(node *ast.Node) bool {
@@ -880,10 +1073,13 @@ func (c *Checker) collectRaisedTypes(node *ast.Node) []*Type {
 			}
 			return false
 		case ast.KindCallExpression, ast.KindNewExpression:
-			if c.checkedExceptionsFailClosed() {
+			promiseEscapesCatch := catchableOnly && c.checkedExceptionsFailClosed() && c.callReturnsPromise(node) && !isAwaitedCall(node)
+			if c.checkedExceptionsFailClosed() && !promiseEscapesCatch {
 				add(c.getEscapingCapabilityThrowsType(node))
 			}
-			add(c.getThrowsTypeOfCall(node))
+			if !promiseEscapesCatch {
+				add(c.getThrowsTypeOfCall(node))
+			}
 		case ast.KindAwaitExpression:
 			if c.checkedExceptionsFailClosed() {
 				add(c.getThrowsTypeOfAwait(node))
@@ -959,7 +1155,7 @@ func (c *Checker) getCatchClauseThrowsType(catchClause *ast.Node) *Type {
 	defer delete(c.catchClauseThrowsInProgress, catchClause)
 	var result *Type
 	if tryStatement := catchClause.Parent; tryStatement != nil && tryStatement.Kind == ast.KindTryStatement {
-		raised := c.collectRaisedTypes(tryStatement.AsTryStatement().TryBlock)
+		raised := c.collectCatchableRaisedTypes(tryStatement.AsTryStatement().TryBlock)
 		if len(raised) != 0 {
 			result = c.getUnionType(raised)
 		}
@@ -998,6 +1194,10 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 			}
 			savedFn, savedTryDepth := enclosingFn, tryDepth
 			enclosingFn, tryDepth = node, 0
+			if node.Kind == ast.KindArrowFunction && node.Body() != nil && node.Body().Kind != ast.KindBlock &&
+				node.Body().Kind != ast.KindCallExpression && node.Body().Kind != ast.KindNewExpression {
+				c.checkRaisedType(node.Body(), c.getReturnedPromiseThrowsType(node.Body(), node), node, false /*isCall*/)
+			}
 			node.ForEachChild(visit)
 			enclosingFn, tryDepth = savedFn, savedTryDepth
 			return false
@@ -1031,16 +1231,34 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 			return false
 		case ast.KindCallExpression, ast.KindNewExpression:
 			if c.checkedExceptionsFailClosed() {
+				if c.isUnsupportedProxyFactoryCall(node) {
+					c.errorCheckedExceptions(node, diagnostics.Proxy_values_have_latent_property_and_private_brand_effects_that_are_not_representable_by_checked_exceptions_Proxy_construction_and_revocation_are_not_supported_when_checkedExceptions_is_enabled)
+				}
 				if capabilityEffect := c.getEscapingCapabilityThrowsType(node); capabilityEffect != nil {
 					c.errorCheckedExceptions(node, diagnostics.Argument_exposes_executable_code_that_may_throw_0_after_the_call_returns_A_synchronous_try_catch_or_enclosing_throws_clause_cannot_handle_it_Handle_the_effect_inside_the_capability_or_use_a_non_escaping_contract, c.TypeToString(capabilityEffect))
 				}
 			}
-			if c.checkedExceptionsFailClosed() && c.callReturnsPromise(node) && !isAwaitedCall(node) && !isDirectlyReturnedCall(node) {
+			returnsPromise := c.checkedExceptionsFailClosed() && c.callReturnsPromise(node)
+			if returnsPromise && !isAwaitedCall(node) && !isDirectlyReturnedCall(node) {
 				throwsType := c.normalizeThrowsType(c.getThrowsTypeOfCall(node))
 				if throwsType == nil || throwsType.flags&TypeFlagsNever != 0 {
 					throwsType = c.unknownType
 				}
 				c.errorCheckedExceptions(node, diagnostics.Promise_returning_call_may_reject_with_0_A_synchronous_try_catch_does_not_handle_that_rejection_Await_or_return_the_promise, c.TypeToString(throwsType))
+			} else if returnsPromise && isDirectlyReturnedCall(node) {
+				// Returning a promise propagates its rejection effect even from inside
+				// a synchronous try block. Only `await` transfers a rejection into the
+				// surrounding catchable control-flow position.
+				c.checkRaisedType(node, c.getThrowsTypeOfCall(node), enclosingFn, true /*isCall*/)
+			} else if c.checkedExceptionsFailClosed() && isDirectlyReturnedCall(node) {
+				// Broad legacy values are only considered possibly thenable at an
+				// enclosing Promise-assimilation boundary, not at every call site.
+				returnedEffect := c.getReturnedPromiseThrowsType(node, enclosingFn)
+				if returnedEffect != nil {
+					c.checkRaisedType(node, returnedEffect, enclosingFn, true /*isCall*/)
+				} else if tryDepth == 0 {
+					c.checkRaisedType(node, c.getThrowsTypeOfCall(node), enclosingFn, true /*isCall*/)
+				}
 			} else if tryDepth == 0 && !(c.checkedExceptionsFailClosed() && isAwaitedCall(node)) {
 				c.checkRaisedType(node, c.getThrowsTypeOfCall(node), enclosingFn, true /*isCall*/)
 			}
@@ -1049,12 +1267,22 @@ func (c *Checker) checkCheckedExceptionsForFile(sourceFile *ast.SourceFile) {
 				c.checkRaisedType(node, c.getThrowsTypeOfAwait(node), enclosingFn, false /*isCall*/)
 			}
 		case ast.KindPropertyAccessExpression, ast.KindElementAccessExpression:
+			if c.checkedExceptionsFailClosed() && c.isAnyAliasPropertyMutation(node) {
+				c.errorCheckedExceptions(node, diagnostics.Mutating_a_property_through_an_any_or_unknown_alias_can_corrupt_a_checked_effect_contract)
+			}
 			if c.checkedExceptionsFailClosed() && tryDepth == 0 && !isCallTargetPropertyAccess(node) {
 				c.checkRaisedType(node, c.getPropertyAccessThrowsType(node), enclosingFn, false /*isCall*/)
 			}
 		case ast.KindTypeAssertionExpression, ast.KindAsExpression:
 			if c.checkedExceptionsFailClosed() {
 				c.checkFailClosedAssertionEffects(node)
+			}
+		case ast.KindReturnStatement:
+			expression := node.Expression()
+			if c.checkedExceptionsFailClosed() && expression != nil && expression.Kind != ast.KindCallExpression && expression.Kind != ast.KindNewExpression {
+				// A synchronous try cannot discharge a rejection carried by the
+				// returned promise value, so this deliberately ignores tryDepth.
+				c.checkRaisedType(node, c.getReturnedPromiseThrowsType(expression, enclosingFn), enclosingFn, false /*isCall*/)
 			}
 		case ast.KindThrowStatement:
 			if tryDepth == 0 {

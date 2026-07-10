@@ -9,7 +9,9 @@ async function rejects(): Promise<void> throws "async" {
 function fakeSynchronousHandling(): void throws never {
     try {
         rejects();
-    } catch {
+    } catch (e) {
+        // The later rejection is not a value this synchronous catch can see.
+        const notTheRejection: "async" = e;
     }
 }
 
@@ -32,6 +34,47 @@ async function handledAwait(): Promise<void> throws never {
 async function returnedPromise(): Promise<void> throws "async" {
     return rejects();
 }
+
+// Returning a promise from a synchronous try does not make its later rejection
+// catchable by that try's catch clause.
+async function returnedInsideSynchronousTry(): Promise<void> throws never {
+    try {
+        return rejects();
+    } catch {
+    }
+}
+
+// An explicit Promise constituent can hide thenable timing. A synchronous catch
+// cannot discharge a declared effect that may arrive as a later rejection.
+declare function maybeAsync(): Promise<void> | void throws "maybe async";
+function ambiguousTimingInSynchronousTry(): void throws never {
+    try {
+        maybeAsync();
+    } catch {
+    }
+}
+
+// Broad legacy returns stay synchronous at their call site, so ordinary
+// declaration APIs remain catchable. They become unknown only if an enclosing
+// async/Promise-returning function actually assimilates the returned value.
+declare function legacyBroadValue(): any;
+function catchesLegacyBroadValue(): void throws never {
+    try {
+        legacyBroadValue();
+    } catch {
+    }
+}
+async function assimilatesLegacyBroadValue(): Promise<void> throws never {
+    return legacyBroadValue();
+}
+
+// Existing Promise values have no tracked rejection slot yet, so returning
+// one cannot manufacture a precise or empty rejection effect.
+declare const ambientPromiseValue: Promise<void>;
+async function returnedPromiseValue(): Promise<void> throws never {
+    return ambientPromiseValue;
+}
+const conciseReturnedPromiseValue = (): Promise<void> throws never => ambientPromiseValue;
 
 // A floating ambient promise is unknown even inside synchronous try/catch.
 declare function legacyAsync(): Promise<void>;
@@ -91,7 +134,9 @@ function fakeSynchronousHandling() {
     try {
         rejects();
     }
-    catch {
+    catch (e) {
+        // The later rejection is not a value this synchronous catch can see.
+        const notTheRejection = e;
     }
 }
 // Await transfers the rejection effect into the surrounding control flow.
@@ -112,6 +157,36 @@ async function handledAwait() {
 async function returnedPromise() {
     return rejects();
 }
+// Returning a promise from a synchronous try does not make its later rejection
+// catchable by that try's catch clause.
+async function returnedInsideSynchronousTry() {
+    try {
+        return rejects();
+    }
+    catch {
+    }
+}
+function ambiguousTimingInSynchronousTry() {
+    try {
+        maybeAsync();
+    }
+    catch {
+    }
+}
+function catchesLegacyBroadValue() {
+    try {
+        legacyBroadValue();
+    }
+    catch {
+    }
+}
+async function assimilatesLegacyBroadValue() {
+    return legacyBroadValue();
+}
+async function returnedPromiseValue() {
+    return ambientPromiseValue;
+}
+const conciseReturnedPromiseValue = () => ambientPromiseValue;
 function floatingLegacyPromise() {
     try {
         legacyAsync();

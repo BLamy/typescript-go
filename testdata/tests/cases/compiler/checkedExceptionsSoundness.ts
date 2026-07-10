@@ -114,6 +114,22 @@ const setterSource = {
 };
 const setterErasure: DataBox = setterSource;
 const assertedGetterErasure = getterSource as DataBox;
+const getterOnlySource = { get value(): number { return 1; } };
+const getterOnlyWriteErasure: DataBox = getterOnlySource;
+const assertedGetterOnlyWriteErasure = getterOnlySource as DataBox;
+
+abstract class AbstractSafeData {
+    abstract value: number;
+}
+class ThrowingAccessorOverride extends AbstractSafeData {
+    get value(): number { throw "override accessor"; }
+}
+class SafeMethodBase {
+    method(): void throws never {}
+}
+class ThrowingMethodOverride extends SafeMethodBase {
+    method(): void { throw "override method"; }
+}
 
 // One unknown source poisons catch precision instead of allowing an optimistic
 // tracked-only type.
@@ -137,6 +153,56 @@ const incorrectlyNarrowed: SafeCallback = legacyCallback;
 declare const dynamicCapability: any;
 const anyToSafeCallback: SafeCallback = dynamicCapability;
 const anyToSafeData: DataBox = dynamicCapability;
+type LegacyOptions = { callback: LegacyCallback };
+type SafeOptions = { callback: SafeCallback };
+declare const legacyOptions: LegacyOptions;
+const nestedAssertionErasesEffect = legacyOptions as SafeOptions;
+const anyNestedAssertionErasesEffect = dynamicCapability as SafeOptions;
+type LegacyConstructorType = new () => DataBox;
+type SafeConstructorType = new () => DataBox throws never;
+declare const legacyConstructorValue: LegacyConstructorType;
+const constructorAssertionErasesEffect = legacyConstructorValue as SafeConstructorType;
+function genericAnyLaunder<T>(value: any): T {
+    return value;
+}
+function genericAssertionLaunder<T>(value: any): T {
+    return value as T;
+}
+function mutationThrower(): void throws "mutated alias" { throw "mutated alias"; }
+const safeMutationVictim: { callback: SafeCallback } = { callback: () => {} };
+function anyAliasCannotCorruptSafeCallback(): void throws never {
+    try {
+        (safeMutationVictim as any).callback = mutationThrower;
+        delete (safeMutationVictim as any).callback;
+    } catch {
+    }
+    safeMutationVictim.callback();
+}
+function genericRaise<T>(): void throws T { throw null as T; }
+try {
+    throw dynamicCapability;
+} catch (e) {
+    const rawAnyMustBeUnknown: string = e;
+}
+try {
+    genericRaise<any>();
+} catch (e) {
+    const instantiatedAnyMustBeUnknown: string = e;
+}
+
+// Proxy preserves T in today's lib declaration but can add latent traps,
+// revocation, and private-brand failures that T cannot represent.
+class PrivateBox {
+    #value = 1;
+    static read(box: PrivateBox): number throws never { return box.#value; }
+}
+function proxyCannotMasqueradeAsPrivateBox(): PrivateBox throws never {
+    try {
+        return new Proxy(new PrivateBox(), {});
+    } catch {
+        return new PrivateBox();
+    }
+}
 
 // Unknown effects at top level must be handled.
 legacy();

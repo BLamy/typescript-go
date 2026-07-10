@@ -241,10 +241,51 @@ const assertedGetterErasure = getterSource as DataBox;
 >getterSource : Symbol(getterSource, Decl(checkedExceptionsSoundness.ts, 105, 5))
 >DataBox : Symbol(DataBox, Decl(checkedExceptionsSoundness.ts, 100, 1))
 
+const getterOnlySource = { get value(): number { return 1; } };
+>getterOnlySource : Symbol(getterOnlySource, Decl(checkedExceptionsSoundness.ts, 113, 5))
+>value : Symbol(value, Decl(checkedExceptionsSoundness.ts, 113, 26))
+
+const getterOnlyWriteErasure: DataBox = getterOnlySource;
+>getterOnlyWriteErasure : Symbol(getterOnlyWriteErasure, Decl(checkedExceptionsSoundness.ts, 114, 5))
+>DataBox : Symbol(DataBox, Decl(checkedExceptionsSoundness.ts, 100, 1))
+>getterOnlySource : Symbol(getterOnlySource, Decl(checkedExceptionsSoundness.ts, 113, 5))
+
+const assertedGetterOnlyWriteErasure = getterOnlySource as DataBox;
+>assertedGetterOnlyWriteErasure : Symbol(assertedGetterOnlyWriteErasure, Decl(checkedExceptionsSoundness.ts, 115, 5))
+>getterOnlySource : Symbol(getterOnlySource, Decl(checkedExceptionsSoundness.ts, 113, 5))
+>DataBox : Symbol(DataBox, Decl(checkedExceptionsSoundness.ts, 100, 1))
+
+abstract class AbstractSafeData {
+>AbstractSafeData : Symbol(AbstractSafeData, Decl(checkedExceptionsSoundness.ts, 115, 67))
+
+    abstract value: number;
+>value : Symbol(AbstractSafeData.value, Decl(checkedExceptionsSoundness.ts, 117, 33))
+}
+class ThrowingAccessorOverride extends AbstractSafeData {
+>ThrowingAccessorOverride : Symbol(ThrowingAccessorOverride, Decl(checkedExceptionsSoundness.ts, 119, 1))
+>AbstractSafeData : Symbol(AbstractSafeData, Decl(checkedExceptionsSoundness.ts, 115, 67))
+
+    get value(): number { throw "override accessor"; }
+>value : Symbol(ThrowingAccessorOverride.value, Decl(checkedExceptionsSoundness.ts, 120, 57))
+}
+class SafeMethodBase {
+>SafeMethodBase : Symbol(SafeMethodBase, Decl(checkedExceptionsSoundness.ts, 122, 1))
+
+    method(): void throws never {}
+>method : Symbol(SafeMethodBase.method, Decl(checkedExceptionsSoundness.ts, 123, 22))
+}
+class ThrowingMethodOverride extends SafeMethodBase {
+>ThrowingMethodOverride : Symbol(ThrowingMethodOverride, Decl(checkedExceptionsSoundness.ts, 125, 1))
+>SafeMethodBase : Symbol(SafeMethodBase, Decl(checkedExceptionsSoundness.ts, 122, 1))
+
+    method(): void { throw "override method"; }
+>method : Symbol(ThrowingMethodOverride.method, Decl(checkedExceptionsSoundness.ts, 126, 53))
+}
+
 // One unknown source poisons catch precision instead of allowing an optimistic
 // tracked-only type.
 function mixedCatch(): void throws never {
->mixedCatch : Symbol(mixedCatch, Decl(checkedExceptionsSoundness.ts, 112, 54))
+>mixedCatch : Symbol(mixedCatch, Decl(checkedExceptionsSoundness.ts, 128, 1))
 
     try {
         tracked();
@@ -254,44 +295,190 @@ function mixedCatch(): void throws never {
 >legacy : Symbol(legacy, Decl(checkedExceptionsSoundness.ts, 0, 0))
 
     } catch (e) {
->e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 120, 13))
+>e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 136, 13))
 
         const unsound: "tracked" = e;
->unsound : Symbol(unsound, Decl(checkedExceptionsSoundness.ts, 121, 13))
->e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 120, 13))
+>unsound : Symbol(unsound, Decl(checkedExceptionsSoundness.ts, 137, 13))
+>e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 136, 13))
     }
 }
 
 // Function types without a clause describe an unknown effect when enabled.
 type LegacyCallback = () => void;
->LegacyCallback : Symbol(LegacyCallback, Decl(checkedExceptionsSoundness.ts, 123, 1))
+>LegacyCallback : Symbol(LegacyCallback, Decl(checkedExceptionsSoundness.ts, 139, 1))
 
 type SafeCallback = () => void throws never;
->SafeCallback : Symbol(SafeCallback, Decl(checkedExceptionsSoundness.ts, 126, 33))
+>SafeCallback : Symbol(SafeCallback, Decl(checkedExceptionsSoundness.ts, 142, 33))
 
 declare const legacyCallback: LegacyCallback;
->legacyCallback : Symbol(legacyCallback, Decl(checkedExceptionsSoundness.ts, 128, 13))
->LegacyCallback : Symbol(LegacyCallback, Decl(checkedExceptionsSoundness.ts, 123, 1))
+>legacyCallback : Symbol(legacyCallback, Decl(checkedExceptionsSoundness.ts, 144, 13))
+>LegacyCallback : Symbol(LegacyCallback, Decl(checkedExceptionsSoundness.ts, 139, 1))
 
 const incorrectlyNarrowed: SafeCallback = legacyCallback;
->incorrectlyNarrowed : Symbol(incorrectlyNarrowed, Decl(checkedExceptionsSoundness.ts, 129, 5))
->SafeCallback : Symbol(SafeCallback, Decl(checkedExceptionsSoundness.ts, 126, 33))
->legacyCallback : Symbol(legacyCallback, Decl(checkedExceptionsSoundness.ts, 128, 13))
+>incorrectlyNarrowed : Symbol(incorrectlyNarrowed, Decl(checkedExceptionsSoundness.ts, 145, 5))
+>SafeCallback : Symbol(SafeCallback, Decl(checkedExceptionsSoundness.ts, 142, 33))
+>legacyCallback : Symbol(legacyCallback, Decl(checkedExceptionsSoundness.ts, 144, 13))
 
 // `any` cannot manufacture a checked-effect proof through ordinary
 // assignment; doing so would bypass the assertion guard and erase effects.
 declare const dynamicCapability: any;
->dynamicCapability : Symbol(dynamicCapability, Decl(checkedExceptionsSoundness.ts, 133, 13))
+>dynamicCapability : Symbol(dynamicCapability, Decl(checkedExceptionsSoundness.ts, 149, 13))
 
 const anyToSafeCallback: SafeCallback = dynamicCapability;
->anyToSafeCallback : Symbol(anyToSafeCallback, Decl(checkedExceptionsSoundness.ts, 134, 5))
->SafeCallback : Symbol(SafeCallback, Decl(checkedExceptionsSoundness.ts, 126, 33))
->dynamicCapability : Symbol(dynamicCapability, Decl(checkedExceptionsSoundness.ts, 133, 13))
+>anyToSafeCallback : Symbol(anyToSafeCallback, Decl(checkedExceptionsSoundness.ts, 150, 5))
+>SafeCallback : Symbol(SafeCallback, Decl(checkedExceptionsSoundness.ts, 142, 33))
+>dynamicCapability : Symbol(dynamicCapability, Decl(checkedExceptionsSoundness.ts, 149, 13))
 
 const anyToSafeData: DataBox = dynamicCapability;
->anyToSafeData : Symbol(anyToSafeData, Decl(checkedExceptionsSoundness.ts, 135, 5))
+>anyToSafeData : Symbol(anyToSafeData, Decl(checkedExceptionsSoundness.ts, 151, 5))
 >DataBox : Symbol(DataBox, Decl(checkedExceptionsSoundness.ts, 100, 1))
->dynamicCapability : Symbol(dynamicCapability, Decl(checkedExceptionsSoundness.ts, 133, 13))
+>dynamicCapability : Symbol(dynamicCapability, Decl(checkedExceptionsSoundness.ts, 149, 13))
+
+type LegacyOptions = { callback: LegacyCallback };
+>LegacyOptions : Symbol(LegacyOptions, Decl(checkedExceptionsSoundness.ts, 151, 49))
+>callback : Symbol(callback, Decl(checkedExceptionsSoundness.ts, 152, 22))
+>LegacyCallback : Symbol(LegacyCallback, Decl(checkedExceptionsSoundness.ts, 139, 1))
+
+type SafeOptions = { callback: SafeCallback };
+>SafeOptions : Symbol(SafeOptions, Decl(checkedExceptionsSoundness.ts, 152, 50))
+>callback : Symbol(callback, Decl(checkedExceptionsSoundness.ts, 153, 20))
+>SafeCallback : Symbol(SafeCallback, Decl(checkedExceptionsSoundness.ts, 142, 33))
+
+declare const legacyOptions: LegacyOptions;
+>legacyOptions : Symbol(legacyOptions, Decl(checkedExceptionsSoundness.ts, 154, 13))
+>LegacyOptions : Symbol(LegacyOptions, Decl(checkedExceptionsSoundness.ts, 151, 49))
+
+const nestedAssertionErasesEffect = legacyOptions as SafeOptions;
+>nestedAssertionErasesEffect : Symbol(nestedAssertionErasesEffect, Decl(checkedExceptionsSoundness.ts, 155, 5))
+>legacyOptions : Symbol(legacyOptions, Decl(checkedExceptionsSoundness.ts, 154, 13))
+>SafeOptions : Symbol(SafeOptions, Decl(checkedExceptionsSoundness.ts, 152, 50))
+
+const anyNestedAssertionErasesEffect = dynamicCapability as SafeOptions;
+>anyNestedAssertionErasesEffect : Symbol(anyNestedAssertionErasesEffect, Decl(checkedExceptionsSoundness.ts, 156, 5))
+>dynamicCapability : Symbol(dynamicCapability, Decl(checkedExceptionsSoundness.ts, 149, 13))
+>SafeOptions : Symbol(SafeOptions, Decl(checkedExceptionsSoundness.ts, 152, 50))
+
+type LegacyConstructorType = new () => DataBox;
+>LegacyConstructorType : Symbol(LegacyConstructorType, Decl(checkedExceptionsSoundness.ts, 156, 72))
+>DataBox : Symbol(DataBox, Decl(checkedExceptionsSoundness.ts, 100, 1))
+
+type SafeConstructorType = new () => DataBox throws never;
+>SafeConstructorType : Symbol(SafeConstructorType, Decl(checkedExceptionsSoundness.ts, 157, 47))
+>DataBox : Symbol(DataBox, Decl(checkedExceptionsSoundness.ts, 100, 1))
+
+declare const legacyConstructorValue: LegacyConstructorType;
+>legacyConstructorValue : Symbol(legacyConstructorValue, Decl(checkedExceptionsSoundness.ts, 159, 13))
+>LegacyConstructorType : Symbol(LegacyConstructorType, Decl(checkedExceptionsSoundness.ts, 156, 72))
+
+const constructorAssertionErasesEffect = legacyConstructorValue as SafeConstructorType;
+>constructorAssertionErasesEffect : Symbol(constructorAssertionErasesEffect, Decl(checkedExceptionsSoundness.ts, 160, 5))
+>legacyConstructorValue : Symbol(legacyConstructorValue, Decl(checkedExceptionsSoundness.ts, 159, 13))
+>SafeConstructorType : Symbol(SafeConstructorType, Decl(checkedExceptionsSoundness.ts, 157, 47))
+
+function genericAnyLaunder<T>(value: any): T {
+>genericAnyLaunder : Symbol(genericAnyLaunder, Decl(checkedExceptionsSoundness.ts, 160, 87))
+>T : Symbol(T, Decl(checkedExceptionsSoundness.ts, 161, 27))
+>value : Symbol(value, Decl(checkedExceptionsSoundness.ts, 161, 30))
+>T : Symbol(T, Decl(checkedExceptionsSoundness.ts, 161, 27))
+
+    return value;
+>value : Symbol(value, Decl(checkedExceptionsSoundness.ts, 161, 30))
+}
+function genericAssertionLaunder<T>(value: any): T {
+>genericAssertionLaunder : Symbol(genericAssertionLaunder, Decl(checkedExceptionsSoundness.ts, 163, 1))
+>T : Symbol(T, Decl(checkedExceptionsSoundness.ts, 164, 33))
+>value : Symbol(value, Decl(checkedExceptionsSoundness.ts, 164, 36))
+>T : Symbol(T, Decl(checkedExceptionsSoundness.ts, 164, 33))
+
+    return value as T;
+>value : Symbol(value, Decl(checkedExceptionsSoundness.ts, 164, 36))
+>T : Symbol(T, Decl(checkedExceptionsSoundness.ts, 164, 33))
+}
+function mutationThrower(): void throws "mutated alias" { throw "mutated alias"; }
+>mutationThrower : Symbol(mutationThrower, Decl(checkedExceptionsSoundness.ts, 166, 1))
+
+const safeMutationVictim: { callback: SafeCallback } = { callback: () => {} };
+>safeMutationVictim : Symbol(safeMutationVictim, Decl(checkedExceptionsSoundness.ts, 168, 5))
+>callback : Symbol(callback, Decl(checkedExceptionsSoundness.ts, 168, 27))
+>SafeCallback : Symbol(SafeCallback, Decl(checkedExceptionsSoundness.ts, 142, 33))
+>callback : Symbol(callback, Decl(checkedExceptionsSoundness.ts, 168, 56))
+
+function anyAliasCannotCorruptSafeCallback(): void throws never {
+>anyAliasCannotCorruptSafeCallback : Symbol(anyAliasCannotCorruptSafeCallback, Decl(checkedExceptionsSoundness.ts, 168, 78))
+
+    try {
+        (safeMutationVictim as any).callback = mutationThrower;
+>safeMutationVictim : Symbol(safeMutationVictim, Decl(checkedExceptionsSoundness.ts, 168, 5))
+>mutationThrower : Symbol(mutationThrower, Decl(checkedExceptionsSoundness.ts, 166, 1))
+
+        delete (safeMutationVictim as any).callback;
+>safeMutationVictim : Symbol(safeMutationVictim, Decl(checkedExceptionsSoundness.ts, 168, 5))
+
+    } catch {
+    }
+    safeMutationVictim.callback();
+>safeMutationVictim.callback : Symbol(callback, Decl(checkedExceptionsSoundness.ts, 168, 27))
+>safeMutationVictim : Symbol(safeMutationVictim, Decl(checkedExceptionsSoundness.ts, 168, 5))
+>callback : Symbol(callback, Decl(checkedExceptionsSoundness.ts, 168, 27))
+}
+function genericRaise<T>(): void throws T { throw null as T; }
+>genericRaise : Symbol(genericRaise, Decl(checkedExceptionsSoundness.ts, 176, 1))
+>T : Symbol(T, Decl(checkedExceptionsSoundness.ts, 177, 22))
+>T : Symbol(T, Decl(checkedExceptionsSoundness.ts, 177, 22))
+>T : Symbol(T, Decl(checkedExceptionsSoundness.ts, 177, 22))
+
+try {
+    throw dynamicCapability;
+>dynamicCapability : Symbol(dynamicCapability, Decl(checkedExceptionsSoundness.ts, 149, 13))
+
+} catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 180, 9))
+
+    const rawAnyMustBeUnknown: string = e;
+>rawAnyMustBeUnknown : Symbol(rawAnyMustBeUnknown, Decl(checkedExceptionsSoundness.ts, 181, 9))
+>e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 180, 9))
+}
+try {
+    genericRaise<any>();
+>genericRaise : Symbol(genericRaise, Decl(checkedExceptionsSoundness.ts, 176, 1))
+
+} catch (e) {
+>e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 185, 9))
+
+    const instantiatedAnyMustBeUnknown: string = e;
+>instantiatedAnyMustBeUnknown : Symbol(instantiatedAnyMustBeUnknown, Decl(checkedExceptionsSoundness.ts, 186, 9))
+>e : Symbol(e, Decl(checkedExceptionsSoundness.ts, 185, 9))
+}
+
+// Proxy preserves T in today's lib declaration but can add latent traps,
+// revocation, and private-brand failures that T cannot represent.
+class PrivateBox {
+>PrivateBox : Symbol(PrivateBox, Decl(checkedExceptionsSoundness.ts, 187, 1))
+
+    #value = 1;
+>#value : Symbol(PrivateBox.#value, Decl(checkedExceptionsSoundness.ts, 191, 18))
+
+    static read(box: PrivateBox): number throws never { return box.#value; }
+>read : Symbol(PrivateBox.read, Decl(checkedExceptionsSoundness.ts, 192, 15))
+>box : Symbol(box, Decl(checkedExceptionsSoundness.ts, 193, 16))
+>PrivateBox : Symbol(PrivateBox, Decl(checkedExceptionsSoundness.ts, 187, 1))
+>box.#value : Symbol(PrivateBox.#value, Decl(checkedExceptionsSoundness.ts, 191, 18))
+>box : Symbol(box, Decl(checkedExceptionsSoundness.ts, 193, 16))
+}
+function proxyCannotMasqueradeAsPrivateBox(): PrivateBox throws never {
+>proxyCannotMasqueradeAsPrivateBox : Symbol(proxyCannotMasqueradeAsPrivateBox, Decl(checkedExceptionsSoundness.ts, 194, 1))
+>PrivateBox : Symbol(PrivateBox, Decl(checkedExceptionsSoundness.ts, 187, 1))
+
+    try {
+        return new Proxy(new PrivateBox(), {});
+>Proxy : Symbol(Proxy, Decl(lib.es2015.proxy.d.ts, --, --))
+>PrivateBox : Symbol(PrivateBox, Decl(checkedExceptionsSoundness.ts, 187, 1))
+
+    } catch {
+        return new PrivateBox();
+>PrivateBox : Symbol(PrivateBox, Decl(checkedExceptionsSoundness.ts, 187, 1))
+    }
+}
 
 // Unknown effects at top level must be handled.
 legacy();
@@ -302,34 +489,34 @@ try { legacy(); } catch {}
 
 // Type assertions cannot manufacture a non-throwing callable type.
 function assertionSource(): void throws "assertion" {
->assertionSource : Symbol(assertionSource, Decl(checkedExceptionsSoundness.ts, 139, 26))
+>assertionSource : Symbol(assertionSource, Decl(checkedExceptionsSoundness.ts, 205, 26))
 
     throw "assertion";
 }
 const assertionErasesEffect = assertionSource as () => void throws never;
->assertionErasesEffect : Symbol(assertionErasesEffect, Decl(checkedExceptionsSoundness.ts, 145, 5))
->assertionSource : Symbol(assertionSource, Decl(checkedExceptionsSoundness.ts, 139, 26))
+>assertionErasesEffect : Symbol(assertionErasesEffect, Decl(checkedExceptionsSoundness.ts, 211, 5))
+>assertionSource : Symbol(assertionSource, Decl(checkedExceptionsSoundness.ts, 205, 26))
 
 function callAssertedFunction(): void throws never {
->callAssertedFunction : Symbol(callAssertedFunction, Decl(checkedExceptionsSoundness.ts, 145, 73))
+>callAssertedFunction : Symbol(callAssertedFunction, Decl(checkedExceptionsSoundness.ts, 211, 73))
 
     assertionErasesEffect();
->assertionErasesEffect : Symbol(assertionErasesEffect, Decl(checkedExceptionsSoundness.ts, 145, 5))
+>assertionErasesEffect : Symbol(assertionErasesEffect, Decl(checkedExceptionsSoundness.ts, 211, 5))
 }
 
 // An overload cannot advertise a narrower effect than its implementation.
 function lyingOverload(): void throws never;
->lyingOverload : Symbol(lyingOverload, Decl(checkedExceptionsSoundness.ts, 148, 1), Decl(checkedExceptionsSoundness.ts, 151, 44))
+>lyingOverload : Symbol(lyingOverload, Decl(checkedExceptionsSoundness.ts, 214, 1), Decl(checkedExceptionsSoundness.ts, 217, 44))
 
 function lyingOverload(): void {
->lyingOverload : Symbol(lyingOverload, Decl(checkedExceptionsSoundness.ts, 148, 1), Decl(checkedExceptionsSoundness.ts, 151, 44))
+>lyingOverload : Symbol(lyingOverload, Decl(checkedExceptionsSoundness.ts, 214, 1), Decl(checkedExceptionsSoundness.ts, 217, 44))
 
     throw "implementation";
 }
 function callLyingOverload(): void throws never {
->callLyingOverload : Symbol(callLyingOverload, Decl(checkedExceptionsSoundness.ts, 154, 1))
+>callLyingOverload : Symbol(callLyingOverload, Decl(checkedExceptionsSoundness.ts, 220, 1))
 
     lyingOverload();
->lyingOverload : Symbol(lyingOverload, Decl(checkedExceptionsSoundness.ts, 148, 1), Decl(checkedExceptionsSoundness.ts, 151, 44))
+>lyingOverload : Symbol(lyingOverload, Decl(checkedExceptionsSoundness.ts, 214, 1), Decl(checkedExceptionsSoundness.ts, 217, 44))
 }
 

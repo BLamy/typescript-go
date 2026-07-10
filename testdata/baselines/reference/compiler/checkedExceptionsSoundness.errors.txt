@@ -19,17 +19,38 @@ checkedExceptionsSoundness.ts(107,7): error TS2322: Type '{ readonly value: numb
 checkedExceptionsSoundness.ts(112,7): error TS2322: Type '{ value: number; }' is not assignable to type 'DataBox'.
   Property 'value's write effect may throw '"erased setter"', but the target only permits 'never'.
 checkedExceptionsSoundness.ts(113,31): error TS100028: Property 'value's read effect may throw '"erased getter"', but the target only permits 'never'.
-checkedExceptionsSoundness.ts(122,15): error TS2322: Type 'unknown' is not assignable to type '"tracked"'.
-checkedExceptionsSoundness.ts(130,7): error TS2322: Type 'LegacyCallback' is not assignable to type 'SafeCallback'.
+checkedExceptionsSoundness.ts(115,7): error TS2322: Type '{ readonly value: number; }' is not assignable to type 'DataBox'.
+  Property 'value's write effect may throw 'unknown', but the target only permits 'never'.
+checkedExceptionsSoundness.ts(116,40): error TS100028: Property 'value's write effect may throw 'unknown', but the target only permits 'never'.
+checkedExceptionsSoundness.ts(121,7): error TS2415: Class 'ThrowingAccessorOverride' incorrectly extends base class 'AbstractSafeData'.
+  Property 'value's read effect may throw '"override accessor"', but the target only permits 'never'.
+checkedExceptionsSoundness.ts(128,5): error TS2416: Property 'method' in type 'ThrowingMethodOverride' is not assignable to the same property in base type 'SafeMethodBase'.
+  Type '() => void throws "override method"' is not assignable to type '() => void throws never'.
+    The source signature may throw '"override method"', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(138,15): error TS2322: Type 'unknown' is not assignable to type '"tracked"'.
+checkedExceptionsSoundness.ts(146,7): error TS2322: Type 'LegacyCallback' is not assignable to type 'SafeCallback'.
   The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
-checkedExceptionsSoundness.ts(135,7): error TS2322: Type 'any' is not assignable to type 'SafeCallback'.
-checkedExceptionsSoundness.ts(136,7): error TS2322: Type 'any' is not assignable to type 'DataBox'.
-checkedExceptionsSoundness.ts(139,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
-checkedExceptionsSoundness.ts(146,31): error TS100023: The source signature may throw '"assertion"', but the target's 'throws' clause only permits 'never'.
-checkedExceptionsSoundness.ts(152,10): error TS100023: The source signature may throw '"implementation"', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(151,7): error TS2322: Type 'any' is not assignable to type 'SafeCallback'.
+checkedExceptionsSoundness.ts(152,7): error TS2322: Type 'any' is not assignable to type 'DataBox'.
+checkedExceptionsSoundness.ts(156,37): error TS100023: The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(157,40): error TS100023: The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(161,42): error TS100023: The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(163,5): error TS2322: Type 'any' is not assignable to type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to 'any'.
+checkedExceptionsSoundness.ts(166,12): error TS100030: An assertion from 'any' to the unresolved type 'T' can manufacture checked-effect guarantees after instantiation.
+checkedExceptionsSoundness.ts(172,9): error TS100031: Mutating a property through an 'any' or 'unknown' alias can corrupt a checked-effect contract.
+checkedExceptionsSoundness.ts(173,16): error TS100031: Mutating a property through an 'any' or 'unknown' alias can corrupt a checked-effect contract.
+checkedExceptionsSoundness.ts(176,5): error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(182,11): error TS2322: Type 'unknown' is not assignable to type 'string'.
+checkedExceptionsSoundness.ts(187,11): error TS2322: Type 'unknown' is not assignable to type 'string'.
+checkedExceptionsSoundness.ts(194,64): error TS100022: Thrown value of type 'unknown' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+checkedExceptionsSoundness.ts(198,16): error TS100029: Proxy values have latent property and private-brand effects that are not representable by checked exceptions. Proxy construction and revocation are not supported when 'checkedExceptions' is enabled.
+checkedExceptionsSoundness.ts(205,1): error TS100024: Call may throw 'unknown', which is not caught by an enclosing 'try' statement. Code outside of a function must handle all checked exceptions.
+checkedExceptionsSoundness.ts(212,31): error TS100023: The source signature may throw '"assertion"', but the target's 'throws' clause only permits 'never'.
+checkedExceptionsSoundness.ts(218,10): error TS100023: The source signature may throw '"implementation"', but the target's 'throws' clause only permits 'never'.
 
 
-==== checkedExceptionsSoundness.ts (26 errors) ====
+==== checkedExceptionsSoundness.ts (42 errors) ====
     declare function legacy(): void;
     declare function tracked(): void throws "tracked";
     declare function explicitlyUnknown(): void throws unknown;
@@ -183,6 +204,34 @@ checkedExceptionsSoundness.ts(152,10): error TS100023: The source signature may 
     const assertedGetterErasure = getterSource as DataBox;
                                   ~~~~~~~~~~~~~~~~~~~~~~~
 !!! error TS100028: Property 'value's read effect may throw '"erased getter"', but the target only permits 'never'.
+    const getterOnlySource = { get value(): number { return 1; } };
+    const getterOnlyWriteErasure: DataBox = getterOnlySource;
+          ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ readonly value: number; }' is not assignable to type 'DataBox'.
+!!! error TS2322:   Property 'value's write effect may throw 'unknown', but the target only permits 'never'.
+    const assertedGetterOnlyWriteErasure = getterOnlySource as DataBox;
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100028: Property 'value's write effect may throw 'unknown', but the target only permits 'never'.
+    
+    abstract class AbstractSafeData {
+        abstract value: number;
+    }
+    class ThrowingAccessorOverride extends AbstractSafeData {
+          ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2415: Class 'ThrowingAccessorOverride' incorrectly extends base class 'AbstractSafeData'.
+!!! error TS2415:   Property 'value's read effect may throw '"override accessor"', but the target only permits 'never'.
+        get value(): number { throw "override accessor"; }
+    }
+    class SafeMethodBase {
+        method(): void throws never {}
+    }
+    class ThrowingMethodOverride extends SafeMethodBase {
+        method(): void { throw "override method"; }
+        ~~~~~~
+!!! error TS2416: Property 'method' in type 'ThrowingMethodOverride' is not assignable to the same property in base type 'SafeMethodBase'.
+!!! error TS2416:   Type '() => void throws "override method"' is not assignable to type '() => void throws never'.
+!!! error TS2416:     The source signature may throw '"override method"', but the target's 'throws' clause only permits 'never'.
+    }
     
     // One unknown source poisons catch precision instead of allowing an optimistic
     // tracked-only type.
@@ -215,6 +264,81 @@ checkedExceptionsSoundness.ts(152,10): error TS100023: The source signature may 
     const anyToSafeData: DataBox = dynamicCapability;
           ~~~~~~~~~~~~~
 !!! error TS2322: Type 'any' is not assignable to type 'DataBox'.
+    type LegacyOptions = { callback: LegacyCallback };
+    type SafeOptions = { callback: SafeCallback };
+    declare const legacyOptions: LegacyOptions;
+    const nestedAssertionErasesEffect = legacyOptions as SafeOptions;
+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100023: The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
+    const anyNestedAssertionErasesEffect = dynamicCapability as SafeOptions;
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100023: The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
+    type LegacyConstructorType = new () => DataBox;
+    type SafeConstructorType = new () => DataBox throws never;
+    declare const legacyConstructorValue: LegacyConstructorType;
+    const constructorAssertionErasesEffect = legacyConstructorValue as SafeConstructorType;
+                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100023: The source signature may throw 'unknown', but the target's 'throws' clause only permits 'never'.
+    function genericAnyLaunder<T>(value: any): T {
+        return value;
+        ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'T'.
+!!! error TS2322:   'T' could be instantiated with an arbitrary type which could be unrelated to 'any'.
+    }
+    function genericAssertionLaunder<T>(value: any): T {
+        return value as T;
+               ~~~~~~~~~~
+!!! error TS100030: An assertion from 'any' to the unresolved type 'T' can manufacture checked-effect guarantees after instantiation.
+    }
+    function mutationThrower(): void throws "mutated alias" { throw "mutated alias"; }
+    const safeMutationVictim: { callback: SafeCallback } = { callback: () => {} };
+    function anyAliasCannotCorruptSafeCallback(): void throws never {
+        try {
+            (safeMutationVictim as any).callback = mutationThrower;
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100031: Mutating a property through an 'any' or 'unknown' alias can corrupt a checked-effect contract.
+            delete (safeMutationVictim as any).callback;
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100031: Mutating a property through an 'any' or 'unknown' alias can corrupt a checked-effect contract.
+        } catch {
+        }
+        safeMutationVictim.callback();
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100021: Call may throw 'unknown', which is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    }
+    function genericRaise<T>(): void throws T { throw null as T; }
+    try {
+        throw dynamicCapability;
+    } catch (e) {
+        const rawAnyMustBeUnknown: string = e;
+              ~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'string'.
+    }
+    try {
+        genericRaise<any>();
+    } catch (e) {
+        const instantiatedAnyMustBeUnknown: string = e;
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'string'.
+    }
+    
+    // Proxy preserves T in today's lib declaration but can add latent traps,
+    // revocation, and private-brand failures that T cannot represent.
+    class PrivateBox {
+        #value = 1;
+        static read(box: PrivateBox): number throws never { return box.#value; }
+                                                                   ~~~~~~~~~~
+!!! error TS100022: Thrown value of type 'unknown' is neither caught by an enclosing 'try' statement nor declared in the enclosing function's 'throws' clause.
+    }
+    function proxyCannotMasqueradeAsPrivateBox(): PrivateBox throws never {
+        try {
+            return new Proxy(new PrivateBox(), {});
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS100029: Proxy values have latent property and private-brand effects that are not representable by checked exceptions. Proxy construction and revocation are not supported when 'checkedExceptions' is enabled.
+        } catch {
+            return new PrivateBox();
+        }
+    }
     
     // Unknown effects at top level must be handled.
     legacy();

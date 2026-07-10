@@ -119,6 +119,10 @@ As with all foreign-function interfaces, explicit declaration clauses are
 trusted contracts. An ambient function declared `throws never` while its native
 implementation throws is a lying declaration, just as an ambient function
 declared to return `string` while returning a number lies to today's checker.
+The same applies to declared value shapes: an ambient function that claims to
+return `T` while actually returning a trap-bearing `Proxy<T>` violates its
+contract. The consumer checker cannot recover facts hidden by dishonest foreign
+code without quarantining every external object as `unknown`.
 Missing ambient metadata is never trusted when checked exceptions are enabled: it becomes
 `throws unknown`. Diagnostic suppression, unchecked generated JavaScript,
 runtime code mutation, and resource-exhaustion/engine termination are outside
@@ -348,8 +352,14 @@ Rules:
 - A synchronous `try/catch` around a promise-producing call does not discharge
   its rejection effect. In the reference implementation, a call whose
   resolved return type is promise-like must currently be immediately `await`ed
-  or directly returned. This deliberately rejects more complex promise chains
-  until their rejection transformations can be represented precisely.
+  or directly returned. A union with an explicit promise-like constituent uses
+  the same rule. Legacy `any`, `unknown`, and broad object returns remain
+  synchronous unknown-effect boundaries at the call site, so existing APIs can
+  still be handled with `try/catch`; if such a value is actually returned from
+  an async or Promise-returning function, the thenable-assimilation boundary
+  contributes an unknown rejection effect. This deliberately rejects more
+  complex promise chains until their rejection transformations can be
+  represented precisely.
 - Directly returning a promise propagates the callee's rejection effect through
   the enclosing function's clause. An immediate `await` transfers that effect
   into the surrounding synchronous control-flow position, where an enclosing
@@ -713,7 +723,7 @@ is implemented, and where it deliberately narrows the full design:
   recognized only on the same line as the preceding token, so existing members
   named `throws` keep parsing.
 - The boolean `checkedExceptions` option, wired through
-  tsconfig, the CLI, and build info; diagnostics TS100021–TS100028 are emitted
+  tsconfig, the CLI, and build info; diagnostics TS100021–TS100031 are emitted
   as build-blocking errors when it is enabled.
 - Handle-or-declare enforcement (§4.3), including top-level code, with
   raises in `catch`/`finally` blocks correctly not discharged by their own
@@ -732,9 +742,11 @@ is implemented, and where it deliberately narrows the full design:
   clause instantiates with the signature.
 - Enabled checked-exceptions analysis treats ambient/legacy declarations without clauses as `unknown`,
   normalizes `throws any` to `unknown`, includes unknown effects in enforcement
-  and catch typing, prevents assertions or `any` assignments from manufacturing
-  callable/property effect proofs, checks function/method/constructor overload
-  implementations, and conservatively treats
+  and catch typing, prevents assertions, nested capabilities, unresolved generic
+  instantiations, `any` assignments, or property mutation through `any` aliases
+  from manufacturing or corrupting callable/property effect proofs, checks
+  function/method/constructor overload implementations,
+  and conservatively treats
   unresolved structural property access, construction, class/module
   evaluation, coercion, iteration, destructuring, disposal, JSX, and decorators
   as unknown effects.
@@ -755,6 +767,11 @@ is implemented, and where it deliberately narrows the full design:
   callback-dependent effect. Function-valued arguments that may throw are
   rejected as potentially escaping; this is sound but intentionally rejects
   synchronous combinators until they can declare the timing contract.
+- Promise values do not yet carry the proposal's internal rejection slot.
+  Awaiting or returning a non-call Promise expression therefore contributes
+  `unknown`; a direct returned/awaited call can still recover its precise effect
+  from the producer signature. This prevents a stored Promise or Promise
+  parameter from laundering an arbitrary rejection through `throws never`.
 - Until parameter-level timing contracts land, the implementation recursively
   examines option objects, collections, index signatures, unions, and generic
   capabilities for executable code. Throwing or imprecise callbacks,
@@ -771,6 +788,11 @@ is implemented, and where it deliberately narrows the full design:
   computed/decorated class elements, tagged templates, and JSX contribute
   `unknown` until their declarations carry a precise effect contract. Visible
   local constructors, accessors, and field initializers are inferred.
+- `Proxy` construction and `Proxy.revocable` are rejected while checking is
+  enabled. Their current standard-library type returns the original `T`, which
+  cannot represent latent traps, revocation, or private-brand failures; safely
+  admitting proxies requires an object-wide property-effect type rather than a
+  catch around the factory call.
 - Static imports are currently rejected as `unknown` module-initialization
   effects. A practical multi-module project needs declaration emit and
   package metadata for module initialization effects before this can become

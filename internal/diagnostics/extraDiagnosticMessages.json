@@ -166,5 +166,17 @@
     "Property '{0}'s {1} effect may throw '{2}', but the target only permits '{3}'.": {
         "category": "Error",
         "code": 100028
+    },
+    "Proxy values have latent property and private-brand effects that are not representable by checked exceptions. Proxy construction and revocation are not supported when 'checkedExceptions' is enabled.": {
+        "category": "Error",
+        "code": 100029
+    },
+    "An assertion from '{0}' to the unresolved type '{1}' can manufacture checked-effect guarantees after instantiation.": {
+        "category": "Error",
+        "code": 100030
+    },
+    "Mutating a property through an 'any' or 'unknown' alias can corrupt a checked-effect contract.": {
+        "category": "Error",
+        "code": 100031
     }
 }
